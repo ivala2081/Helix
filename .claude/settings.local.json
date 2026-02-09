@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python3:*)",
+      "Bash(python:*)",
+      "Bash(wc:*)",
+      "Bash(pip3 list:*)",
+      "Bash(xdg-open:*)",
+      "Bash(sensible-browser:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}
