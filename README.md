@@ -241,5 +241,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 For questions or suggestions, please open an issue on GitHub.
 
 ---
-
-**Built with ❤️ for algorithmic traders**
