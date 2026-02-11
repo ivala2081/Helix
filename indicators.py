@@ -144,6 +144,21 @@ class MarketStructure:
 
         df["ms_trend"] = df["ms_trend"].fillna(Trend.NEUTRAL.value).astype(int)
 
+        # ── Trend maturity (consecutive same-direction swing confirmations) ──
+        df["ms_trend_maturity"] = 0
+        consec_bull = 0
+        consec_bear = 0
+        for idx, stype in all_events:
+            if stype in ("HH", "HL"):
+                consec_bull += 1
+                consec_bear = 0
+            elif stype in ("LH", "LL"):
+                consec_bear += 1
+                consec_bull = 0
+            maturity = max(consec_bull, consec_bear)
+            df.iloc[idx, df.columns.get_loc("ms_trend_maturity")] = maturity
+        df["ms_trend_maturity"] = df["ms_trend_maturity"].replace(0, np.nan).ffill().fillna(0).astype(int)
+
         # ── BOS and CHoCH detection ──
         df["bos"] = 0  # 1 = bullish BOS, -1 = bearish BOS
         df["choch"] = 0  # 1 = bullish CHoCH, -1 = bearish CHoCH
@@ -192,35 +207,48 @@ class MarketStructure:
         row = df.iloc[bar_index]
         trend = row["ms_trend"]
         atr = row.get("atr_14", row["high"] - row["low"])
+        if atr is None or pd.isna(atr) or atr <= 0:
+            return signals
 
-        # BOS signal — continuation entry
+        maturity = int(row.get("ms_trend_maturity", 1))
+
+        # Context modifiers for dynamic signal strength
+        body_size = abs(row["close"] - row["open"])
+        body_modifier = min(body_size / atr / 1.5, 0.15)  # up to +0.15 for strong candles
+        maturity_modifier = min((maturity - 1) * 0.05, 0.15)  # up to +0.15 for mature trends
+
+        # BOS signal — continuation entry (dynamic strength)
         if row["bos"] == 1:
+            strength = min(0.55 + maturity_modifier + body_modifier, 0.90)
             sl = row["last_swing_low"] if not pd.isna(row.get("last_swing_low")) else row["low"] - 2 * atr
             signals.append(Signal(
-                type=SignalType.LONG, strength=0.7, source="market_structure",
+                type=SignalType.LONG, strength=strength, source="market_structure",
                 entry_price=row["close"], stop_loss=sl,
                 bar_index=bar_index, reason="Bullish BOS — uptrend continuation",
             ))
         elif row["bos"] == -1:
+            strength = min(0.55 + maturity_modifier + body_modifier, 0.90)
             sl = row["last_swing_high"] if not pd.isna(row.get("last_swing_high")) else row["high"] + 2 * atr
             signals.append(Signal(
-                type=SignalType.SHORT, strength=0.7, source="market_structure",
+                type=SignalType.SHORT, strength=strength, source="market_structure",
                 entry_price=row["close"], stop_loss=sl,
                 bar_index=bar_index, reason="Bearish BOS — downtrend continuation",
             ))
 
-        # CHoCH signal — reversal entry (lower strength, higher risk)
+        # CHoCH signal — reversal entry (lower base, body modifier only)
         if row["choch"] == 1:
+            strength = min(0.40 + body_modifier, 0.60)
             sl = row["low"] - 1.5 * atr
             signals.append(Signal(
-                type=SignalType.LONG, strength=0.5, source="market_structure",
+                type=SignalType.LONG, strength=strength, source="market_structure",
                 entry_price=row["close"], stop_loss=sl,
                 bar_index=bar_index, reason="Bullish CHoCH — potential trend reversal",
             ))
         elif row["choch"] == -1:
+            strength = min(0.40 + body_modifier, 0.60)
             sl = row["high"] + 1.5 * atr
             signals.append(Signal(
-                type=SignalType.SHORT, strength=0.5, source="market_structure",
+                type=SignalType.SHORT, strength=strength, source="market_structure",
                 entry_price=row["close"], stop_loss=sl,
                 bar_index=bar_index, reason="Bearish CHoCH — potential trend reversal",
             ))
@@ -265,6 +293,8 @@ class FairValueGap:
         df["bearish_fvg_top"] = np.nan
         df["bearish_fvg_bottom"] = np.nan
         df["fvg_signal"] = 0  # 1 = long (price at bullish FVG), -1 = short (price at bearish FVG)
+        df["fvg_gap_size_atr"] = 0.0   # gap size relative to ATR (for dynamic strength)
+        df["fvg_age_bars"] = 0          # age of FVG when tested (for freshness modifier)
 
         active_fvgs: list[FVG] = []
 
@@ -319,6 +349,10 @@ class FairValueGap:
                             fvg.tested = True
                             fvg.test_bar = i
                             df.iloc[i, df.columns.get_loc("fvg_signal")] = 1
+                            # Record FVG context for dynamic strength
+                            gap_size = fvg.top - fvg.bottom
+                            df.iloc[i, df.columns.get_loc("fvg_gap_size_atr")] = gap_size / atr if atr > 0 else 0
+                            df.iloc[i, df.columns.get_loc("fvg_age_bars")] = age
                     # FVG filled (price went through completely)
                     if df["low"].iloc[i] < fvg.bottom:
                         fvg.filled = True
@@ -331,6 +365,10 @@ class FairValueGap:
                             fvg.tested = True
                             fvg.test_bar = i
                             df.iloc[i, df.columns.get_loc("fvg_signal")] = -1
+                            # Record FVG context for dynamic strength
+                            gap_size = fvg.top - fvg.bottom
+                            df.iloc[i, df.columns.get_loc("fvg_gap_size_atr")] = gap_size / atr if atr > 0 else 0
+                            df.iloc[i, df.columns.get_loc("fvg_age_bars")] = age
                     # FVG filled
                     if df["high"].iloc[i] > fvg.top:
                         fvg.filled = True
@@ -342,24 +380,37 @@ class FairValueGap:
         return df
 
     def get_signals(self, df: pd.DataFrame, bar_index: int) -> list[Signal]:
-        """Generate signals from FVG interactions."""
+        """Generate signals from FVG interactions (dynamic strength)."""
         signals = []
         row = df.iloc[bar_index]
         atr = row.get("atr_14", row["high"] - row["low"])
+        if atr is None or pd.isna(atr) or atr <= 0:
+            return signals
 
         if row["fvg_signal"] == 1:
-            # Bullish FVG retest — buy
+            # Dynamic strength based on gap size and freshness
+            gap_atr = row.get("fvg_gap_size_atr", 0.5)
+            age = row.get("fvg_age_bars", 50)
+            gap_modifier = min(float(gap_atr) * 0.15, 0.20)
+            freshness_modifier = max(0.10 - float(age) * 0.002, 0.0)
+            strength = min(0.40 + gap_modifier + freshness_modifier, 0.80)
+
             sl = row["low"] - 1.5 * atr
             signals.append(Signal(
-                type=SignalType.LONG, strength=0.6, source="fvg",
+                type=SignalType.LONG, strength=strength, source="fvg",
                 entry_price=row["close"], stop_loss=sl,
                 bar_index=bar_index, reason="Bullish FVG retest — buying at imbalance zone",
             ))
         elif row["fvg_signal"] == -1:
-            # Bearish FVG retest — sell
+            gap_atr = row.get("fvg_gap_size_atr", 0.5)
+            age = row.get("fvg_age_bars", 50)
+            gap_modifier = min(float(gap_atr) * 0.15, 0.20)
+            freshness_modifier = max(0.10 - float(age) * 0.002, 0.0)
+            strength = min(0.40 + gap_modifier + freshness_modifier, 0.80)
+
             sl = row["high"] + 1.5 * atr
             signals.append(Signal(
-                type=SignalType.SHORT, strength=0.6, source="fvg",
+                type=SignalType.SHORT, strength=strength, source="fvg",
                 entry_price=row["close"], stop_loss=sl,
                 bar_index=bar_index, reason="Bearish FVG retest — selling at imbalance zone",
             ))

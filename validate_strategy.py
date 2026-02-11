@@ -22,33 +22,54 @@ from stake_manager import SizingMethod
 
 DATA_DIR = Path(__file__).parent / "data"
 
-# Winning strategy config
+# Winning strategy config — synced with V5 STRATEGY_PARAMS
 WINNER_PARAMS = {
+    # Capital & Risk
     "initial_capital": 10_000,
-    "risk_pct": 0.02,
+    "risk_pct": 0.03,                    # V5-C: 3% risk
     "sizing_method": SizingMethod.FIXED_FRACTIONAL,
+    "max_position_pct": 0.80,            # V5-C: 80% position cap
+
+    # Entry
     "use_market_structure": True,
     "use_fvg": True,
     "use_smc": False,
     "use_classic_pa": False,
     "min_confluence": 0.50,
-    "sl_atr_mult": 2.0,
-    "tp1_atr_mult": 2.0,
+
+    # Stop Loss
+    "sl_atr_mult": 1.0,                 # V5-A: 1x ATR
+
+    # Take Profits
+    "tp1_atr_mult": 1.0,                # V5-B: 1x ATR
     "tp2_atr_mult": 4.0,
-    "tp3_atr_mult": 8.0,
-    "tp1_close_pct": 0.40,
+    "tp3_atr_mult": 6.0,
+    "tp1_close_pct": 0.05,
     "tp2_close_pct": 0.30,
-    "tp3_close_pct": 0.30,
+    "tp3_close_pct": 0.65,
+
+    # Trailing — disabled
     "use_trailing": False,
     "trailing_atr_mult": 0,
     "trailing_activation_atr": 0,
+
     # V2 improvements
-    "min_bars_before_sl": 19,
     "be_after_tp1": True,
     "be_buffer_atr": 0.30,
     "min_signal_score": 0.60,
+
+    # V3+V4 improvements
+    "min_bars_before_sl": 50,            # V4-B: was 19
+    "use_tiered_sizing": False,
+
+    # Execution
     "warmup_bars": 50,
     "commission_pct": 0.075,
+    "slippage_pct": 0.02,               # V4: realistic BTC 1H slippage
+
+    # Hard stop — catastrophic protection during SL suppression
+    "use_hard_stop": True,
+    "hard_stop_atr_mult": 15.0,
 }
 
 

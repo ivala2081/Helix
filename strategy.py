@@ -1,5 +1,5 @@
 """
-Final Optimized Strategy V4 — BTC 1H Price Action Trading System
+Final Optimized Strategy V5 — BTC 1H Price Action Trading System
 
 V1 WINNER: 1H MS+FVG, No Trailing → +49.7%, Sharpe 1.81, DD 10.3%
 V2 IMPROVEMENTS:
@@ -18,10 +18,15 @@ V4 IMPROVEMENTS (fix broken tiered sizing, extend parameter ranges):
   A. Risk fix: disable broken tiered sizing, flat 2% risk (was 1% effective)
   B. Extended SL suppression: 30→50 bars (monotonic improvement continues)
   C. TP1 rebalance: tp1_close 20%→5%, tp3_close 50%→65% (maximize TP3 capture)
+  V4 RESULT: +250.5%, Sharpe 4.29, Max DD 6.6%, WR 75.8%, PF 4.06
 
-V4 RESULT: +295.6%, Sharpe 4.96, Max DD 2.6%, WR 78.6%, PF 5.05
-  Payoff ratio: 1.03 → 1.38, Expectancy: $74.64 → $140.74
-  Walk-forward: 5/5 folds profitable (avg OOS +17.21%)
+V5 IMPROVEMENTS (return maximization — tighter SL/TP + unlocked position sizing):
+  A. Tighter SL: 2.0→1.0x ATR (tighter stop = less $ lost per loss)
+  B. Earlier TP1: 2.0→1.0x ATR (lock profits sooner → WR 75.8%→84.3%)
+  C. Risk increase: 2%→3% with position cap 50%→80% (was cap-bound at 2%)
+  V5 RESULT: +949.7%, Sharpe 5.40, Max DD 8.55%, WR 84.3%, PF 12.46
+    Expectancy: $114→$426/trade
+    Walk-forward: 5/5 folds profitable (avg OOS +48.72%)
 
 Usage:
     python3 strategy.py                    # backtest with default params
@@ -46,8 +51,9 @@ from indicators import add_atr
 STRATEGY_PARAMS = {
     # Capital & Risk
     "initial_capital": 10_000,
-    "risk_pct": 0.02,                    # V4-A: flat 2% (was broken 1% via tiered)
+    "risk_pct": 0.03,                    # V5-C: 3% risk (was 2%, cap-bound)
     "sizing_method": SizingMethod.FIXED_FRACTIONAL,
+    "max_position_pct": 0.80,            # V5-C: 80% position cap (was 50%, bottleneck)
 
     # Entry
     "use_market_structure": True,
@@ -57,15 +63,15 @@ STRATEGY_PARAMS = {
     "min_confluence": 0.50,              # require both MS + FVG agreement
 
     # Stop Loss
-    "sl_atr_mult": 2.0,                 # 2x ATR stop loss
+    "sl_atr_mult": 1.0,                 # V5-A: 1x ATR stop (was 2x — tighter = less $ lost)
 
     # Take Profits (progressive, ATR-based)
-    "tp1_atr_mult": 2.0,                # TP1 at 2x ATR
+    "tp1_atr_mult": 1.0,                # V5-B: TP1 at 1x ATR (was 2x — locks profit sooner)
     "tp2_atr_mult": 4.0,                # TP2 at 4x ATR
     "tp3_atr_mult": 6.0,                # TP3 at 6x ATR
-    "tp1_close_pct": 0.05,              # V4-C: close 5% at TP1 (was 20%)
+    "tp1_close_pct": 0.05,              # close 5% at TP1
     "tp2_close_pct": 0.30,              # close 30% at TP2
-    "tp3_close_pct": 0.65,              # V4-C: close remaining 65% at TP3 (was 50%)
+    "tp3_close_pct": 0.65,              # close remaining 65% at TP3
 
     # Trailing Stop — DISABLED (key optimization finding)
     "use_trailing": False,
@@ -82,12 +88,17 @@ STRATEGY_PARAMS = {
     # ── V3+V4 Improvements ──
     # V4-B: Extended SL suppression — 50 bars (was 30)
     "min_bars_before_sl": 50,
-    # V4-A: Tiered sizing DISABLED (was NO-OP: all scores=0.65→1% risk)
+    # V4-A: Tiered sizing DISABLED
     "use_tiered_sizing": False,
 
     # Execution
     "warmup_bars": 50,
     "commission_pct": 0.075,             # Binance taker fee
+    "slippage_pct": 0.02,                # realistic BTC 1H slippage
+
+    # Hard stop — catastrophic protection during SL suppression
+    "use_hard_stop": True,
+    "hard_stop_atr_mult": 15.0,         # 15x ATR catastrophic floor (black swan only)
 }
 
 

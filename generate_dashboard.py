@@ -84,6 +84,11 @@ def trade_to_dict(t) -> dict:
         "risk_amount": float(t.risk_amount),
         "max_favorable": float(t.max_favorable),
         "max_adverse": float(t.max_adverse),
+        "entry_commission": float(getattr(t, 'entry_commission', 0)),
+        "exit_commission": float(getattr(t, 'exit_commission', 0)),
+        "total_commission": float(getattr(t, 'total_commission', 0)),
+        "hard_stop": float(t.hard_stop) if getattr(t, 'hard_stop', None) is not None else None,
+        "max_adverse_during_suppression": float(getattr(t, 'max_adverse_during_suppression', 0)),
     }
 
 
@@ -594,6 +599,226 @@ def compute_r_multiple_distribution(trades):
     }
 
 
+
+# ═══════════════════════════════════════════════════════════════
+# NEW ANALYSIS FUNCTIONS (Phase 4 — Critical Concerns Dashboard)
+# ═══════════════════════════════════════════════════════════════
+
+def compute_signal_score_analysis(trades):
+    """Signal score distribution and per-band win rate (3a)."""
+    scores = [t.signal_score for t in trades if t.signal_score is not None]
+    if not scores:
+        return None
+    scores_arr = np.array(scores)
+
+    # Histogram
+    bins = np.arange(0.40, 1.01, 0.05)
+    counts, edges = np.histogram(scores_arr, bins=bins)
+    centers = [(edges[i] + edges[i + 1]) / 2 for i in range(len(counts))]
+
+    # Win rate by score band
+    bands = [(0.50, 0.55), (0.55, 0.60), (0.60, 0.65), (0.65, 0.70),
+             (0.70, 0.75), (0.75, 0.80), (0.80, 0.90)]
+    band_stats = []
+    for lo, hi in bands:
+        band_trades = [t for t in trades if t.signal_score >= lo and t.signal_score < hi]
+        n = len(band_trades)
+        if n > 0:
+            wins = len([t for t in band_trades if t.pnl and t.pnl > 0])
+            avg_pnl = sum(t.pnl for t in band_trades if t.pnl is not None) / n
+            band_stats.append({
+                "label": f"{lo:.2f}-{hi:.2f}",
+                "count": n,
+                "win_rate": round(wins / n * 100, 1),
+                "avg_pnl": round(avg_pnl, 2),
+            })
+
+    return {
+        "histogram": {"centers": [round(c, 3) for c in centers], "counts": counts.tolist()},
+        "band_stats": band_stats,
+        "mean_score": round(float(scores_arr.mean()), 4),
+        "std_score": round(float(scores_arr.std()), 4),
+        "min_score": round(float(scores_arr.min()), 4),
+        "max_score": round(float(scores_arr.max()), 4),
+        "unique_count": len(np.unique(np.round(scores_arr, 3))),
+    }
+
+
+def compute_suppression_risk(trades, min_bars_before_sl):
+    """Analyze max adverse excursion during SL suppression period (3b)."""
+    mae_values = [t.max_adverse_during_suppression for t in trades
+                  if hasattr(t, 'max_adverse_during_suppression') and t.max_adverse_during_suppression > 0]
+    hard_stop_hits = len([t for t in trades
+                         if getattr(t, 'exit_reason', '') == 'Hard Stop'])
+
+    if not mae_values:
+        return None
+
+    mae_arr = np.array(mae_values)
+    # Histogram
+    n_bins = min(20, max(5, len(mae_values) // 5))
+    counts, edges = np.histogram(mae_arr, bins=n_bins)
+    centers = [(edges[i] + edges[i + 1]) / 2 for i in range(len(counts))]
+
+    return {
+        "suppression_bars": min_bars_before_sl,
+        "trades_with_suppression": len(mae_values),
+        "hard_stop_hits": hard_stop_hits,
+        "max_mae_pct": round(float(mae_arr.max()), 3),
+        "avg_mae_pct": round(float(mae_arr.mean()), 3),
+        "p95_mae_pct": round(float(np.percentile(mae_arr, 95)), 3),
+        "p99_mae_pct": round(float(np.percentile(mae_arr, 99)), 3),
+        "histogram": {"centers": [round(c, 3) for c in centers], "counts": counts.tolist()},
+    }
+
+
+def compute_bnh_comparison(metrics, equity_curve, df, initial_capital):
+    """Enhanced buy-and-hold comparison with risk-adjusted metrics (3c)."""
+    closes = df["close"].values
+    bnh_equity = initial_capital * (closes / closes[0])
+
+    # B&H risk metrics
+    bnh_running_max = np.maximum.accumulate(bnh_equity)
+    bnh_dd = (bnh_equity - bnh_running_max) / bnh_running_max * 100
+    bnh_max_dd = abs(float(bnh_dd.min()))
+
+    bnh_returns = np.diff(bnh_equity) / bnh_equity[:-1]
+    bnh_returns = bnh_returns[~np.isnan(bnh_returns)]
+    avg_gap = (df["date"].iloc[-1] - df["date"].iloc[0]).total_seconds() / len(df)
+    bars_per_year = 365.25 * 24 * 3600 / avg_gap if avg_gap > 0 else 8760
+    bnh_sharpe = float((bnh_returns.mean() / bnh_returns.std()) * np.sqrt(bars_per_year)) if bnh_returns.std() > 0 else 0
+
+    bnh_return = float((bnh_equity[-1] - initial_capital) / initial_capital * 100)
+    bnh_calmar = bnh_return / bnh_max_dd if bnh_max_dd > 0 else 0
+
+    # Time in market
+    eq = np.array(equity_curve)
+    eq_changes = np.abs(np.diff(eq))
+    bars_active = int(np.count_nonzero(eq_changes > 0.01))
+    total_bars = len(eq) - 1
+    time_in_market = round(bars_active / total_bars * 100, 1) if total_bars > 0 else 0
+
+    strat_return = metrics.get("total_return_pct", 0)
+    capital_efficiency = round(strat_return / time_in_market * 100, 1) if time_in_market > 0 else 0
+
+    # Idle capital yield estimate (5% APR)
+    years = total_bars / bars_per_year
+    idle_fraction = (100 - time_in_market) / 100
+    idle_yield = round(initial_capital * 0.05 * years * idle_fraction, 2)
+
+    return {
+        "strategy": {
+            "return": round(strat_return, 2),
+            "sharpe": round(metrics.get("sharpe_ratio", 0), 2),
+            "sortino_trade": round(metrics.get("sortino_ratio_trade", 0), 2),
+            "max_dd": round(metrics.get("max_drawdown_pct", 0), 2),
+            "calmar": round(metrics.get("calmar_ratio", 0), 2),
+        },
+        "buy_hold": {
+            "return": round(bnh_return, 2),
+            "sharpe": round(bnh_sharpe, 2),
+            "max_dd": round(bnh_max_dd, 2),
+            "calmar": round(bnh_calmar, 2),
+        },
+        "time_in_market_pct": time_in_market,
+        "capital_efficiency": capital_efficiency,
+        "idle_yield_estimate": idle_yield,
+        "combined_return": round(strat_return + idle_yield / initial_capital * 100, 2),
+    }
+
+
+def compute_returns_distribution(trades, equity_curve):
+    """Returns distribution for Sortino transparency (3d)."""
+    eq = np.array(equity_curve)
+    bar_returns = np.diff(eq) / eq[:-1]
+    bar_returns = bar_returns[~np.isnan(bar_returns)]
+
+    upside = bar_returns[bar_returns > 0]
+    downside = bar_returns[bar_returns < 0]
+    flat = bar_returns[np.abs(bar_returns) < 1e-10]
+
+    # Histogram of bar returns (clipped to ±1%)
+    clipped = np.clip(bar_returns, -0.01, 0.01)
+    counts, edges = np.histogram(clipped, bins=50)
+    centers = [(edges[i] + edges[i + 1]) / 2 for i in range(len(counts))]
+
+    return {
+        "histogram": {"centers": [round(c * 100, 4) for c in centers], "counts": counts.tolist()},
+        "upside_count": int(len(upside)),
+        "downside_count": int(len(downside)),
+        "flat_count": int(len(flat)),
+        "total_bars": int(len(bar_returns)),
+        "upside_mean_pct": round(float(upside.mean()) * 100, 4) if len(upside) > 0 else 0,
+        "downside_mean_pct": round(float(downside.mean()) * 100, 4) if len(downside) > 0 else 0,
+        "flat_pct": round(len(flat) / len(bar_returns) * 100, 1) if len(bar_returns) > 0 else 0,
+    }
+
+
+def compute_commission_analysis(trades, metrics):
+    """Commission breakdown and cumulative curve (3e)."""
+    total_comm = sum(getattr(t, 'total_commission', 0) for t in trades)
+    entry_comm = sum(getattr(t, 'entry_commission', 0) for t in trades)
+    exit_comm = sum(getattr(t, 'exit_commission', 0) for t in trades)
+
+    # Cumulative commission over time
+    cumulative = []
+    running = 0.0
+    for t in trades:
+        running += getattr(t, 'total_commission', 0)
+        cumulative.append({
+            "date": str(t.exit_date)[:16] if t.exit_date else "",
+            "cumulative": round(running, 2),
+        })
+
+    # Downsample to 200 points max
+    if len(cumulative) > 200:
+        step = len(cumulative) // 200
+        cumulative = cumulative[::step]
+
+    gross_profit = metrics.get("gross_profit", 0)
+    net_profit = metrics.get("net_profit", 0)
+    return {
+        "total_commission": round(total_comm, 2),
+        "entry_commission": round(entry_comm, 2),
+        "exit_commission": round(exit_comm, 2),
+        "avg_per_trade": round(total_comm / len(trades), 2) if trades else 0,
+        "pct_of_gross": round(total_comm / gross_profit * 100, 2) if gross_profit > 0 else 0,
+        "pct_of_net": round(total_comm / net_profit * 100, 2) if net_profit > 0 else 0,
+        "cumulative_curve": cumulative,
+    }
+
+
+def compute_slippage_sensitivity(df, base_params):
+    """Run backtests at multiple slippage levels (3g)."""
+    from backtester import Backtester
+    slippage_levels = [0.0, 0.01, 0.02, 0.03, 0.05, 0.08, 0.10]
+    results = []
+    for slip in slippage_levels:
+        params = {**base_params, "slippage_pct": slip}
+        bt = Backtester(**params)
+        result = bt.run(df.copy())
+        m = result["metrics"]
+        results.append({
+            "slippage_pct": slip,
+            "return_pct": round(m.get("total_return_pct", 0), 2),
+            "sharpe": round(m.get("sharpe_ratio", 0), 2),
+            "net_profit": round(m.get("net_profit", 0), 2),
+            "profit_factor": round(m.get("profit_factor", 0), 2),
+            "max_dd": round(m.get("max_drawdown_pct", 0), 2),
+            "trades": m.get("total_trades", 0),
+        })
+    # Find breakeven slippage (where return crosses 0)
+    breakeven_slip = None
+    for i in range(1, len(results)):
+        if results[i]["return_pct"] <= 0 and results[i - 1]["return_pct"] > 0:
+            r0, r1 = results[i - 1]["return_pct"], results[i]["return_pct"]
+            s0, s1 = results[i - 1]["slippage_pct"], results[i]["slippage_pct"]
+            breakeven_slip = round(s0 + (s1 - s0) * r0 / (r0 - r1), 4) if r0 != r1 else s1
+            break
+
+    return {"levels": results, "breakeven_slippage": breakeven_slip}
+
+
 # ═══════════════════════════════════════════════════════════════
 # HTML TEMPLATE
 # ═══════════════════════════════════════════════════════════════
@@ -854,6 +1079,43 @@ header .meta {{ font-size:12px; color:var(--text-secondary); }}
         <div class="panel-title">Yearly Performance Breakdown</div>
         <div style="height:220px;"><canvas id="yearly-chart"></canvas></div>
         <div id="yearly-table" style="margin-top:12px;"></div>
+    </section>
+
+    <!-- 12. Signal Score Analysis (3a) -->
+    <section id="signal-section" class="panel">
+        <div class="panel-title">Signal Score Distribution &amp; Quality</div>
+        <div style="height:200px;"><canvas id="signal-hist"></canvas></div>
+        <div style="height:200px;margin-top:12px;"><canvas id="signal-winrate"></canvas></div>
+        <div id="signal-stats" style="margin-top:12px;"></div>
+    </section>
+
+    <!-- 13. SL Suppression Risk (3b) -->
+    <section id="suppression-section" class="panel">
+        <div class="panel-title">SL Suppression Risk Analysis</div>
+        <div style="height:200px;"><canvas id="mae-hist"></canvas></div>
+        <div id="suppression-stats" style="margin-top:12px;"></div>
+    </section>
+
+    <!-- 14. Strategy vs Buy &amp; Hold (3c) -->
+    <section id="bnh-section" class="panel full-width">
+        <div class="panel-title">Strategy vs Buy &amp; Hold &mdash; Risk-Adjusted Comparison</div>
+        <div style="height:250px;"><canvas id="bnh-chart"></canvas></div>
+        <div id="bnh-table" style="margin-top:12px;"></div>
+    </section>
+
+    <!-- 15. Commission Analysis (3e) -->
+    <section id="commission-section" class="panel">
+        <div class="panel-title">Commission &amp; Execution Cost Analysis</div>
+        <div id="commission-kpis" class="kpi-row"></div>
+        <div style="height:180px;margin-top:12px;"><canvas id="cumulative-comm-chart"></canvas></div>
+        <div style="height:150px;margin-top:12px;"><canvas id="comm-pie"></canvas></div>
+    </section>
+
+    <!-- 16. Slippage Sensitivity (3g) -->
+    <section id="slippage-section" class="panel">
+        <div class="panel-title">Slippage Sensitivity Analysis</div>
+        <div style="height:220px;"><canvas id="slippage-chart"></canvas></div>
+        <div id="slippage-table" style="margin-top:12px;"></div>
     </section>
 
 </main>
@@ -1621,6 +1883,171 @@ function renderYearly() {{
 }}
 
 // ═══════════════════════════════════════════════════════
+// 12. SIGNAL SCORE ANALYSIS (3a)
+// ═══════════════════════════════════════════════════════
+function renderSignalScore() {{
+    const ss = DATA.signal_score_analysis;
+    if (!ss) return;
+    new Chart(document.getElementById('signal-hist'), {{
+        type:'bar',
+        data:{{ labels:ss.histogram.centers.map(c=>c.toFixed(2)), datasets:[{{ data:ss.histogram.counts, backgroundColor:'#bc8cff88', borderColor:'#bc8cff', borderWidth:1, label:'Trades' }}] }},
+        options:{{ responsive:true, maintainAspectRatio:false, plugins:{{ legend:{{display:false}}, title:{{ display:true, text:'Signal Score Distribution (n='+ss.unique_count+' unique, \u03bc='+ss.mean_score+', \u03c3='+ss.std_score+')', color:'#e6edf3' }} }} }}
+    }});
+    if (ss.band_stats && ss.band_stats.length > 0) {{
+        new Chart(document.getElementById('signal-winrate'), {{
+            type:'bar',
+            data:{{
+                labels:ss.band_stats.map(b=>b.label),
+                datasets:[
+                    {{ label:'Win Rate %', data:ss.band_stats.map(b=>b.win_rate), backgroundColor:'#26a69a88', yAxisID:'y' }},
+                    {{ label:'Avg PnL $', data:ss.band_stats.map(b=>b.avg_pnl), type:'line', borderColor:'#ffa726', pointRadius:4, borderWidth:2, yAxisID:'y1' }},
+                ]
+            }},
+            options:{{
+                responsive:true, maintainAspectRatio:false,
+                plugins:{{ title:{{ display:true, text:'Win Rate & Avg PnL by Score Band', color:'#e6edf3' }} }},
+                scales:{{
+                    y:{{ position:'left', title:{{ display:true, text:'Win Rate %', color:'#8b949e' }} }},
+                    y1:{{ position:'right', title:{{ display:true, text:'Avg PnL $', color:'#8b949e' }}, grid:{{ display:false }} }},
+                }},
+            }}
+        }});
+    }}
+    let html = '<div style="display:flex;gap:16px;flex-wrap:wrap;">';
+    html += '<div class="kpi-card"><div class="kpi-label">Score Range</div><div class="kpi-value">'+ss.min_score+' - '+ss.max_score+'</div></div>';
+    html += '<div class="kpi-card"><div class="kpi-label">Unique Scores</div><div class="kpi-value">'+ss.unique_count+'</div></div>';
+    html += '<div class="kpi-card"><div class="kpi-label">Std Dev</div><div class="kpi-value">'+ss.std_score+'</div></div>';
+    html += '</div>';
+    document.getElementById('signal-stats').innerHTML = html;
+}}
+
+// ═══════════════════════════════════════════════════════
+// 13. SUPPRESSION RISK (3b)
+// ═══════════════════════════════════════════════════════
+function renderSuppressionRisk() {{
+    const sr = DATA.suppression_risk;
+    if (!sr) return;
+    new Chart(document.getElementById('mae-hist'), {{
+        type:'bar',
+        data:{{ labels:sr.histogram.centers.map(c=>c.toFixed(2)+'%'), datasets:[{{ data:sr.histogram.counts, backgroundColor:'#ef535088', borderColor:'#ef5350', borderWidth:1, label:'Trades' }}] }},
+        options:{{ responsive:true, maintainAspectRatio:false, plugins:{{ legend:{{display:false}}, title:{{ display:true, text:'Max Adverse Excursion During '+sr.suppression_bars+'-Bar SL Suppression', color:'#e6edf3' }} }} }}
+    }});
+    let html = '<div style="display:flex;gap:16px;flex-wrap:wrap;">';
+    html += '<div class="kpi-card"><div class="kpi-label">Avg MAE</div><div class="kpi-value">'+sr.avg_mae_pct+'%</div></div>';
+    html += '<div class="kpi-card"><div class="kpi-label">P95 MAE</div><div class="kpi-value">'+sr.p95_mae_pct+'%</div></div>';
+    html += '<div class="kpi-card"><div class="kpi-label">Max MAE</div><div class="kpi-value" style="color:var(--red)">'+sr.max_mae_pct+'%</div></div>';
+    html += '<div class="kpi-card"><div class="kpi-label">Hard Stop Hits</div><div class="kpi-value">'+(sr.hard_stop_hits||0)+'</div></div>';
+    html += '</div>';
+    html += '<p style="color:var(--text-secondary);margin-top:8px;font-size:12px;">'+sr.trades_with_suppression+' trades experienced adverse moves during the '+sr.suppression_bars+'-bar SL suppression window. Hard stop provides catastrophic protection.</p>';
+    document.getElementById('suppression-stats').innerHTML = html;
+}}
+
+// ═══════════════════════════════════════════════════════
+// 14. BUY & HOLD COMPARISON (3c)
+// ═══════════════════════════════════════════════════════
+function renderBnHComparison() {{
+    const bnh = DATA.bnh_comparison;
+    if (!bnh) return;
+    const s = bnh.strategy, b = bnh.buy_hold;
+    const labels = ['Return %', 'Sharpe', 'Max DD %', 'Calmar'];
+    new Chart(document.getElementById('bnh-chart'), {{
+        type:'bar',
+        data:{{
+            labels:labels,
+            datasets:[
+                {{ label:'Strategy', data:[s.return, s.sharpe, s.max_dd, s.calmar], backgroundColor:'#26a69a88', borderColor:'#26a69a', borderWidth:1 }},
+                {{ label:'Buy & Hold', data:[b.return, b.sharpe, b.max_dd, b.calmar], backgroundColor:'#58a6ff88', borderColor:'#58a6ff', borderWidth:1 }},
+            ]
+        }},
+        options:{{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{{ title:{{ display:true, text:'Strategy vs Buy & Hold (Risk-Adjusted)', color:'#e6edf3' }} }},
+            scales:{{ y:{{ grid:{{ color:'#1c2333' }} }} }},
+        }}
+    }});
+    let html = '<table class="data-table"><thead><tr><th>Metric</th><th>Strategy</th><th>Buy & Hold</th><th>Winner</th></tr></thead><tbody>';
+    const rows = [
+        ['Return %', s.return, b.return, s.return > b.return ? 'Strategy' : 'B&H'],
+        ['Sharpe', s.sharpe, b.sharpe, s.sharpe > b.sharpe ? 'Strategy' : 'B&H'],
+        ['Max DD %', s.max_dd, b.max_dd, s.max_dd < b.max_dd ? 'Strategy' : 'B&H'],
+        ['Calmar', s.calmar, b.calmar, s.calmar > b.calmar ? 'Strategy' : 'B&H'],
+        ['Time in Market', bnh.time_in_market_pct+'%', '100%', bnh.time_in_market_pct < 100 ? 'Strategy' : '-'],
+    ];
+    rows.forEach(r => {{
+        const cls = r[3] === 'Strategy' ? 'positive' : (r[3] === 'B&H' ? 'negative' : '');
+        html += '<tr><td>'+r[0]+'</td><td>'+r[1]+'</td><td>'+r[2]+'</td><td class="'+cls+'"><strong>'+r[3]+'</strong></td></tr>';
+    }});
+    html += '</tbody></table>';
+    html += '<div style="margin-top:12px;padding:12px;background:var(--bg-hover);border-radius:8px;font-size:12px;color:var(--text-secondary);">';
+    html += '<strong style="color:var(--cyan)">Capital Efficiency:</strong> '+bnh.capital_efficiency+'% return per 100% time exposure. ';
+    html += 'Idle capital (~'+(100-bnh.time_in_market_pct).toFixed(0)+'% of time) at 5% APR would add ~$'+bnh.idle_yield_estimate+' ';
+    html += '(combined: '+bnh.combined_return+'% effective return).</div>';
+    document.getElementById('bnh-table').innerHTML = html;
+}}
+
+// ═══════════════════════════════════════════════════════
+// 15. COMMISSION ANALYSIS (3e)
+// ═══════════════════════════════════════════════════════
+function renderCommission() {{
+    const ca = DATA.commission_analysis;
+    if (!ca) return;
+    const kpiDiv = document.getElementById('commission-kpis');
+    let html = '';
+    html += '<div class="kpi-card"><div class="kpi-label">Total Commission</div><div class="kpi-value">$'+ca.total_commission+'</div></div>';
+    html += '<div class="kpi-card"><div class="kpi-label">Avg / Trade</div><div class="kpi-value">$'+ca.avg_per_trade+'</div></div>';
+    html += '<div class="kpi-card"><div class="kpi-label">% of Gross Profit</div><div class="kpi-value" style="color:var(--yellow)">'+ca.pct_of_gross+'%</div></div>';
+    html += '<div class="kpi-card"><div class="kpi-label">% of Net Profit</div><div class="kpi-value">'+ca.pct_of_net+'%</div></div>';
+    kpiDiv.innerHTML = html;
+
+    if (ca.cumulative_curve && ca.cumulative_curve.length > 0) {{
+        new Chart(document.getElementById('cumulative-comm-chart'), {{
+            type:'line',
+            data:{{ labels:ca.cumulative_curve.map(p=>p.date.substring(0,10)), datasets:[{{ label:'Cumulative Commission', data:ca.cumulative_curve.map(p=>p.cumulative), borderColor:'#ffa726', backgroundColor:'#ffa72622', fill:true, pointRadius:0, borderWidth:2 }}] }},
+            options:{{ responsive:true, maintainAspectRatio:false, plugins:{{ title:{{ display:true, text:'Cumulative Commission Over Time', color:'#e6edf3' }} }}, scales:{{ y:{{ title:{{ display:true, text:'$', color:'#8b949e' }} }}, x:{{ display:false }} }} }}
+        }});
+    }}
+    new Chart(document.getElementById('comm-pie'), {{
+        type:'doughnut',
+        data:{{ labels:['Entry Commission','Exit Commission'], datasets:[{{ data:[ca.entry_commission, ca.exit_commission], backgroundColor:['#bc8cff88','#39d2c088'], borderWidth:0 }}] }},
+        options:{{ responsive:true, maintainAspectRatio:false, plugins:{{ title:{{ display:true, text:'Entry vs Exit Commission Split', color:'#e6edf3' }} }} }}
+    }});
+}}
+
+// ═══════════════════════════════════════════════════════
+// 16. SLIPPAGE SENSITIVITY (3g)
+// ═══════════════════════════════════════════════════════
+function renderSlippage() {{
+    const sl = DATA.slippage_sensitivity;
+    if (!sl || !sl.levels) return;
+    const levels = sl.levels;
+    new Chart(document.getElementById('slippage-chart'), {{
+        type:'line',
+        data:{{
+            labels:levels.map(l=>l.slippage_pct+'%'),
+            datasets:[
+                {{ label:'Return %', data:levels.map(l=>l.return_pct), borderColor:'#26a69a', backgroundColor:'transparent', pointRadius:5, borderWidth:2, yAxisID:'y' }},
+                {{ label:'Sharpe', data:levels.map(l=>l.sharpe), borderColor:'#58a6ff', backgroundColor:'transparent', pointRadius:5, borderWidth:2, yAxisID:'y1' }},
+            ]
+        }},
+        options:{{
+            responsive:true, maintainAspectRatio:false,
+            plugins:{{ title:{{ display:true, text:'Performance vs Slippage Level'+(sl.breakeven_slippage ? ' (breakeven at '+sl.breakeven_slippage+'%)' : ''), color:'#e6edf3' }} }},
+            scales:{{
+                y:{{ position:'left', title:{{ display:true, text:'Return %', color:'#8b949e' }} }},
+                y1:{{ position:'right', title:{{ display:true, text:'Sharpe', color:'#8b949e' }}, grid:{{ display:false }} }},
+            }},
+        }}
+    }});
+    let html = '<table class="data-table"><thead><tr><th>Slippage</th><th>Return</th><th>Sharpe</th><th>PF</th><th>Max DD</th><th>Trades</th></tr></thead><tbody>';
+    levels.forEach(l => {{
+        const cls = l.return_pct > 0 ? 'positive' : 'negative';
+        html += '<tr><td>'+l.slippage_pct+'%</td><td class="'+cls+'">'+l.return_pct+'%</td><td>'+l.sharpe+'</td><td>'+l.profit_factor+'</td><td>'+l.max_dd+'%</td><td>'+l.trades+'</td></tr>';
+    }});
+    html += '</tbody></table>';
+    document.getElementById('slippage-table').innerHTML = html;
+}}
+
+// ═══════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', () => {{
@@ -1635,6 +2062,11 @@ document.addEventListener('DOMContentLoaded', () => {{
     renderTreasury();
     renderDuration();
     renderYearly();
+    renderSignalScore();
+    renderSuppressionRisk();
+    renderBnHComparison();
+    renderCommission();
+    renderSlippage();
 }});
 </script>
 </body>
@@ -1696,14 +2128,49 @@ def main():
                         trades, STRATEGY_PARAMS["initial_capital"], data_duration_years)
 
     # 6c. Additional analyses
-    print("[6c/8] Computing duration, yearly, concentration analysis...")
+    print("[6c/10] Computing duration, yearly, concentration analysis...")
     duration_analysis = compute_duration_analysis(trades)
     yearly_performance = compute_yearly_performance(trades, STRATEGY_PARAMS["initial_capital"])
     profit_concentration = compute_profit_concentration(trades)
     r_distribution = compute_r_multiple_distribution(trades)
 
+    # 6d. Signal score analysis (3a)
+    print("[6d/10] Computing signal score analysis...")
+    signal_score_analysis = safe_run("Signal Score Analysis",
+                                      compute_signal_score_analysis, trades)
+
+    # 6e. Suppression risk analysis (3b)
+    print("[6e/10] Computing suppression risk analysis...")
+    suppression_risk = safe_run("Suppression Risk",
+                                 compute_suppression_risk, trades,
+                                 STRATEGY_PARAMS.get("min_bars_before_sl", 50))
+
+    # 6f. Buy & Hold comparison (3c)
+    print("[6f/10] Computing buy & hold comparison...")
+    bnh_comparison = safe_run("B&H Comparison",
+                               compute_bnh_comparison, metrics,
+                               result["equity_curve"], df,
+                               STRATEGY_PARAMS["initial_capital"])
+
+    # 6g. Returns distribution (3d)
+    print("[6g/10] Computing returns distribution...")
+    returns_distribution = safe_run("Returns Distribution",
+                                     compute_returns_distribution, trades,
+                                     result["equity_curve"])
+
+    # 6h. Commission analysis (3e)
+    print("[6h/10] Computing commission analysis...")
+    commission_analysis = safe_run("Commission Analysis",
+                                    compute_commission_analysis, trades, metrics)
+
+    # 6i. Slippage sensitivity (3g)
+    print("[6i/10] Running slippage sensitivity analysis...")
+    slippage_sensitivity = safe_run("Slippage Sensitivity",
+                                     compute_slippage_sensitivity, df,
+                                     STRATEGY_PARAMS)
+
     # 7. Assemble data
-    print("[7/8] Assembling dashboard data...")
+    print("[7/10] Assembling dashboard data...")
 
     # Prepare data structures
     ohlcv = prepare_ohlcv(df, "4h")
@@ -1754,6 +2221,12 @@ def main():
         "yearly_performance": yearly_performance,
         "profit_concentration": profit_concentration,
         "r_distribution": r_distribution,
+        "signal_score_analysis": signal_score_analysis.get("data") if signal_score_analysis["status"] == "ok" else None,
+        "suppression_risk": suppression_risk.get("data") if suppression_risk["status"] == "ok" else None,
+        "bnh_comparison": bnh_comparison.get("data") if bnh_comparison["status"] == "ok" else None,
+        "returns_distribution": returns_distribution.get("data") if returns_distribution["status"] == "ok" else None,
+        "commission_analysis": commission_analysis.get("data") if commission_analysis["status"] == "ok" else None,
+        "slippage_sensitivity": slippage_sensitivity.get("data") if slippage_sensitivity["status"] == "ok" else None,
     }
 
     # Generate HTML

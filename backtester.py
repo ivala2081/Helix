@@ -46,6 +46,13 @@ class Trade:
     max_favorable: float = 0.0      # max unrealized profit
     max_adverse: float = 0.0        # max unrealized loss (drawdown)
     partial_pnl: float = 0.0        # accumulated PnL from partial closes
+    # Commission tracking
+    entry_commission: float = 0.0   # total entry commission charged
+    exit_commission: float = 0.0    # total exit commission charged
+    total_commission: float = 0.0   # entry + exit
+    # Hard stop / suppression tracking (Phase 2)
+    hard_stop: Optional[float] = None
+    max_adverse_during_suppression: float = 0.0  # % adverse move during SL suppression
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -106,6 +113,11 @@ class Backtester:
         edge_reduce_threshold: float = 15.0, # E: reduce risk below this $/trade
         edge_skip_threshold: float = 5.0,    # E: skip trades below this $/trade
         edge_reduced_risk: float = 0.01,     # E: risk% when edge is weak
+        # ── Position sizing cap ──
+        max_position_pct: float = 0.50,      # max position as % of equity (0.50 = 50%)
+        # ── Hard stop (catastrophic protection during SL suppression) ──
+        use_hard_stop: bool = False,         # enable hard stop during suppression
+        hard_stop_atr_mult: float = 15.0,    # 15x ATR catastrophic stop (black swan only)
     ):
         self.initial_capital = initial_capital
         self.risk_pct = risk_pct
@@ -150,6 +162,11 @@ class Backtester:
         self.edge_reduce_threshold = edge_reduce_threshold
         self.edge_skip_threshold = edge_skip_threshold
         self.edge_reduced_risk = edge_reduced_risk
+        # Position sizing cap
+        self.max_position_pct = max_position_pct
+        # Hard stop
+        self.use_hard_stop = use_hard_stop
+        self.hard_stop_atr_mult = hard_stop_atr_mult
 
         # Indicator instances
         self.ms = MarketStructure(swing_lookback=5) if use_market_structure else None
@@ -218,7 +235,7 @@ class Backtester:
             initial_capital=self.initial_capital,
             risk_pct=self.risk_pct,
             method=self.sizing_method,
-            max_position_pct=0.50,
+            max_position_pct=self.max_position_pct,
         )
 
         trades: list[Trade] = []
@@ -285,6 +302,25 @@ class Backtester:
                         if high >= effective_sl:
                             exit_price = effective_sl
                             reason = "Trailing Stop" if trailing_active else "Stop Loss"
+                            stopped_out = True
+                else:
+                    # During SL suppression: track adverse excursion + check hard stop
+                    if open_trade.direction == "LONG":
+                        adverse_pct = (open_trade.entry_price - low) / open_trade.entry_price * 100
+                    else:
+                        adverse_pct = (high - open_trade.entry_price) / open_trade.entry_price * 100
+                    open_trade.max_adverse_during_suppression = max(
+                        open_trade.max_adverse_during_suppression, adverse_pct)
+
+                    # Hard stop: catastrophic protection during suppression
+                    if self.use_hard_stop and open_trade.hard_stop is not None:
+                        if open_trade.direction == "LONG" and low <= open_trade.hard_stop:
+                            exit_price = open_trade.hard_stop
+                            reason = "Hard Stop"
+                            stopped_out = True
+                        elif open_trade.direction == "SHORT" and high >= open_trade.hard_stop:
+                            exit_price = open_trade.hard_stop
+                            reason = "Hard Stop"
                             stopped_out = True
 
                 if stopped_out:
@@ -503,6 +539,14 @@ class Backtester:
 
             date_str = str(df["date"].iloc[i]) if "date" in df.columns else str(i)
 
+            # Calculate hard stop (catastrophic protection during SL suppression)
+            hard_stop_price = None
+            if self.use_hard_stop:
+                if direction == Direction.LONG:
+                    hard_stop_price = entry_price - self.hard_stop_atr_mult * atr
+                else:
+                    hard_stop_price = entry_price + self.hard_stop_atr_mult * atr
+
             open_trade = Trade(
                 entry_bar=i,
                 entry_price=entry_price,
@@ -516,6 +560,7 @@ class Backtester:
                 risk_amount=sizing["risk_amount"],
                 signal_score=decision["score"],
                 signal_reasons=decision.get("reasons", []),
+                hard_stop=hard_stop_price,
             )
 
         # Close any remaining open trade at last bar
@@ -547,16 +592,22 @@ class Backtester:
             pnl = (price - trade.entry_price) * close_size
         else:
             pnl = (trade.entry_price - price) * close_size
-        # Apply commission
-        commission = price * close_size * self.commission_pct / 100
-        pnl -= commission
+        # Proportional entry + exit commission for this partial slice
+        exit_comm = price * close_size * self.commission_pct / 100
+        entry_comm = trade.entry_price * close_size * self.commission_pct / 100
+        total_comm = exit_comm + entry_comm
+        pnl -= total_comm
+        # Track commissions
+        trade.entry_commission += entry_comm
+        trade.exit_commission += exit_comm
+        trade.total_commission += total_comm
         sm.realized_pnl += pnl
         trade.partial_pnl += pnl
 
     def _close_trade(self, trade, bar_idx, exit_price, reason, remaining_size, df, sm, position_id):
         """Finalize and close a trade. Combines partial + final close PnL."""
         # Apply slippage on stop-loss and end-of-data exits (market/stop fills)
-        if self.slippage_pct > 0 and reason in ("Stop Loss", "Trailing Stop", "End of data"):
+        if self.slippage_pct > 0 and reason in ("Stop Loss", "Trailing Stop", "Hard Stop", "End of data"):
             slip = exit_price * self.slippage_pct / 100
             exit_price += -slip if trade.direction == "LONG" else slip
 
@@ -565,10 +616,14 @@ class Backtester:
         else:
             final_pnl = (trade.entry_price - exit_price) * remaining_size
 
-        # Commission on remaining size exit + entry for full size (charged once)
+        # Commission on remaining size (proportional entry + exit)
         exit_commission = exit_price * remaining_size * self.commission_pct / 100
-        entry_commission = trade.entry_price * trade.size * self.commission_pct / 100
+        entry_commission = trade.entry_price * remaining_size * self.commission_pct / 100
         final_pnl -= exit_commission + entry_commission
+        # Track commissions
+        trade.entry_commission += entry_commission
+        trade.exit_commission += exit_commission
+        trade.total_commission += exit_commission + entry_commission
 
         # Close position in stake manager
         if position_id and position_id in sm.open_positions:
@@ -721,6 +776,22 @@ class Backtester:
         max_r = max(r_multiples) if r_multiples else 0
         min_r = min(r_multiples) if r_multiples else 0
 
+        # Commission tracking
+        total_commission = sum(t.total_commission for t in trades)
+        total_entry_commission = sum(t.entry_commission for t in trades)
+        total_exit_commission = sum(t.exit_commission for t in trades)
+        avg_commission_per_trade = total_commission / total_trades if total_trades > 0 else 0
+        commission_pct_of_gross = (total_commission / gross_profit * 100) if gross_profit > 0 else 0
+
+        # Trade-level Sortino (more meaningful than bar-level for trading systems)
+        trade_sortino = 0
+        if r_multiples:
+            tr_arr = np.array(r_multiples)
+            trade_downside = tr_arr[tr_arr < 0]
+            if len(trade_downside) > 0 and trade_downside.std() > 0:
+                trades_per_year = total_trades / years if years > 0 else total_trades
+                trade_sortino = (tr_arr.mean() / trade_downside.std()) * np.sqrt(trades_per_year)
+
         return {
             # Basic
             "total_trades": total_trades,
@@ -767,6 +838,16 @@ class Backtester:
 
             # Exit analysis
             "exit_reasons": exit_reasons,
+
+            # Commission
+            "total_commission": total_commission,
+            "total_entry_commission": total_entry_commission,
+            "total_exit_commission": total_exit_commission,
+            "avg_commission_per_trade": avg_commission_per_trade,
+            "commission_pct_of_gross": commission_pct_of_gross,
+
+            # Trade-level Sortino
+            "sortino_ratio_trade": trade_sortino,
         }
 
 
