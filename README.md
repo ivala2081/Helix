@@ -58,7 +58,7 @@ pip install pandas numpy requests
 ### Installation
 
 ```bash
-git clone https://github.com/yourusername/helix-trading-strategy.git
+git clone https://github.com/ivala2081/helix.git
 cd helix-trading-strategy
 ```
 
