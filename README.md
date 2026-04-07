@@ -191,7 +191,14 @@ python3 -c "from validate_strategy import test_out_of_sample; test_out_of_sample
 - Fixed risk at 2% per trade (tiered sizing was a no-op)
 - Extended SL suppression to 50 bars
 - Optimized TP distribution (5%/30%/65%)
-- **Result**: +295.6%, Sharpe 4.96, DD 2.6%
+- **Result**: +295.6%, Sharpe 4.96, DD 2.6% *(V4)*
+
+**V5: Final Risk Tuning (Current)**
+- SL multiplier: 2× → 1× ATR (tighter entry risk)
+- TP1 multiplier: 2× → 1× ATR
+- Risk per trade: 2% → 3%, max position 80% equity
+- **Result**: +949.7%, Sharpe 5.40, DD 8.55%, WR 84.3%, PF 12.46
+- Walk-Forward: 5/5 folds profitable (avg OOS +48.72%)
 
 ### V5: Return Maximization (Current)
 - Tighter stops: SL 2× → 1× ATR (less $ lost per loss)
