@@ -9,14 +9,19 @@ A professional-grade cryptocurrency trading strategy backtesting framework with 
 
 **Helix** is an event-driven backtesting system for BTC price action trading using Market Structure and Fair Value Gap (FVG) analysis on 1-hour timeframes.
 
-### Performance Highlights (V4)
+### Performance Highlights (V5)
 
-- **Total Return**: +295.6%
-- **Sharpe Ratio**: 4.96
-- **Max Drawdown**: 2.6%
-- **Win Rate**: 78.6%
-- **Profit Factor**: 5.05
-- **Walk-Forward**: 5/5 folds profitable (avg OOS +17.21%)
+- **Total Return**: +949.7%
+- **Sharpe Ratio**: 5.40
+- **Max Drawdown**: 8.55%
+- **Win Rate**: 84.3%
+- **Profit Factor**: 12.46
+- **Expectancy**: $426 per trade
+- **Walk-Forward**: 5/5 folds profitable (avg OOS +48.72%)
+
+> ⚠️ These are backtest results optimized on in-sample data. See
+> [CHANGELOG.md](CHANGELOG.md) for the full V1→V5 evolution and the
+> strategy's roadmap for holdout OOS validation and paper trading.
 
 ## ✨ Features
 
@@ -95,23 +100,26 @@ Edit `strategy.py` to customize strategy parameters:
 STRATEGY_PARAMS = {
     # Capital & Risk
     "initial_capital": 10_000,
-    "risk_pct": 0.02,              # Risk 2% per trade
-    
+    "risk_pct": 0.03,              # V5: 3% risk per trade
+    "max_position_pct": 0.80,      # V5: 80% position cap
+
     # Indicators
     "use_market_structure": True,
     "use_fvg": True,
     "min_confluence": 0.50,        # Require both MS + FVG
-    
+
     # Stop Loss & Take Profits
-    "sl_atr_mult": 2.0,            # 2x ATR stop loss
-    "tp1_atr_mult": 2.0,           # TP1 at 2x ATR (5% close)
+    "sl_atr_mult": 1.0,            # V5: 1x ATR stop loss (tight)
+    "tp1_atr_mult": 1.0,           # V5: TP1 at 1x ATR (5% close)
     "tp2_atr_mult": 4.0,           # TP2 at 4x ATR (30% close)
     "tp3_atr_mult": 6.0,           # TP3 at 6x ATR (65% close)
-    
+
     # Risk Management
     "be_after_tp1": True,          # Move to breakeven after TP1
     "min_bars_before_sl": 50,      # Suppress SL for first 50 bars
     "min_signal_score": 0.60,      # Filter weak signals
+    "use_hard_stop": True,         # Catastrophic protection
+    "hard_stop_atr_mult": 15.0,    # 15x ATR black-swan floor
 }
 ```
 
@@ -179,11 +187,24 @@ python3 -c "from validate_strategy import test_out_of_sample; test_out_of_sample
 - Extended SL suppression to 30 bars
 - **Result**: +173.2%, Sharpe 4.66, DD 4.1%
 
-### V4: Final Optimization (Current)
-- Fixed risk at 2% per trade
+### V4: Risk Stabilization
+- Fixed risk at 2% per trade (tiered sizing was a no-op)
 - Extended SL suppression to 50 bars
 - Optimized TP distribution (5%/30%/65%)
 - **Result**: +295.6%, Sharpe 4.96, DD 2.6%
+
+### V5: Return Maximization (Current)
+- Tighter stops: SL 2× → 1× ATR (less $ lost per loss)
+- Earlier profit lock: TP1 2× → 1× ATR (WR 78.6% → 84.3%)
+- Position sizing unlocked: risk 2% → 3%, position cap 50% → 80%
+- **Result**: +949.7%, Sharpe 5.40, DD 8.55%, WR 84.3%, PF 12.46
+- Walk-forward: 5/5 folds profitable, avg OOS +48.72%
+
+> **Note on V5:** The monotonic improvement from V1→V5 is a known
+> overfit signal. V5 still needs (a) a true holdout OOS test on data
+> excluded from optimization, (b) a parameter sensitivity matrix to
+> confirm V5 sits on a plateau rather than a lone peak, and (c) paper
+> trading on Binance Testnet before any live capital exposure.
 
 ## 📊 Key Metrics Explained
 

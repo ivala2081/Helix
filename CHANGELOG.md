@@ -2,6 +2,36 @@
 
 All notable changes to the Helix Trading Strategy will be documented in this file.
 
+## [5.0.0] - 2026-04-07
+
+### Added
+- Hard stop catastrophic protection during SL suppression (15× ATR floor)
+- Position cap raised to 80% of equity (was bottlenecked at 50%)
+
+### Changed
+- **Tighter stop loss**: SL multiplier 2.0× → 1.0× ATR
+  (less $ lost per losing trade)
+- **Earlier profit lock**: TP1 multiplier 2.0× → 1.0× ATR
+  (lifts win rate 78.6% → 84.3%)
+- **Risk per trade**: 2% → 3% (previous setting was cap-bound at effective 2%)
+- Slippage assumption tightened to 0.02% (realistic BTC 1H taker fill)
+
+### Results
+- **Total Return**: +949.7% (from +295.6%)
+- **Sharpe Ratio**: 5.40 (from 4.96)
+- **Max Drawdown**: 8.55% (from 2.6%)
+- **Win Rate**: 84.3% (from 78.6%)
+- **Profit Factor**: 12.46 (from 5.05)
+- **Expectancy**: $426 per trade (from $140.74)
+- **Walk-forward**: 5/5 folds profitable, avg OOS +48.72%
+
+### Caveats
+The monotonic V1→V5 improvement is a known overfit signal. V5 still
+requires (a) a true holdout OOS test on data excluded from
+optimization, (b) a parameter sensitivity matrix to confirm V5 sits
+on a plateau rather than a lone peak, and (c) paper trading on
+Binance Testnet before any live capital exposure.
+
 ## [4.0.0] - 2026-02-09
 
 ### Added
