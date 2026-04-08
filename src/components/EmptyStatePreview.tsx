@@ -2,11 +2,14 @@
 
 import { motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
+import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
 // Faded skeleton-style preview shown on /backtest before any run.
 // Sets the user's expectation for what the results will look like.
 
 export function EmptyStatePreview() {
+  const dict = useDictionary();
+  const t = dict.backtest.emptyState;
   return (
     <div className="relative overflow-hidden rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)]/40 p-6 backdrop-blur-md">
       {/* Faded preview content */}
@@ -73,10 +76,9 @@ export function EmptyStatePreview() {
       >
         <div className="rounded-xl border border-emerald-500/30 bg-[var(--color-bg)]/80 px-6 py-5 text-center shadow-2xl backdrop-blur-xl">
           <Sparkles className="mx-auto mb-2 h-5 w-5 text-emerald-400" />
-          <h3 className="text-base font-semibold">Ready when you are</h3>
+          <h3 className="text-base font-semibold">{t.title}</h3>
           <p className="mt-1 max-w-xs text-xs text-[var(--color-muted)]">
-            Configure on the left and click <strong className="text-white">Run Backtest</strong>.
-            Try V5 defaults on BTCUSDT 1H to reproduce the +949% reference run.
+            {t.body}
           </p>
         </div>
       </motion.div>
