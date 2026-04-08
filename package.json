@@ -1,0 +1,35 @@
+{
+  "name": "helix-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@splinetool/react-spline": "^4.1.0",
+    "@splinetool/runtime": "^1.12.78",
+    "clsx": "2.1.1",
+    "cmdk": "^1.1.1",
+    "cobe": "^2.0.1",
+    "framer-motion": "^12.38.0",
+    "lightweight-charts": "5.0.2",
+    "lucide-react": "0.469.0",
+    "next": "^16.2.2",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "recharts": "2.15.0",
+    "tailwind-merge": "2.6.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.0.0-beta.8",
+    "@types/node": "22.10.5",
+    "@types/react": "19.0.3",
+    "@types/react-dom": "19.0.2",
+    "postcss": "8.4.49",
+    "tailwindcss": "4.0.0-beta.8",
+    "typescript": "5.7.2"
+  }
+}

@@ -92,3 +92,10 @@ reports/*.html
 config.ini
 secrets.json
 .env.local
+
+# Node / Next.js (web app)
+node_modules/
+.next/
+.vercel/
+.env*.local
+next-env.d.ts.swp
