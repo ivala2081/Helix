@@ -29,7 +29,7 @@ export function KPICards({ kpis, columns = 4 }: { kpis: KPI[]; columns?: 3 | 4 |
       {kpis.map((k) => (
         <div
           key={k.label}
-          className="group relative overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-4 backdrop-blur-md transition-colors hover:border-[var(--color-muted)]/50"
+          className="group relative overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 transition-colors hover:border-[var(--color-muted)]/50"
         >
           <div className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted)]">
             {k.label}

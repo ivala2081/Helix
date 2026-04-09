@@ -28,7 +28,7 @@ export async function Footer() {
   return (
     <footer className="mt-24 border-t border-[var(--color-border)] bg-[var(--color-bg)]/40 backdrop-blur-md">
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
-        <div className="grid grid-cols-2 gap-8 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-6 sm:gap-8 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
             <Link href="/" className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded bg-gradient-to-br from-emerald-500 to-blue-500 font-mono text-xs font-bold text-black">

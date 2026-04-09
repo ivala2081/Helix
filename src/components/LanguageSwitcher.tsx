@@ -51,7 +51,7 @@ export function LanguageSwitcher() {
             aria-hidden
           />
           <div
-            className="absolute right-0 top-full z-50 mt-1 w-48 overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/95 shadow-2xl backdrop-blur-xl"
+            className="absolute right-0 top-full z-50 mt-1 w-[calc(100vw-2rem)] max-w-[12rem] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/95 shadow-2xl backdrop-blur-xl"
             role="listbox"
           >
             <div className="max-h-[60vh] overflow-y-auto p-1">

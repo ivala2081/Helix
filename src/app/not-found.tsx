@@ -15,7 +15,7 @@ export default async function NotFound() {
       <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-500 font-mono text-4xl font-bold text-black shadow-2xl shadow-emerald-500/20">
         H
       </div>
-      <div className="font-mono text-7xl font-bold tracking-tighter text-transparent bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text">
+      <div className="font-mono text-display-xl font-bold tracking-tighter text-transparent bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text">
         {t.code}
       </div>
       <h1 className="mt-4 text-2xl font-semibold tracking-tight">{t.title}</h1>

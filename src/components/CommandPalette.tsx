@@ -102,7 +102,7 @@ export function CommandPalette() {
 
   return (
     <div
-      className="fixed inset-0 z-[200] flex items-start justify-center pt-[12vh]"
+      className="fixed inset-0 z-[200] flex items-start justify-center px-4 pt-[8vh] sm:pt-[12vh]"
       onClick={() => setOpen(false)}
     >
       <div

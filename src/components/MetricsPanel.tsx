@@ -136,7 +136,7 @@ function ExplanationTrigger({
       <span
         role="tooltip"
         aria-label={`${label} explanation`}
-        className="pointer-events-none absolute left-0 top-full z-30 mt-1 hidden w-64 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-3 text-[10px] leading-relaxed text-[var(--color-muted)] shadow-2xl group-hover:block"
+        className="pointer-events-none absolute left-0 top-full z-30 mt-1 hidden w-[calc(100vw-2rem)] max-w-xs rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)] p-3 text-[10px] leading-relaxed text-[var(--color-muted)] shadow-2xl group-hover:block sm:w-64"
       >
         <div className="text-emerald-400">{label}</div>
         <code className="mt-1 block break-all font-mono text-[9px] text-white/80">

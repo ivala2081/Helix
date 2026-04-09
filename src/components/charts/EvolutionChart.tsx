@@ -30,9 +30,9 @@ export function EvolutionChart() {
           Each version is a single, validated improvement. V5 delivers ~19× the V1 baseline.
         </p>
       </div>
-      <div className="h-[260px]">
+      <div className="h-[220px] sm:h-[260px] md:h-[300px]">
         <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={DATA} margin={{ top: 10, right: 16, left: 0, bottom: 0 }}>
+          <BarChart data={DATA} margin={{ top: 10, right: 16, left: 8, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(63,63,70,0.4)" />
             <XAxis dataKey="version" stroke="#a1a1aa" tick={{ fontSize: 12 }} />
             <YAxis stroke="#a1a1aa" tick={{ fontSize: 11 }} tickFormatter={(v) => `${v}%`} />

@@ -11,6 +11,7 @@ import {
   type Time,
 } from "lightweight-charts";
 import type { Candle, Trade } from "@/lib/engine/types";
+import { useResponsiveChartHeight } from "@/lib/hooks/useResponsiveChartHeight";
 
 export function CandlestickChart({
   candles,
@@ -28,6 +29,11 @@ export function CandlestickChart({
   const chartRef = useRef<IChartApi | null>(null);
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const markersRef = useRef<SeriesMarker<Time>[]>([]);
+  const chartHeight = useResponsiveChartHeight({
+    minH: 280,
+    maxH: 480,
+    ratio: 0.5,
+  });
   // Structural type — `createSeriesMarkers` returns a richer API but we only use setMarkers
   const markersApiRef = useRef<{
     setMarkers: (markers: SeriesMarker<Time>[]) => void;
@@ -83,7 +89,7 @@ export function CandlestickChart({
 
     const chart = createChart(containerRef.current, {
       width: containerRef.current.clientWidth,
-      height: 420,
+      height: containerRef.current.clientHeight || 420,
       layout: {
         background: { color: "transparent" },
         textColor: "#a1a1aa",
@@ -120,7 +126,10 @@ export function CandlestickChart({
 
     const ro = new ResizeObserver(() => {
       if (containerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+        chartRef.current.applyOptions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight,
+        });
       }
     });
     ro.observe(containerRef.current);
@@ -201,7 +210,11 @@ export function CandlestickChart({
           )}
         </div>
       </div>
-      <div ref={containerRef} className="h-[420px] w-full" />
+      <div
+        ref={containerRef}
+        className="w-full"
+        style={{ height: chartHeight }}
+      />
     </div>
   );
 }

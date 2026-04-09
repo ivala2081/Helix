@@ -10,6 +10,7 @@ import {
   type Time,
 } from "lightweight-charts";
 import type { EquityPoint } from "@/lib/engine/types";
+import { useResponsiveChartHeight } from "@/lib/hooks/useResponsiveChartHeight";
 
 export function EquityCurve({
   equityCurve,
@@ -22,12 +23,17 @@ export function EquityCurve({
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const chartRef = useRef<IChartApi | null>(null);
+  const chartHeight = useResponsiveChartHeight({
+    minH: 240,
+    maxH: 400,
+    ratio: 0.45,
+  });
 
   useEffect(() => {
     if (!containerRef.current) return;
     const chart = createChart(containerRef.current, {
       width: containerRef.current.clientWidth,
-      height: 360,
+      height: containerRef.current.clientHeight || 360,
       layout: {
         background: { color: "transparent" },
         textColor: "#a1a1aa",
@@ -128,7 +134,10 @@ export function EquityCurve({
 
     const ro = new ResizeObserver(() => {
       if (containerRef.current && chartRef.current) {
-        chartRef.current.applyOptions({ width: containerRef.current.clientWidth });
+        chartRef.current.applyOptions({
+          width: containerRef.current.clientWidth,
+          height: containerRef.current.clientHeight,
+        });
       }
     });
     ro.observe(containerRef.current);
@@ -163,7 +172,11 @@ export function EquityCurve({
           </span>
         </div>
       </div>
-      <div ref={containerRef} className="h-[360px] w-full" />
+      <div
+        ref={containerRef}
+        className="w-full"
+        style={{ height: chartHeight }}
+      />
     </div>
   );
 }

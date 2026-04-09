@@ -167,7 +167,7 @@ export function BacktestForm({
         </Select>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <Label htmlFor="startDate">Start Date</Label>
           <Input
@@ -220,7 +220,7 @@ export function BacktestForm({
 
         {showAdvanced && (
           <div className="mt-3 space-y-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-bg)]/60 p-3 backdrop-blur-md">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <NumberInput
                 label="Risk %"
                 value={params.riskPct * 100}

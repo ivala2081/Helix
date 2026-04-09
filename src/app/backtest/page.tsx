@@ -194,9 +194,9 @@ export default function BacktestPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[360px_1fr]">
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-[320px_1fr] lg:grid-cols-[360px_1fr]">
         {/* Left: Form */}
-        <aside className="lg:sticky lg:top-20 lg:self-start">
+        <aside className="md:sticky md:top-20 md:self-start">
           <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-5 backdrop-blur-md">
             <BacktestForm
               config={config}
@@ -304,7 +304,7 @@ function RunHistoryDropdown({
             onClick={() => setOpen(false)}
             aria-hidden
           />
-          <div className="absolute right-0 top-full z-40 mt-2 w-72 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/95 p-2 shadow-2xl backdrop-blur-xl">
+          <div className="absolute right-0 top-full z-40 mt-2 w-[calc(100vw-2rem)] max-w-sm rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/95 p-2 shadow-2xl backdrop-blur-xl sm:w-72">
             {history.map((h) => {
               const ret = h.totalReturnPct;
               const tone = ret >= 0 ? "text-emerald-400" : "text-red-400";

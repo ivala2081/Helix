@@ -1,0 +1,441 @@
+// German dictionary — mirrors en.ts exactly.
+// Industry-standard fintech terms (Sharpe, Sortino, ATR, FVG, BOS, CHoCH,
+// Stop Loss, Take Profit, Backtest, Drawdown, etc.) stay in English.
+
+export const de = {
+  nav: {
+    home: "Startseite",
+    backtest: "Backtest",
+    about: "Über uns",
+    changelog: "Änderungsprotokoll",
+    github: "GitHub",
+    skipToContent: "Zum Inhalt springen",
+  },
+
+  footer: {
+    tagline:
+      "Institutionelles Backtesting von Preisstrukturen für Kryptowährungsmärkte. Open Source, Walk-forward-validiert.",
+    starOnGithub: "Auf GitHub bewerten",
+    columns: {
+      product: "Produkt",
+      resources: "Ressourcen",
+      legal: "Rechtliches",
+    },
+    links: {
+      home: "Startseite",
+      backtest: "Backtest",
+      about: "Über uns",
+      changelog: "Änderungsprotokoll",
+      githubRepo: "GitHub-Repository",
+      documentation: "Dokumentation",
+      mitLicense: "MIT-Lizenz",
+      disclaimer: "Haftungsausschluss",
+      license: "Lizenz",
+    },
+    status: "Alle Systeme betriebsbereit",
+    build: "Build",
+    copyright:
+      "Vergangene Ergebnisse garantieren keine zukünftigen Renditen · Keine Finanzberatung.",
+  },
+
+  landing: {
+    hero: {
+      badge: "V5-Strategie · Walk-forward-validiert",
+      titleTop: "Institutionelles",
+      titleBottom: "Backtesting von Preisstrukturen",
+      subtitle:
+        "Testen Sie Market Structure + Fair Value Gap Strategien auf jedem Binance-gelisteten Paar. Basierend auf Walk-forward-validierten Algorithmen — kein Python erforderlich.",
+      ctaPrimary: "Backtest starten",
+      ctaSecondary: "So funktioniert es",
+    },
+    socialProof: {
+      openSource: "Open Source auf GitHub",
+      mitLicense: "MIT-Lizenz",
+      lastCommit: "Letzter Commit",
+    },
+    marqueeLabel: "Getestet auf",
+    kpis: {
+      sectionLabel: "BTCUSDT 1H · In-Sample-Referenzergebnisse",
+      totalReturn: "Gesamtrendite",
+      totalReturnSublabel: "BTCUSDT 1H · Jan 2023 → Feb 2026",
+      sharpeRatio: "Sharpe Ratio",
+      sharpeSublabel: "Annualisiert, risikoadjustiert",
+      winRate: "Gewinnrate",
+      winRateSublabel: "Über alle geschlossenen Trades",
+      profitFactor: "Profit Factor",
+      profitFactorSublabel: "Bruttogewinn / Bruttoverlust",
+    },
+    reproduce: {
+      lead: "Verlassen Sie sich nicht auf unser Wort.",
+      cta: "Reproduzieren Sie diese Ergebnisse selbst",
+    },
+    globe: {
+      titleTop: "Jeder Markt.",
+      titleBottom: "Jeder Zeitrahmen.",
+      body: "Helix streamt Daten direkt von der öffentlichen Binance-API und führt den gesamten V5-Backtester lokal in Ihrem Browser aus. Testen Sie BTCUSDT oder einen unbekannten Altcoin — gleiche Engine, gleiche Metriken, keine Server, keine Limits.",
+      stats: {
+        symbols: "Symbole",
+        timeframes: "Zeitrahmen",
+        apiKeys: "API-Schlüssel",
+      },
+    },
+    howItWorks: {
+      title: "So funktioniert es",
+      subtitle:
+        "Drei Schritte. Keine Kreditkarte. Kein Python. Die gesamte Engine läuft in Ihrem Browser.",
+      cards: {
+        pick: {
+          title: "1. Markt auswählen",
+          text: "Wählen Sie ein beliebiges Binance-Spot-Paar, einen Zeitrahmen und einen Datumsbereich. Daten werden direkt von der öffentlichen Binance-API gestreamt.",
+        },
+        engine: {
+          title: "2. Engine läuft im Browser",
+          text: "Der V5-Backtester analysiert jeden Balken — Market Structure, FVG-Zonen, Konfluenz-Bewertung, partielle Take-Profits.",
+        },
+        results: {
+          title: "3. Ergebnisse lesen",
+          text: "Equity-Kurve, Drawdown, Trade-Protokoll, Ausstiegsgrund-Aufschlüsselung, monatliche Renditen, 30+ professionelle Metriken.",
+        },
+      },
+    },
+    strategy: {
+      title: "Die Helix-V5-Strategie",
+      subtitle: "Zwei konfluente Vorteile, ein diszipliniertes Risikomodell.",
+      cards: {
+        ms: {
+          title: "Market Structure",
+          text: "Erkennt Swing-Hochs und -Tiefs, klassifiziert HH/HL/LH/LL, leitet den Trend ab und eröffnet Positionen bei Break of Structure (BOS) und Change of Character (CHoCH) Bestätigungen. Die Signalstärke skaliert mit der Trendreife.",
+        },
+        fvg: {
+          title: "Fair Value Gap",
+          text: "Verfolgt 3-Candlestick-Ungleichgewichtszonen, in denen der Preis eine Lücke hinterlassen hat. Generiert Wiedereinstiegs-Signale, wenn der Preis zur ungefüllten Lücke zurückkehrt. Die Stärke wird nach Lückengröße und Aktualität gewichtet.",
+        },
+      },
+      mini: {
+        risk: { label: "Risiko pro Trade", value: "3% des Equity" },
+        sl: { label: "Stop Loss", value: "1× ATR (nach 50-Balken-Unterdrückung)" },
+        tps: { label: "Take Profits", value: "Progressiv: 5% / 30% / 65%" },
+      },
+    },
+    disclaimer:
+      "Vergangene Ergebnisse garantieren keine zukünftigen Renditen. Helix ist ein Forschungswerkzeug ausschließlich zu Bildungszwecken. Nichts auf dieser Seite stellt eine Finanzberatung dar. Der Handel mit Kryptowährungen birgt ein erhebliches Verlustrisiko.",
+  },
+
+  parityBadge: {
+    title: "Engine-Parität",
+    titleSuffix: "Bit-für-Bit-Übereinstimmung mit dem Python-Forschungscode",
+    subtitle: "Gleicher Algorithmus, gleiche Gebühren, gleicher Slippage. Klicken Sie hier, um mehr zu erfahren.",
+    rows: {
+      algorithm: {
+        label: "Gleicher Algorithmus",
+        body: "Die TypeScript-Engine, die in Ihrem Browser läuft, ist eine direkte Zeile-für-Zeile-Portierung von backtester.py, indicators.py und stake_manager.py aus dem Python-Forschungs-Repository. Jede Formel — ATR, Swing-Erkennung, BOS/CHoCH-Klassifizierung, FVG-Zonenverfolgung, Aggregator, Fixed-Fractional-Sizing, Partial-Close-PnL — ist identisch.",
+      },
+      execution: {
+        label: "Gleiches Ausführungsmodell",
+        body: "0,075% Taker-Kommission, 0,02% negativer Slippage bei Stops/Datenende, kein Slippage bei Take-Profits (Limit-Orders). Positionslimit bei 80% des Equity. Identisch mit den veröffentlichten V5-Parametern.",
+      },
+      warmup: {
+        label: "Gleiche Aufwärmphase & Unterdrückung",
+        body: "50 Balken Aufwärmphase vor dem ersten Signal. 50 Balken SL-Unterdrückungsfenster nach dem Einstieg, wobei der 15× ATR Hard Stop während dieses Fensters katastrophalen Schutz bietet. Breakeven-Verschiebung bei +0,30 ATR nach TP1-Auslösung.",
+      },
+      open: {
+        label: "Keine versteckten Anpassungen",
+        body: "Open Source, MIT-lizenziert. Der Python-Quellcode und der TypeScript-Quellcode sind beide auf GitHub verfügbar. Reproduzieren Sie jedes Ergebnis selbst.",
+      },
+    },
+  },
+
+  backtest: {
+    pageTitle: "Backtest",
+    pageSubtitle:
+      "Führen Sie die Helix-V5-Engine auf jedem Binance-Paar aus. Der gesamte Backtest läuft lokal in Ihrem Browser.",
+    historyButton: "Verlauf",
+    form: {
+      configHeading: "Konfiguration",
+      customBadge: "Benutzerdefiniert",
+      quickPickLabel: "Schnellauswahl",
+      symbolLabel: "Symbol",
+      symbolPlaceholder: "BTCUSDT",
+      symbolHelp: "Jedes Binance-Spot-Paar (z. B. ETHUSDT, SOLUSDT, AVAXUSDT)",
+      timeframeLabel: "Zeitrahmen",
+      timeframes: {
+        "15m": "15 Minuten",
+        "30m": "30 Minuten",
+        "1h": "1 Stunde",
+        "4h": "4 Stunden",
+        "1d": "1 Tag",
+      },
+      startDateLabel: "Startdatum",
+      endDateLabel: "Enddatum",
+      initialCapitalLabel: "Anfangskapital (USD)",
+      advancedToggle: "Erweiterte Parameter (V5-Standardwerte)",
+      advancedFields: {
+        riskPct: "Risiko %",
+        maxPositionPct: "Max. Position %",
+        slAtrMult: "SL × ATR",
+        tp1AtrMult: "TP1 × ATR",
+        tp2AtrMult: "TP2 × ATR",
+        tp3AtrMult: "TP3 × ATR",
+        minSignalScore: "Min. Signalwert",
+        minBarsBeforeSl: "SL-Unterdrückung Balken",
+      },
+      resetDefaults: "V5-Standardwerte zurücksetzen",
+      runButton: "Backtest starten",
+      runningButton: "Wird ausgeführt…",
+    },
+    emptyState: {
+      title: "Bereit, wenn Sie es sind",
+      body: "Konfigurieren Sie links und klicken Sie auf Backtest starten. Probieren Sie die V5-Standardwerte auf BTCUSDT 1H, um den +949%-Referenzlauf zu reproduzieren.",
+      runBacktest: "Backtest starten",
+    },
+    progress: {
+      fetchingTitle: "Marktdaten werden geladen",
+      runningTitle: "Backtest wird ausgeführt",
+      stages: {
+        fetch: "Daten laden",
+        indicators: "Indikatoren",
+        backtest: "Backtest",
+      },
+    },
+    toast: {
+      completeTitle: "Backtest abgeschlossen",
+      failedTitle: "Backtest fehlgeschlagen",
+      historyLoaded: "Aus Verlauf geladen",
+      historyHint: 'Klicken Sie auf „Backtest starten", um erneut auszuführen',
+      csvDownloaded: "CSV heruntergeladen",
+      csvDownloadedBody: "Trades exportiert",
+      linkCopied: "Link kopiert",
+      linkCopiedBody: "Jeder mit dieser URL kann Ihren Backtest erneut ausführen",
+      copyFailed: "Kopieren fehlgeschlagen",
+      copyFailedBody: "Ihr Browser hat den Zugriff auf die Zwischenablage blockiert",
+      chartExported: "Diagramm exportiert",
+      noChart: "Kein Diagramm zum Exportieren",
+    },
+    errors: {
+      invalidDateRange: "Ungültiger Datumsbereich",
+      symbolRequired: "Symbol ist erforderlich (z. B. BTCUSDT)",
+      notEnoughData: "Nicht genügend Daten: erhalten",
+      notEnoughDataNeed: "Kerzen, mindestens benötigt",
+      generic: "Backtest fehlgeschlagen",
+    },
+    results: {
+      kpis: {
+        totalReturn: "Gesamtrendite",
+        sharpe: "Sharpe",
+        maxDrawdown: "Max. Drawdown",
+        winRate: "Gewinnrate",
+        profitFactor: "Profit Factor",
+        expectancy: "Erwartungswert",
+        perTrade: "pro Trade",
+      },
+      exports: {
+        downloadCsv: "CSV herunterladen",
+        copyLink: "Link kopieren",
+        chartPng: "Diagramm PNG",
+      },
+    },
+    charts: {
+      equityCurveTitle: "Equity-Kurve",
+      legendStrategy: "Strategie",
+      legendBuyHold: "Buy & Hold",
+      legendDrawdown: "Drawdown",
+      candlestickTitle: "Preis",
+      legendLong: "Long",
+      legendShort: "Short",
+      tradesSuffix: "Trades",
+      exitReasonsTitle: "Ausstiegsgründe",
+      monthlyReturnsTitle: "Monatliche Renditen",
+      noData: "Keine Daten",
+    },
+    table: {
+      heading: "Trade-Protokoll",
+      tradesSuffix: "Trades",
+      noTrades: "Keine Trades generiert.",
+      showAll: "Alle anzeigen",
+      headers: {
+        id: "#",
+        side: "Seite",
+        entryDate: "Einstiegsdatum",
+        entryPrice: "Einstieg $",
+        exitDate: "Ausstiegsdatum",
+        exitPrice: "Ausstieg $",
+        pnl: "PnL $",
+        pnlPct: "PnL %",
+        rMultiple: "R",
+        bars: "Balken",
+        exit: "Ausstieg",
+      },
+    },
+    metricsPanel: {
+      heading: "Vollständige Metrikübersicht",
+      sections: {
+        returns: "Renditen",
+        risk: "Risiko",
+        tradeSummary: "Trade-Zusammenfassung",
+        tradeQuality: "Trade-Qualität",
+        costs: "Kosten",
+      },
+      labels: {
+        totalReturn: "Gesamtrendite",
+        annualizedReturn: "Annualisierte Rendite",
+        netProfit: "Nettogewinn",
+        finalEquity: "End-Equity",
+        yearsTested: "Getestete Jahre",
+        maxDrawdown: "Max. Drawdown",
+        maxDdDuration: "Max. DD-Dauer",
+        avgDdDuration: "Durchschn. DD-Dauer",
+        sharpeRatio: "Sharpe Ratio",
+        sortinoRatio: "Sortino Ratio",
+        calmarRatio: "Calmar Ratio",
+        totalTrades: "Gesamtanzahl Trades",
+        winRate: "Gewinnrate",
+        winsLosses: "Gewinne / Verluste",
+        longTrades: "Long-Trades",
+        shortTrades: "Short-Trades",
+        avgBarsHeld: "Durchschn. gehaltene Balken",
+        profitFactor: "Profit Factor",
+        payoffRatio: "Auszahlungsverhältnis",
+        expectancy: "Erwartungswert",
+        avgWin: "Durchschn. Gewinn",
+        avgLoss: "Durchschn. Verlust",
+        largestWin: "Größter Gewinn",
+        largestLoss: "Größter Verlust",
+        avgRMultiple: "Durchschn. R-Multiple",
+        bestRMultiple: "Bestes R-Multiple",
+        worstRMultiple: "Schlechtestes R-Multiple",
+        maxConsecWins: "Max. aufeinanderfolgende Gewinne",
+        maxConsecLosses: "Max. aufeinanderfolgende Verluste",
+        totalCommission: "Gesamtkommission",
+        avgCommissionPerTrade: "Durchschn. Kommission pro Trade",
+        commissionPctOfGross: "Kommission in % des Bruttogewinns",
+        bars: "Balken",
+        wr: "GR",
+      },
+    },
+  },
+
+  about: {
+    metaTitle: "Über Helix · Methodik & Strategieentwicklung",
+    metaDescription:
+      "Wie sich Helix von V1 zu V5 entwickelt hat — Market Structure, Fair Value Gap, SL-Unterdrückung, progressive Take-Profits und Walk-forward-Validierung.",
+    title: "Über Helix",
+    subtitle:
+      "Ein Forschungsframework zum Testen institutioneller Preisstruktur-Konzepte auf Kryptowährungsmärkten.",
+    onThisPage: "Auf dieser Seite",
+    sections: {
+      evolution: "Strategieentwicklung",
+      ms: "Market Structure",
+      fvg: "Fair Value Gap",
+      confluence: "Konfluenz-Bewertung",
+      risk: "Risikomanagement",
+      tps: "Progressive TPs",
+      execution: "Ausführungsmodell",
+      walkForward: "Walk-forward",
+      disclaimer: "Haftungsausschluss",
+    },
+    evolutionIntro:
+      "Jede Version ist eine einzelne, validierte Verbesserung gegenüber der vorherigen Basislinie. Kein Curve-Fitting — jede Änderung wurde mit Walk-forward-Validierung erneut getestet.",
+    table: {
+      version: "Version",
+      changes: "Wichtigste Änderungen",
+      return: "Rendite",
+      sharpe: "Sharpe",
+      maxDd: "Max. DD",
+      winRate: "Gewinnrate",
+      current: "aktuell",
+    },
+    methodology: {
+      ms: "Die Engine identifiziert Swing-Hochs und -Tiefs mithilfe eines 5-Balken-Rückblickfensters auf beiden Seiten. Jeder neue Swing wird als Higher High (HH), Higher Low (HL), Lower High (LH) oder Lower Low (LL) klassifiziert. Der Markt befindet sich in einem Aufwärtstrend bei HH+HL und in einem Abwärtstrend bei LH+LL. Ein Schlusskurs, der das letzte Swing-Hoch in einem Aufwärtstrend durchbricht, erzeugt ein Break of Structure (BOS) Long-Signal; ein Wechsel vom Aufwärts- zum Abwärtstrend erzeugt ein Change of Character (CHoCH) Umkehrsignal. Die Signalstärke skaliert mit der Trendreife (aufeinanderfolgende gleichgerichtete Swings) und der Größe der Ausbruchskerze relativ zum ATR.",
+      fvg: "Ein Fair Value Gap ist ein 3-Candlestick-Muster, bei dem der Preis ein ungefülltes Ungleichgewicht zwischen Kerze 1 und Kerze 3 hinterlässt. Jede Lücke muss mindestens 0,3× ATR betragen, um als signifikant zu gelten. Die Engine verfolgt jeden aktiven FVG und gibt ein Wiedereinstiegssignal aus, sobald der Preis erstmals in die Zone zurückkehrt. Die Signalstärke belohnt größere und aktuellere Lücken.",
+      confluence:
+        "Der Aggregator kombiniert Market Structure- und FVG-Signale zu einer einzigen Entscheidung. Jeder aktivierte Indikator trägt zu einem normalisierten 0–1-Score bei. Ein Trade wird nur ausgelöst, wenn der aggregierte Score mindestens 0,50 beträgt (zwei bestätigende Quellen erforderlich) UND den Post-Aggregationsfilter von 0,60 besteht.",
+      risk: "V5 riskiert 3% des Equity pro Trade mit einem 80%-Positionslimit. Der Stop Loss wird bei 1× ATR berechnet — der reguläre SL ist jedoch für die ersten 50 Balken des Trades unterdrückt. Während des Unterdrückungsfensters bietet nur ein 15× ATR \\\"Hard Stop\\\" katastrophalen Schutz. Nach 50 Balken ist der reguläre Stop aktiv. Dies reduziert das Problem des vorzeitigen Ausstoppens in volatilen Kryptomärkten erheblich.",
+      tpsLead: "Gewinne werden in drei Tranchen mitgenommen:",
+      tpsBullets: [
+        "5% der Position werden bei 1× ATR geschlossen (TP1)",
+        "30% werden bei 4× ATR geschlossen (TP2) — erst nach TP1",
+        "65% werden bei 6× ATR geschlossen (TP3) — erst nach TP2",
+      ],
+      tpsTail:
+        "Wenn TP1 erreicht wird, wird der Stop Loss auf Einstieg + 0,30 × ATR verschoben (Breakeven plus kleiner Puffer), um Schutz zu sichern, während die verbleibenden 95% der Position die größere Bewegung mitnehmen können.",
+      execution:
+        "Jeder Einstieg wird zum Balkenschluss mit 0,02% negativem Slippage ausgeführt. Stop Loss und Datenende-Ausstiege zahlen ebenfalls Slippage; Take-Profit-Ausführungen nicht (es handelt sich um Limit-Orders). Jede Teilschließung wird mit 0,075% Kommission auf den Einstiegs- und Ausstiegs-Nominalwert belastet, entsprechend den realistischen Binance-Taker-Gebühren.",
+      walkForward:
+        "Der Python-Forschungscode führt eine 5-Fold-Walk-forward-Validierung mit einem 60/40-Train/Test-Split pro Fold durch. V5 erzielt 5/5 profitable Test-Folds mit einer durchschnittlichen Out-of-Sample-Rendite von +48,72%. Die Web-App zeigt nur den In-Sample-Backtest — für die vollständige Validierung siehe das Forschungs-Repository.",
+    },
+    disclaimer: {
+      heading: "Haftungsausschluss",
+      body: "Helix ist ein Forschungs- und Bildungswerkzeug. Backtesting-Ergebnisse sagen keine zukünftige Performance voraus. Vergangene Ergebnisse sind kein Indikator für zukünftige Renditen. Der Handel mit Kryptowährungen birgt ein erhebliches Verlustrisiko und ist nicht für jeden geeignet. Nichts auf dieser Seite stellt eine Anlage-, Finanz-, Handels- oder sonstige Beratung dar. Sie sind allein verantwortlich für alle Entscheidungen, die Sie auf Grundlage der hier präsentierten Informationen treffen.",
+    },
+    cta: "Probieren Sie es selbst aus",
+  },
+
+  changelog: {
+    metaTitle: "Änderungsprotokoll & Roadmap",
+    metaDescription:
+      "Helix-Versionshinweise von V1 bis V5, plus was in V6 und der Live-Trading-Forschung kommt.",
+    badge: "Forschungsfortschritt · Open Source",
+    title: "Änderungsprotokoll & Roadmap",
+    subtitle:
+      "Jede Version von Helix ist eine einzelne, validierte Verbesserung gegenüber der vorherigen. Kein Curve-Fitting — jede Änderung durchlief eine Walk-forward-Validierung, bevor sie übernommen wurde.",
+    releasesHeading: "Veröffentlichungen",
+    roadmapHeading: "Roadmap",
+    roadmapIntro:
+      "Woran wir als Nächstes arbeiten. Nichts davon ist verbindlich — dies sind Forschungsrichtungen, grob nach Wahrscheinlichkeit geordnet.",
+    currentBadge: "Aktuell",
+    cta: "V5 auf jedem Paar testen",
+    statuses: {
+      inProgress: "In Bearbeitung",
+      planned: "Geplant",
+      researching: "In Erforschung",
+    },
+  },
+
+  notFound: {
+    metaTitle: "404 · Seite nicht gefunden",
+    code: "404",
+    title: "Diese Route existiert nicht",
+    body: "Die Seite, die Sie suchen, wurde verschoben, hat nie existiert oder Sie haben die URL falsch eingegeben. Die Backtest-Engine läuft weiterhin einwandfrei.",
+    goHome: "Zur Startseite",
+    runBacktest: "Backtest starten",
+  },
+
+  commandPalette: {
+    placeholder: "Suchen oder springen zu…",
+    empty: "Keine Ergebnisse",
+    groups: {
+      navigate: "Navigieren",
+      quickRun: "Schnellstart",
+      external: "Extern",
+    },
+    items: {
+      home: "Startseite",
+      backtest: "Backtest",
+      about: "Über uns",
+      changelog: "Änderungsprotokoll",
+      runBtc: "BTCUSDT 1H starten · 2023→heute",
+      runEth: "ETHUSDT 1H starten · 2023→heute",
+      runSol: "SOLUSDT 1H starten · 2023→heute",
+      githubRepo: "GitHub-Repository",
+    },
+    hints: {
+      navigate: "navigieren",
+      select: "auswählen",
+      toggle: "umschalten",
+    },
+  },
+
+  errorPage: {
+    title: "Etwas ist schiefgelaufen",
+    body: "Beim Rendern dieser Seite ist ein unerwarteter Fehler aufgetreten.",
+    digest: "Digest",
+    tryAgain: "Erneut versuchen",
+    backtestTitle: "Backtest-Seite abgestürzt",
+    backtestBody: "Beim Rendern der Backtest-Seite ist etwas schiefgelaufen.",
+    reloadBacktest: "Backtest neu laden",
+  },
+
+  language: {
+    label: "Sprache",
+  },
+} as const;

@@ -3,8 +3,8 @@ import { ArrowRight, BarChart3, Layers, LineChart, Shield, Zap } from "lucide-re
 import { KPICards, type KPI } from "@/components/KPICards";
 import { ParityBadge } from "@/components/ParityBadge";
 import { SocialProofBar } from "@/components/SocialProofBar";
-import { Globe } from "@/components/visuals/Globe";
-import { GenerativeArtScene } from "@/components/ui/anomalous-matter-hero";
+import { GlobeLazy } from "@/components/visuals/GlobeLazy";
+import { HeroScene } from "@/components/ui/HeroScene";
 import { SymbolMarquee } from "@/components/visuals/SymbolMarquee";
 import {
   V5_EQUITY_CURVE,
@@ -68,15 +68,15 @@ export default async function LandingPage() {
   return (
     <>
       {/* Hero — full-bleed with 3D animated background */}
-      <section className="relative w-full h-screen overflow-hidden">
-        <GenerativeArtScene />
+      <section className="relative w-full h-[100svh] min-h-[560px] max-h-[900px] overflow-hidden">
+        <HeroScene />
 
         {/* Gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-bg)] via-[var(--color-bg)]/70 to-transparent z-10" />
 
         {/* Hero content */}
-        <div className="relative z-20 flex flex-col items-center justify-end h-full pb-20 md:pb-32 text-center">
-          <div className="max-w-3xl px-4 animate-hero-fade-in">
+        <div className="relative z-20 flex h-full flex-col items-center justify-end px-4 pb-12 text-center sm:pb-20 md:pb-24 lg:pb-32">
+          <div className="max-w-3xl animate-hero-fade-in">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400 backdrop-blur-md">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
@@ -84,14 +84,14 @@ export default async function LandingPage() {
               </span>
               {h.badge}
             </div>
-            <h1 className="mt-6 text-balance text-4xl font-semibold tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="mt-6 text-balance text-display font-semibold">
               {h.titleTop}
               <br />
               <span className="bg-gradient-to-r from-emerald-400 via-emerald-300 to-blue-400 bg-clip-text text-transparent">
                 {h.titleBottom}
               </span>
             </h1>
-            <p className="mt-6 max-w-xl mx-auto text-balance text-lg text-[var(--color-muted)]">
+            <p className="mt-4 sm:mt-6 max-w-xl mx-auto text-balance text-base sm:text-lg text-[var(--color-muted)]">
               {h.subtitle}
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -104,7 +104,7 @@ export default async function LandingPage() {
               </Link>
               <Link
                 href="/about"
-                className="inline-flex h-12 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-6 text-base font-semibold text-white backdrop-blur-md transition-colors hover:border-[var(--color-muted)]"
+                className="inline-flex h-12 items-center gap-2 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/80 px-6 text-base font-semibold text-white transition-colors hover:border-[var(--color-muted)]"
               >
                 {h.ctaSecondary}
               </Link>
@@ -156,9 +156,9 @@ export default async function LandingPage() {
       </section>
 
       {/* Globe section */}
-      <section className="grid grid-cols-1 items-center gap-10 py-16 lg:grid-cols-[0.9fr_1.1fr]">
-        <div className="flex justify-center lg:justify-start">
-          <Globe size={360} />
+      <section className="grid grid-cols-1 items-center gap-8 py-12 sm:gap-10 sm:py-16 md:grid-cols-[0.9fr_1.1fr]">
+        <div className="flex justify-center md:justify-start">
+          <GlobeLazy />
         </div>
         <div className="text-center lg:text-left">
           <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl">
@@ -171,7 +171,7 @@ export default async function LandingPage() {
           <p className="mx-auto mt-4 max-w-xl text-balance text-[var(--color-muted)] lg:mx-0">
             {g.body}
           </p>
-          <div className="mt-6 grid grid-cols-3 gap-3 text-left">
+          <div className="mt-6 grid grid-cols-3 gap-2 text-left sm:gap-3">
             <MiniStat n="500+" l={g.stats.symbols} />
             <MiniStat n="14" l={g.stats.timeframes} />
             <MiniStat n="0" l={g.stats.apiKeys} />
@@ -185,7 +185,7 @@ export default async function LandingPage() {
         <p className="mx-auto mt-3 max-w-xl text-center text-[var(--color-muted)]">
           {hiw.subtitle}
         </p>
-        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-3">
+        <div className="mt-10 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           <FeatureCard icon={<Layers className="h-5 w-5" />} title={hiw.cards.pick.title} text={hiw.cards.pick.text} />
           <FeatureCard icon={<Zap className="h-5 w-5" />} title={hiw.cards.engine.title} text={hiw.cards.engine.text} />
           <FeatureCard icon={<BarChart3 className="h-5 w-5" />} title={hiw.cards.results.title} text={hiw.cards.results.text} />
@@ -208,7 +208,7 @@ export default async function LandingPage() {
       </section>
 
       {/* Disclaimer */}
-      <section className="my-16 rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-5 text-center text-xs text-yellow-200/80 backdrop-blur-md">
+      <section className="my-16 rounded-xl border border-yellow-500/20 bg-yellow-500/5 p-5 text-center text-xs text-yellow-200/80">
         {dict.landing.disclaimer}
       </section>
     </div>
@@ -218,7 +218,7 @@ export default async function LandingPage() {
 
 function FeatureCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-6 backdrop-blur-md transition-colors hover:border-emerald-500/40">
+    <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] p-6 transition-colors hover:border-emerald-500/40">
       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/15 text-emerald-400">{icon}</div>
       <h3 className="mt-4 text-lg font-semibold">{title}</h3>
       <p className="mt-2 text-sm text-[var(--color-muted)]">{text}</p>
@@ -228,7 +228,7 @@ function FeatureCard({ icon, title, text }: { icon: React.ReactNode; title: stri
 
 function StrategyCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return (
-    <div className="rounded-xl border border-[var(--color-border)] bg-gradient-to-b from-[var(--color-surface)]/80 to-[var(--color-bg)]/80 p-6 backdrop-blur-md">
+    <div className="rounded-xl border border-[var(--color-border)] bg-gradient-to-b from-[var(--color-surface)] to-[var(--color-bg)] p-6">
       <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/15 text-blue-400">{icon}</div>
       <h3 className="mt-4 text-xl font-semibold">{title}</h3>
       <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">{text}</p>
@@ -238,7 +238,7 @@ function StrategyCard({ icon, title, text }: { icon: React.ReactNode; title: str
 
 function MiniCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/70 p-4 backdrop-blur-md">
+    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
       <div className="text-[10px] font-medium uppercase tracking-wider text-[var(--color-muted)]">{label}</div>
       <div className="mt-1 text-sm font-semibold">{value}</div>
     </div>
@@ -247,7 +247,7 @@ function MiniCard({ label, value }: { label: string; value: string }) {
 
 function MiniStat({ n, l }: { n: string; l: string }) {
   return (
-    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-3 backdrop-blur-md">
+    <div className="rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)] p-3">
       <div className="font-mono text-xl font-bold text-emerald-400 tabular-nums">{n}</div>
       <div className="text-[10px] uppercase tracking-wider text-[var(--color-muted)]">{l}</div>
     </div>

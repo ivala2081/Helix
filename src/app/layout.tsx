@@ -8,6 +8,7 @@ import { ToastProvider } from "@/components/ui/ToastProvider";
 import { CommandPalette } from "@/components/CommandPalette";
 import { Footer } from "@/components/Footer";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { MobileNav } from "@/components/MobileNav";
 import { DictionaryProvider } from "@/lib/i18n/DictionaryProvider";
 import { getCurrentDictionary } from "@/lib/i18n/getDictionary";
 import "./globals.css";
@@ -79,15 +80,17 @@ export default async function RootLayout({
             >
               {dict.nav.skipToContent}
             </a>
-            <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-bg)]/60 backdrop-blur-xl">
-              <nav className="mx-auto flex h-14 max-w-7xl items-center justify-between px-4 sm:px-6">
+            <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 backdrop-blur-md">
+              <nav className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-2 px-4 sm:px-6">
                 <Link href="/" className="flex items-center gap-2">
                   <div className="flex h-7 w-7 items-center justify-center rounded bg-gradient-to-br from-emerald-500 to-blue-500 font-mono text-xs font-bold text-black">
                     H
                   </div>
                   <span className="font-semibold tracking-tight">Helix</span>
                 </Link>
-                <div className="flex items-center gap-1 sm:gap-2">
+
+                {/* Desktop / tablet cluster — hidden on phones */}
+                <div className="hidden items-center gap-1 sm:flex sm:gap-2">
                   <Link
                     href="/"
                     className="rounded-md px-3 py-1.5 text-sm text-[var(--color-muted)] transition-colors hover:bg-[var(--color-surface)] hover:text-white"
@@ -108,12 +111,12 @@ export default async function RootLayout({
                   </Link>
                   <Link
                     href="/changelog"
-                    className="hidden rounded-md px-3 py-1.5 text-sm text-[var(--color-muted)] transition-colors hover:bg-[var(--color-surface)] hover:text-white sm:block"
+                    className="hidden rounded-md px-3 py-1.5 text-sm text-[var(--color-muted)] transition-colors hover:bg-[var(--color-surface)] hover:text-white md:block"
                   >
                     {dict.nav.changelog}
                   </Link>
                   <LanguageSwitcher />
-                  <kbd className="ml-1 hidden items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-2 py-1 font-mono text-[10px] text-[var(--color-muted)] sm:flex">
+                  <kbd className="ml-1 hidden items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-2 py-1 font-mono text-[10px] text-[var(--color-muted)] md:flex">
                     ⌘K
                   </kbd>
                   <a
@@ -125,6 +128,12 @@ export default async function RootLayout({
                   >
                     <Github className="h-4 w-4" />
                   </a>
+                </div>
+
+                {/* Mobile cluster — language switcher (already has flag-only mobile mode) + hamburger */}
+                <div className="flex items-center gap-1 sm:hidden">
+                  <LanguageSwitcher />
+                  <MobileNav nav={dict.nav} />
                 </div>
               </nav>
             </header>

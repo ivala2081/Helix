@@ -142,8 +142,11 @@ export function ShaderBackground() {
     const uRes = gl.getUniformLocation(prog, "u_res");
     const uTime = gl.getUniformLocation(prog, "u_time");
 
+    // Cap DPR more aggressively (this is a subtle background — full DPR is overkill)
+    const targetDpr = () => Math.min(window.devicePixelRatio || 1, 1.5);
+
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = targetDpr();
       const w = Math.floor(window.innerWidth * dpr);
       const h = Math.floor(window.innerHeight * dpr);
       if (canvas.width !== w || canvas.height !== h) {
@@ -154,24 +157,49 @@ export function ShaderBackground() {
       gl.uniform2f(uRes, w, h);
     };
     resize();
-    window.addEventListener("resize", resize);
+
+    // Debounce resize events.
+    let resizeTimer: ReturnType<typeof setTimeout> | null = null;
+    const onResize = () => {
+      if (resizeTimer) clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(resize, 120);
+    };
+    window.addEventListener("resize", onResize);
+
+    // Throttle to ~30 FPS — this is a subtle ambient background; 60 FPS is wasted GPU.
+    const FRAME_INTERVAL_MS = 33;
+    let isVisible = !document.hidden;
+    let lastFrameTime = 0;
 
     const start = performance.now();
-    const render = () => {
-      const t = (performance.now() - start) / 1000;
+    const render = (now: number) => {
+      rafRef.current = requestAnimationFrame(render);
+      if (!isVisible) return;
+      if (now - lastFrameTime < FRAME_INTERVAL_MS) return;
+      lastFrameTime = now;
+      const t = (now - start) / 1000;
       gl.uniform1f(uTime, t);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-      rafRef.current = requestAnimationFrame(render);
     };
     rafRef.current = requestAnimationFrame(render);
 
+    const handleVisibility = () => {
+      isVisible = !document.hidden;
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
     return () => {
       cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("resize", resize);
+      if (resizeTimer) clearTimeout(resizeTimer);
+      window.removeEventListener("resize", onResize);
+      document.removeEventListener("visibilitychange", handleVisibility);
       gl.deleteProgram(prog);
       gl.deleteShader(vert);
       gl.deleteShader(frag);
       gl.deleteBuffer(buf);
+      // Force WebGL context loss for fast cleanup
+      const lose = gl.getExtension("WEBGL_lose_context");
+      if (lose) lose.loseContext();
     };
   }, []);
 

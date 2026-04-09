@@ -70,4 +70,56 @@ body {
 
 .animate-hero-fade-in {
   animation: hero-fade-in 1.2s ease-out both;
+  will-change: transform, opacity;
+}
+
+@keyframes marquee {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.marquee-track {
+  width: max-content;
+  animation: marquee 60s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track,
+  .animate-hero-fade-in {
+    animation: none !important;
+  }
+}
+
+/* --- Responsive utilities ------------------------------------------- */
+
+/* Insurance against any rogue child producing horizontal scroll. Safe
+   because our sticky header lives inside <body>, not <html>. */
+html {
+  overflow-x: hidden;
+}
+
+/* Fluid display type — replaces breakpoint chains in hero h1 + 404 */
+.text-display {
+  font-size: clamp(2.25rem, 1.5rem + 3.5vw, 3.75rem); /* 36 → 60px */
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+.text-display-xl {
+  font-size: clamp(3rem, 2rem + 5vw, 5rem); /* 48 → 80px */
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* iOS safe-area insets (notch / home indicator) */
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
 }

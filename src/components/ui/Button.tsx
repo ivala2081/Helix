@@ -17,8 +17,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         "text-[var(--color-muted)] hover:bg-[var(--color-surface)] hover:text-white",
     } as const;
     const sizes = {
-      sm: "h-8 px-3 text-xs",
-      md: "h-10 px-4 text-sm",
+      sm: "h-9 px-3 text-xs",
+      md: "h-11 sm:h-10 px-4 text-sm",
       lg: "h-12 px-6 text-base",
     } as const;
     return (

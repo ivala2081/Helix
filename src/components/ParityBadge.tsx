@@ -11,7 +11,7 @@ export function ParityBadge({ compact = false }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 backdrop-blur-md">
+    <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5">
       <button
         type="button"
         onClick={() => setOpen(!open)}
