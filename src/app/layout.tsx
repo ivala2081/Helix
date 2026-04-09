@@ -9,6 +9,7 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { Footer } from "@/components/Footer";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { MobileNav } from "@/components/MobileNav";
+import { AnimatedLogo } from "@/components/brand/AnimatedLogo";
 import { Logo } from "@/components/brand/Logo";
 import { DictionaryProvider } from "@/lib/i18n/DictionaryProvider";
 import { getCurrentDictionary } from "@/lib/i18n/getDictionary";
@@ -85,11 +86,10 @@ export default async function RootLayout({
               <nav className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-2 px-4 sm:px-6">
                 <Link
                   href="/"
-                  className="flex items-center gap-2 text-white"
+                  className="flex items-center text-white"
                   aria-label="Helix — home"
                 >
-                  <Logo size={28} />
-                  <span className="font-semibold tracking-tight">Helix</span>
+                  <AnimatedLogo size={28} />
                 </Link>
 
                 {/* Desktop / tablet cluster — hidden on phones */}
