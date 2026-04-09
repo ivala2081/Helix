@@ -50,7 +50,9 @@ export function EquityCurve({
     });
     chartRef.current = chart;
 
-    // Sample to ~2000 points for performance on huge curves
+    // Sample to ~2000 points for performance on huge curves.
+    // Always include the final point — but skip it if the stride loop already
+    // landed on it, otherwise lightweight-charts asserts on duplicate timestamps.
     const sample = (curve: EquityPoint[]) => {
       const maxPoints = 2000;
       const stride = Math.max(1, Math.floor(curve.length / maxPoints));
@@ -64,7 +66,10 @@ export function EquityCurve({
       }
       if (curve.length > 0) {
         const last = curve[curve.length - 1];
-        data.push({ time: Math.floor(last.timestamp / 1000) as Time, value: last.equity });
+        const lastTime = Math.floor(last.timestamp / 1000) as Time;
+        if (data.length === 0 || data[data.length - 1].time !== lastTime) {
+          data.push({ time: lastTime, value: last.equity });
+        }
       }
       return data;
     };
