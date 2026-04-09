@@ -6,12 +6,12 @@ import {
   LOGO_VIEWBOX,
 } from "@/components/brand/Logo";
 
-export const size = { width: 180, height: 180 };
+export const size = { width: 192, height: 192 };
 export const contentType = "image/png";
 
-// iOS home-screen icon. iOS already applies its own rounded mask, so we
-// use a flat dark surface and let the helix mark fill the safe area.
-export default function AppleIcon() {
+// PWA "any" purpose icon. 192×192. Used by Android home-screen
+// when the launcher does NOT apply its own mask.
+export default function Icon192() {
   return new ImageResponse(
     (
       <div
@@ -23,11 +23,12 @@ export default function AppleIcon() {
           justifyContent: "center",
           background:
             "radial-gradient(circle at 35% 25%, #1f2937 0%, #09090b 75%)",
+          borderRadius: 32,
         }}
       >
         <svg
-          width="120"
-          height="120"
+          width="128"
+          height="128"
           viewBox={LOGO_VIEWBOX}
           fill="none"
           xmlns="http://www.w3.org/2000/svg"

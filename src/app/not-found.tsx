@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, BarChart3, Home } from "lucide-react";
 import { getCurrentDictionary } from "@/lib/i18n/getDictionary";
+import { Logo } from "@/components/brand/Logo";
 
 export const metadata = {
   title: "404 · Page not found",
@@ -12,8 +13,8 @@ export default async function NotFound() {
 
   return (
     <div className="mx-auto flex min-h-[60vh] max-w-2xl flex-col items-center justify-center px-4 py-20 text-center sm:px-6">
-      <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-blue-500 font-mono text-4xl font-bold text-black shadow-2xl shadow-emerald-500/20">
-        H
+      <div className="mb-6">
+        <Logo size={80} />
       </div>
       <div className="font-mono text-display-xl font-bold tracking-tighter text-transparent bg-gradient-to-r from-emerald-400 to-blue-400 bg-clip-text">
         {t.code}

@@ -9,6 +9,7 @@ import { CommandPalette } from "@/components/CommandPalette";
 import { Footer } from "@/components/Footer";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { MobileNav } from "@/components/MobileNav";
+import { Logo } from "@/components/brand/Logo";
 import { DictionaryProvider } from "@/lib/i18n/DictionaryProvider";
 import { getCurrentDictionary } from "@/lib/i18n/getDictionary";
 import "./globals.css";
@@ -82,10 +83,12 @@ export default async function RootLayout({
             </a>
             <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 backdrop-blur-md">
               <nav className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-2 px-4 sm:px-6">
-                <Link href="/" className="flex items-center gap-2">
-                  <div className="flex h-7 w-7 items-center justify-center rounded bg-gradient-to-br from-emerald-500 to-blue-500 font-mono text-xs font-bold text-black">
-                    H
-                  </div>
+                <Link
+                  href="/"
+                  className="flex items-center gap-2 text-white"
+                  aria-label="Helix — home"
+                >
+                  <Logo size={28} />
                   <span className="font-semibold tracking-tight">Helix</span>
                 </Link>
 

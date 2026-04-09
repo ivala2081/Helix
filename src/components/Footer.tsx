@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Github } from "lucide-react";
 import { getCurrentDictionary } from "@/lib/i18n/getDictionary";
+import { Logo } from "@/components/brand/Logo";
 
 export async function Footer() {
   const { dict } = await getCurrentDictionary();
@@ -30,10 +31,12 @@ export async function Footer() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="grid grid-cols-2 gap-6 sm:gap-8 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded bg-gradient-to-br from-emerald-500 to-blue-500 font-mono text-xs font-bold text-black">
-                H
-              </div>
+            <Link
+              href="/"
+              className="flex items-center gap-2 text-white"
+              aria-label="Helix — home"
+            >
+              <Logo size={28} />
               <span className="font-semibold tracking-tight">Helix</span>
             </Link>
             <p className="mt-3 text-xs leading-relaxed text-[var(--color-muted)]">

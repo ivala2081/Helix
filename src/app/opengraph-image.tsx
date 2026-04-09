@@ -1,4 +1,10 @@
 import { ImageResponse } from "next/og";
+import {
+  LOGO_GRADIENT_FROM,
+  LOGO_GRADIENT_TO,
+  LOGO_PATHS,
+  LOGO_VIEWBOX,
+} from "@/components/brand/Logo";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
@@ -47,24 +53,48 @@ export default function OG() {
         />
 
         {/* Logo + brand */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          <div
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 12,
-              background: "linear-gradient(135deg, #10b981 0%, #3b82f6 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              color: "#000",
-              fontSize: 36,
-              fontWeight: 800,
-            }}
+        <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+          <svg
+            width="64"
+            height="64"
+            viewBox={LOGO_VIEWBOX}
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
           >
-            H
-          </div>
-          <div style={{ fontSize: 32, fontWeight: 600, letterSpacing: -0.5 }}>
+            <defs>
+              <linearGradient
+                id="og-logo-grad"
+                x1="4"
+                y1="4"
+                x2="28"
+                y2="28"
+                gradientUnits="userSpaceOnUse"
+              >
+                <stop offset="0" stopColor={LOGO_GRADIENT_FROM} />
+                <stop offset="1" stopColor={LOGO_GRADIENT_TO} />
+              </linearGradient>
+            </defs>
+            <path
+              d={LOGO_PATHS.leftLeg}
+              stroke="url(#og-logo-grad)"
+              strokeWidth="4"
+              strokeLinecap="round"
+            />
+            <path
+              d={LOGO_PATHS.rightLeg}
+              stroke="url(#og-logo-grad)"
+              strokeWidth="4"
+              strokeLinecap="round"
+            />
+            <path
+              d={LOGO_PATHS.crossbar}
+              stroke="url(#og-logo-grad)"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <div style={{ fontSize: 36, fontWeight: 600, letterSpacing: -0.5 }}>
             Helix
           </div>
         </div>
