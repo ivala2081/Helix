@@ -99,3 +99,4 @@ node_modules/
 .vercel/
 .env*.local
 next-env.d.ts.swp
+.vercel
