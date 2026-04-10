@@ -441,6 +441,9 @@ export const tr = {
     title: "Canlı Forward Test",
     subtitle: "Helix V5, 5 coinde her biri $10.000 sanal sermaye ile çalışıyor. Gerçek Binance 1s mumları, ileriye bakış yok, sıfırlama yok.",
     disclaimer: "Helix V5, BTC 1s verisi üzerinde Oca 2023 – Şub 2026 arasında optimize edilmiştir. Bu canlı panel tek gerçek örneklem dışı testtir. Sonuçlar backtest'ten önemli ölçüde farklı olabilir.",
+    chartTitle: "Varlık Eğrisi (tüm coinler)",
+    openPositionsTitle: "Açık Pozisyonlar",
+    lastTick: "Son tick",
     loading: "Canlı veriler yükleniyor...",
     errorPrefix: "Veri yüklenemedi:",
     kpis: {

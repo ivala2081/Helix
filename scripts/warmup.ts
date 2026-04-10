@@ -8,11 +8,16 @@
 import { createClient } from "@supabase/supabase-js";
 import { createInitialState, stepCandle } from "../src/lib/engine/paper-engine";
 import { V5_DEFAULTS } from "../src/lib/engine/defaults";
+import {
+  FORWARD_TEST_COINS,
+  FORWARD_TEST_INITIAL_CAPITAL,
+  FORWARD_TEST_WARMUP_CANDLES,
+} from "../src/lib/engine/live-config";
 import type { Candle } from "../src/lib/engine/types";
 
-const COINS = ["BTCUSDT", "ETHUSDT", "SOLUSDT", "XRPUSDT", "BNBUSDT"];
-const WARMUP_CANDLES = 150;
-const INITIAL_CAPITAL = 10_000;
+const COINS = FORWARD_TEST_COINS;
+const WARMUP_CANDLES = FORWARD_TEST_WARMUP_CANDLES;
+const INITIAL_CAPITAL = FORWARD_TEST_INITIAL_CAPITAL;
 
 async function main() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;

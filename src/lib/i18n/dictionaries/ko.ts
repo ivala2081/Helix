@@ -442,6 +442,9 @@ export const ko = {
     title: "라이브 포워드 테스트",
     subtitle: "Helix V5가 5개 코인에서 각 $10,000 가상 자본으로 운영 중. 실제 바이낸스 1시간 캔들, 미래 데이터 참조 없음, 리셋 없음.",
     disclaimer: "Helix V5는 BTC 1h 데이터(2023년 1월 – 2026년 2월)에 최적화되었습니다. 이 라이브 대시보드는 유일한 진정한 아웃오브샘플 테스트입니다. 결과는 백테스트와 크게 다를 수 있습니다.",
+    chartTitle: "자산 곡선 (전체 코인)",
+    openPositionsTitle: "오픈 포지션",
+    lastTick: "마지막 틱",
     loading: "라이브 데이터 로딩 중...",
     errorPrefix: "데이터 로드 실패:",
     kpis: {

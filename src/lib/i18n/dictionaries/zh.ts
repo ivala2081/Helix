@@ -442,6 +442,9 @@ export const zh = {
     title: "实时前向测试",
     subtitle: "Helix V5 在5个币种上运行，每个币种使用$10,000虚拟资金。真实币安1小时K线，无前瞻，无重置。",
     disclaimer: "Helix V5在BTC 1小时数据（2023年1月至2026年2月）上进行了优化。此实时面板是唯一真正的样本外测试。结果可能与回测有显著差异。",
+    chartTitle: "资产曲线（全部币种）",
+    openPositionsTitle: "持仓",
+    lastTick: "上次更新",
     loading: "正在加载实时数据...",
     errorPrefix: "数据加载失败：",
     kpis: {

@@ -158,6 +158,37 @@ describe("paper-engine parity", () => {
     }
   });
 
+  it("is deterministic: same candles twice produce identical trades", () => {
+    const candles = loadCsv(CSV_PATH, 500);
+
+    const runOnce = () => {
+      const state = createInitialState(V5_DEFAULTS.initialCapital);
+      const trades: Trade[] = [];
+      for (const candle of candles) {
+        const result = stepCandle(state, { ...candle }, V5_DEFAULTS);
+        for (const ev of result.events) {
+          if (ev.type === "tradeClosed" && ev.trade) trades.push(ev.trade);
+        }
+      }
+      return { trades, finalEquity: state.equity, realizedPnl: state.realizedPnl };
+    };
+
+    const run1 = runOnce();
+    const run2 = runOnce();
+
+    expect(run2.trades.length).toBe(run1.trades.length);
+    expect(run2.finalEquity).toBe(run1.finalEquity);
+    expect(run2.realizedPnl).toBe(run1.realizedPnl);
+
+    for (let i = 0; i < run1.trades.length; i++) {
+      expect(run2.trades[i].entryPrice).toBe(run1.trades[i].entryPrice);
+      expect(run2.trades[i].exitPrice).toBe(run1.trades[i].exitPrice);
+      expect(run2.trades[i].pnl).toBe(run1.trades[i].pnl);
+      expect(run2.trades[i].exitReason).toBe(run1.trades[i].exitReason);
+      expect(run2.trades[i].entryTs).toBe(run1.trades[i].entryTs);
+    }
+  });
+
   it("equity tracking is consistent", () => {
     const candles = loadCsv(CSV_PATH, 200);
     const state = createInitialState(V5_DEFAULTS.initialCapital);

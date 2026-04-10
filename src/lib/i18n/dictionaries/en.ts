@@ -445,6 +445,9 @@ export const en = {
     title: "Live Forward Test",
     subtitle: "Helix V5 running on 5 coins with $10,000 virtual capital each. Real Binance 1h candles, no look-ahead, no resets.",
     disclaimer: "Helix V5 was optimized on BTC 1h data Jan 2023 – Feb 2026. This live dashboard is the only true out-of-sample test. Results may differ significantly from backtest.",
+    chartTitle: "Equity Curve (all coins)",
+    openPositionsTitle: "Open Positions",
+    lastTick: "Last tick",
     loading: "Loading live data...",
     errorPrefix: "Failed to load data:",
     kpis: {

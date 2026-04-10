@@ -56,6 +56,7 @@ export interface Trade {
   id: number;
   direction: Direction;
   entryBar: number;
+  entryTs?: number; // ms epoch timestamp of entry candle (set by streaming engine)
   entryDate: string;
   entryPrice: number;
   initialStopLoss: number;

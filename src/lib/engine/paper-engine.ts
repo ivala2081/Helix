@@ -396,6 +396,7 @@ export function stepCandle(
     id: state.nextTradeId++,
     direction: dir,
     entryBar: i,
+    entryTs: candle.timestamp,
     entryDate: candle.date,
     entryPrice,
     initialStopLoss: stopLoss,

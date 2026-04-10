@@ -442,6 +442,9 @@ export const ja = {
     title: "ライブフォワードテスト",
     subtitle: "Helix V5が5つのコインで各$10,000の仮想資本で稼働中。リアルなBinance 1時間足、先読みなし、リセットなし。",
     disclaimer: "Helix V5はBTC 1hデータ（2023年1月〜2026年2月）で最適化されました。このライブダッシュボードは唯一の真のアウトオブサンプルテストです。結果はバックテストと大きく異なる可能性があります。",
+    chartTitle: "資産カーブ（全コイン）",
+    openPositionsTitle: "オープンポジション",
+    lastTick: "最終ティック",
     loading: "ライブデータを読み込み中...",
     errorPrefix: "データの読み込みに失敗:",
     kpis: {

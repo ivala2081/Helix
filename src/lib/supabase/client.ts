@@ -3,7 +3,8 @@
 
 import { createClient } from "@supabase/supabase-js";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+// Note: reads env vars at module load. Browser bundles only see NEXT_PUBLIC_* vars.
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 export const supabase = createClient(url, anonKey);

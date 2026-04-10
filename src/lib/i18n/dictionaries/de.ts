@@ -442,6 +442,9 @@ export const de = {
     title: "Live Forward-Test",
     subtitle: "Helix V5 läuft auf 5 Coins mit je $10.000 virtuellem Kapital. Echte Binance 1h-Kerzen, kein Vorausblick, kein Zurücksetzen.",
     disclaimer: "Helix V5 wurde auf BTC 1h-Daten von Jan 2023 – Feb 2026 optimiert. Dieses Live-Dashboard ist der einzige echte Out-of-Sample-Test. Ergebnisse können erheblich vom Backtest abweichen.",
+    chartTitle: "Equity-Kurve (alle Coins)",
+    openPositionsTitle: "Offene Positionen",
+    lastTick: "Letzter Tick",
     loading: "Lade Live-Daten...",
     errorPrefix: "Daten konnten nicht geladen werden:",
     kpis: {

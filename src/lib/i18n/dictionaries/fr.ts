@@ -444,6 +444,9 @@ export const fr = {
     title: "Forward Test en Direct",
     subtitle: "Helix V5 fonctionne sur 5 cryptos avec 10 000 $ de capital virtuel chacune. Bougies Binance 1h réelles, sans anticipation, sans réinitialisation.",
     disclaimer: "Helix V5 a été optimisé sur les données BTC 1h de Jan 2023 à Fév 2026. Ce tableau de bord en direct est le seul véritable test hors échantillon. Les résultats peuvent différer significativement du backtest.",
+    chartTitle: "Courbe de Capital (toutes les cryptos)",
+    openPositionsTitle: "Positions Ouvertes",
+    lastTick: "Dernier tick",
     loading: "Chargement des données en direct...",
     errorPrefix: "Échec du chargement :",
     kpis: {

@@ -1,5 +1,5 @@
-// Public read API for the live paper trading dashboard.
-// Returns all portfolio summaries + recent trades.
+// Public read API for the forward test dashboard.
+// Returns portfolio summaries, recent trades, cumulative trade count, cron health.
 // No auth required — all data is public via RLS.
 
 import { NextResponse } from "next/server";
@@ -8,13 +8,13 @@ import { createClient } from "@supabase/supabase-js";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 export async function GET() {
   const db = createClient(url, anonKey);
 
-  const [portfoliosRes, tradesRes] = await Promise.all([
+  const [portfoliosRes, tradesRes, tradeCountRes, cronRunRes] = await Promise.all([
     db
       .from("live_portfolios")
       .select("symbol, interval, status, initial_capital, equity, realized_pnl, open_trade, last_candle_ts, bar_index, warmup_complete, started_at, updated_at")
@@ -24,6 +24,15 @@ export async function GET() {
       .select("*")
       .order("exit_ts", { ascending: false })
       .limit(50),
+    db
+      .from("live_trades")
+      .select("*", { count: "exact", head: true }),
+    db
+      .from("live_cron_runs")
+      .select("ran_at, duration_ms, status, candles_processed, trades_closed")
+      .order("ran_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
   ]);
 
   if (portfoliosRes.error) {
@@ -36,6 +45,8 @@ export async function GET() {
   return NextResponse.json({
     portfolios: portfoliosRes.data ?? [],
     recentTrades: tradesRes.data ?? [],
+    totalTradeCount: tradeCountRes.count ?? 0,
+    lastCronRun: cronRunRes.data ?? null,
     updatedAt: new Date().toISOString(),
   }, {
     headers: {

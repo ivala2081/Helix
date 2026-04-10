@@ -442,6 +442,9 @@ export const pt = {
     title: "Forward Test ao Vivo",
     subtitle: "Helix V5 rodando em 5 moedas com $10.000 de capital virtual cada. Candles reais da Binance 1h, sem antecipação, sem resets.",
     disclaimer: "Helix V5 foi otimizado com dados BTC 1h de Jan 2023 – Fev 2026. Este painel ao vivo é o único teste fora da amostra real. Os resultados podem diferir significativamente do backtest.",
+    chartTitle: "Curva de Capital (todas as moedas)",
+    openPositionsTitle: "Posições Abertas",
+    lastTick: "Último tick",
     loading: "Carregando dados ao vivo...",
     errorPrefix: "Falha ao carregar dados:",
     kpis: {

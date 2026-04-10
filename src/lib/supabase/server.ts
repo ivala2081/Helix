@@ -2,12 +2,10 @@
 // Used by cron worker and warmup script to write portfolio state.
 
 import { createClient } from "@supabase/supabase-js";
-
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+import { env } from "@/lib/env";
 
 export function createServiceClient() {
-  return createClient(url, serviceKey, {
+  return createClient(env.SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }

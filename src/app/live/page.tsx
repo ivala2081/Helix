@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { LiveEquityChart } from "@/components/live/LiveEquityChart";
 import { LivePortfolioCard } from "@/components/live/LivePortfolioCard";
 import { LiveStatusBadge } from "@/components/live/LiveStatusBadge";
+import { OpenPositionsStrip } from "@/components/live/OpenPositionsStrip";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
 interface Portfolio {
@@ -10,7 +12,16 @@ interface Portfolio {
   equity: number;
   initial_capital: number;
   realized_pnl: number;
-  open_trade: { direction: string; entryPrice: number } | null;
+  open_trade: {
+    direction: string;
+    entryPrice: number;
+    stopLoss?: number;
+    takeProfit1?: number;
+    takeProfit2?: number;
+    takeProfit3?: number;
+    tp1Hit?: boolean;
+    tp2Hit?: boolean;
+  } | null;
   warmup_complete: boolean;
   started_at: string;
   updated_at: string;
@@ -28,9 +39,19 @@ interface TradeRow {
   exit_ts: number;
 }
 
+interface CronRun {
+  ran_at: string;
+  duration_ms: number;
+  status: string;
+  candles_processed: number;
+  trades_closed: number;
+}
+
 interface LiveData {
   portfolios: Portfolio[];
   recentTrades: TradeRow[];
+  totalTradeCount: number;
+  lastCronRun: CronRun | null;
   updatedAt: string;
 }
 
@@ -42,23 +63,36 @@ export default function LivePage() {
 
   useEffect(() => {
     let mounted = true;
+    let interval: ReturnType<typeof setInterval> | null = null;
 
     async function fetchData() {
+      if (document.hidden) return; // skip when tab is backgrounded
       try {
         const r = await fetch("/api/live");
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const json = await r.json();
-        if (mounted) setData(json);
+        if (mounted) {
+          setData(json);
+          setError(null);
+        }
       } catch (err) {
         if (mounted) setError((err as Error).message);
       }
     }
 
     fetchData();
-    const interval = setInterval(fetchData, 30_000);
+    interval = setInterval(fetchData, 30_000);
+
+    // Refresh immediately when tab becomes visible after being hidden
+    const onVisibility = () => {
+      if (!document.hidden) fetchData();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+
     return () => {
       mounted = false;
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, []);
 
@@ -66,9 +100,14 @@ export default function LivePage() {
   const totalInitial = data?.portfolios.reduce((s, p) => s + p.initial_capital, 0) ?? 0;
   const totalReturn = totalInitial > 0 ? ((totalEquity - totalInitial) / totalInitial) * 100 : 0;
   const bestCoin = data?.portfolios.reduce((best, p) => {
-    const ret = ((p.equity - p.initial_capital) / p.initial_capital) * 100;
-    return ret > ((best.equity - best.initial_capital) / best.initial_capital) * 100 ? p : best;
-  }, data.portfolios[0]);
+    if (!best) return p;
+    const pRet = (p.equity - p.initial_capital) / p.initial_capital;
+    const bRet = (best.equity - best.initial_capital) / best.initial_capital;
+    return pRet > bRet ? p : best;
+  }, undefined as Portfolio | undefined);
+  const bestCoinReturnPct = bestCoin
+    ? ((bestCoin.equity - bestCoin.initial_capital) / bestCoin.initial_capital) * 100
+    : 0;
   const earliestStart = data?.portfolios
     .map((p) => p.started_at)
     .sort()[0];
@@ -118,11 +157,16 @@ export default function LivePage() {
             />
             <MiniKpi
               label={t.kpis.bestPerformer}
-              value={bestCoin?.symbol.replace("USDT", "") ?? "—"}
+              value={
+                bestCoin
+                  ? `${bestCoin.symbol.replace("USDT", "")} ${bestCoinReturnPct >= 0 ? "+" : ""}${bestCoinReturnPct.toFixed(1)}%`
+                  : "—"
+              }
+              tone={bestCoinReturnPct >= 0 ? "positive" : "negative"}
             />
             <MiniKpi
               label={t.kpis.totalTrades}
-              value={String(data.recentTrades.length)}
+              value={String(data.totalTradeCount)}
             />
           </div>
 
@@ -132,6 +176,20 @@ export default function LivePage() {
               <LivePortfolioCard key={p.symbol} p={p} updatedLabel={t.updated} />
             ))}
           </div>
+
+          {/* Equity curve (all coins overlay) */}
+          <LiveEquityChart title={t.chartTitle} />
+
+          {/* Open positions */}
+          <OpenPositionsStrip portfolios={data.portfolios} title={t.openPositionsTitle} />
+
+          {/* Cron health */}
+          {data.lastCronRun && (
+            <div className="mt-4 text-center text-[10px] text-[var(--color-muted)]">
+              {t.lastTick}: {new Date(data.lastCronRun.ran_at).toLocaleString()} ·{" "}
+              {data.lastCronRun.duration_ms}ms · {data.lastCronRun.status}
+            </div>
+          )}
 
           {/* Recent trades */}
           {data.recentTrades.length > 0 && (
