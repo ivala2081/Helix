@@ -464,6 +464,39 @@ export const ja = {
       time: "時間",
     },
     updated: "更新",
+    tradeAnalytics: {
+      title: "取引履歴",
+      stats: {
+        winRate: "Win Rate",
+        avgWin: "Avg Win",
+        avgLoss: "Avg Loss",
+        profitFactor: "Profit Factor",
+        expectancy: "Expectancy",
+        totalPnl: "Total P&L",
+      },
+      filters: {
+        all: "すべて",
+      },
+      table: {
+        coin: "コイン",
+        side: "方向",
+        entryDate: "エントリー日",
+        entryPrice: "エントリー $",
+        exitDate: "決済日",
+        exitPrice: "決済 $",
+        pnl: "PnL $",
+        pnlPct: "PnL %",
+        rMultiple: "R",
+        barsHeld: "Bars",
+        exitReason: "決済理由",
+        noTrades: "まだ取引がありません — フォワードテストがデータを蓄積中です。",
+        showingOf: "{total}件中 {from}–{to}を表示",
+      },
+      exitReasons: {
+        title: "決済理由",
+      },
+      perTrade: "1取引あたり",
+    },
   },
 
   language: {

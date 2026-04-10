@@ -464,6 +464,39 @@ export const ru = {
       time: "Время",
     },
     updated: "Обновлено",
+    tradeAnalytics: {
+      title: "История сделок",
+      stats: {
+        winRate: "Win Rate",
+        avgWin: "Avg Win",
+        avgLoss: "Avg Loss",
+        profitFactor: "Profit Factor",
+        expectancy: "Expectancy",
+        totalPnl: "Total P&L",
+      },
+      filters: {
+        all: "Все",
+      },
+      table: {
+        coin: "Монета",
+        side: "Сторона",
+        entryDate: "Дата входа",
+        entryPrice: "Вход $",
+        exitDate: "Дата выхода",
+        exitPrice: "Выход $",
+        pnl: "PnL $",
+        pnlPct: "PnL %",
+        rMultiple: "R",
+        barsHeld: "Bars",
+        exitReason: "Выход",
+        noTrades: "Сделок пока нет — форвард-тест накапливает данные.",
+        showingOf: "Показано {from}–{to} из {total}",
+      },
+      exitReasons: {
+        title: "Причины выхода",
+      },
+      perTrade: "за сделку",
+    },
   },
 
   language: {

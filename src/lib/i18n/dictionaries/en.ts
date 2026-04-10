@@ -467,6 +467,39 @@ export const en = {
       time: "Time",
     },
     updated: "Updated",
+    tradeAnalytics: {
+      title: "Trade History",
+      stats: {
+        winRate: "Win Rate",
+        avgWin: "Avg Win",
+        avgLoss: "Avg Loss",
+        profitFactor: "Profit Factor",
+        expectancy: "Expectancy",
+        totalPnl: "Total P&L",
+      },
+      filters: {
+        all: "All",
+      },
+      table: {
+        coin: "Coin",
+        side: "Side",
+        entryDate: "Entry Date",
+        entryPrice: "Entry $",
+        exitDate: "Exit Date",
+        exitPrice: "Exit $",
+        pnl: "PnL $",
+        pnlPct: "PnL %",
+        rMultiple: "R",
+        barsHeld: "Bars",
+        exitReason: "Exit",
+        noTrades: "No trades yet — forward test is accumulating data.",
+        showingOf: "Showing {from}–{to} of {total}",
+      },
+      exitReasons: {
+        title: "Exit Reasons",
+      },
+      perTrade: "per trade",
+    },
   },
 
   language: {

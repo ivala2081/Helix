@@ -464,6 +464,39 @@ export const zh = {
       time: "时间",
     },
     updated: "已更新",
+    tradeAnalytics: {
+      title: "交易记录",
+      stats: {
+        winRate: "Win Rate",
+        avgWin: "Avg Win",
+        avgLoss: "Avg Loss",
+        profitFactor: "Profit Factor",
+        expectancy: "Expectancy",
+        totalPnl: "Total P&L",
+      },
+      filters: {
+        all: "全部",
+      },
+      table: {
+        coin: "币种",
+        side: "方向",
+        entryDate: "入场日期",
+        entryPrice: "入场 $",
+        exitDate: "出场日期",
+        exitPrice: "出场 $",
+        pnl: "PnL $",
+        pnlPct: "PnL %",
+        rMultiple: "R",
+        barsHeld: "Bars",
+        exitReason: "出场原因",
+        noTrades: "暂无交易 — 前向测试正在积累数据。",
+        showingOf: "显示 {from}–{to}，共 {total} 笔",
+      },
+      exitReasons: {
+        title: "出场原因",
+      },
+      perTrade: "每笔交易",
+    },
   },
 
   language: {

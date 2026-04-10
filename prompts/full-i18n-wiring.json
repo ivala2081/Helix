@@ -1,0 +1,300 @@
+{
+  "meta": {
+    "name": "Full i18n Wiring — Fix All Hardcoded English Strings",
+    "version": "1.0",
+    "created": "2026-04-10",
+    "project": "Helix",
+    "repo": "c:\\Users\\ACER\\Documents\\GitHub\\Helix",
+    "description": "All dictionary keys exist in 10 languages but components hardcode English. This prompt wires every component and page to read from the i18n dictionary. No new translation work needed — everything is already translated."
+  },
+
+  "context": {
+    "i18n_system": {
+      "client_hook": "useDictionary() from src/lib/i18n/DictionaryProvider.tsx — returns Dictionary type",
+      "server_function": "getCurrentDictionary() from src/lib/i18n/getDictionary.ts — returns { dict, locale }",
+      "provider": "DictionaryProvider wraps the entire app in src/app/layout.tsx — all client components have access",
+      "dictionary_type": "Inferred from src/lib/i18n/dictionaries/en.ts export type Dictionary = typeof en",
+      "languages": ["en", "de", "es", "fr", "ja", "ko", "pt", "ru", "tr", "zh"],
+      "translation_policy": "Industry-standard fintech terms (Sharpe, Sortino, ATR, FVG, BOS, CHoCH, Stop Loss, Take Profit, Backtest, Drawdown, PnL, R-multiple) stay in English everywhere. Only natural-language strings get translated."
+    },
+    "root_cause": "Components don't import useDictionary() or receive dict props. The keys exist in all 10 language files but are unused. Nav/footer show correct language because layout.tsx wires them, but child components ignore the dictionary."
+  },
+
+  "steps": [
+    {
+      "id": 1,
+      "title": "Wire BacktestForm.tsx to i18n",
+      "priority": "HIGH",
+      "file": "src/components/BacktestForm.tsx",
+      "action": "modify",
+      "instructions": [
+        "Add: import { useDictionary } from '@/lib/i18n/DictionaryProvider'",
+        "At top of component function, add: const dict = useDictionary(); const t = dict.backtest.form;",
+        "Replace ALL hardcoded form labels with dictionary references:",
+        "  'Configuration' → t.configHeading",
+        "  'Custom' → t.customBadge",
+        "  'Quick pick' → t.quickPickLabel",
+        "  'Symbol' → t.symbolLabel",
+        "  'BTCUSDT' (placeholder) → t.symbolPlaceholder",
+        "  'Any Binance spot pair...' → t.symbolHelp",
+        "  'Timeframe' → t.timeframeLabel",
+        "  '15 minutes'/'30 minutes'/'1 hour'/'4 hours'/'1 day' → t.timeframes['15m'] etc.",
+        "  'Start Date' → t.startDateLabel",
+        "  'End Date' → t.endDateLabel",
+        "  'Initial Capital (USD)' → t.initialCapitalLabel",
+        "  'Advanced parameters (V5 defaults)' → t.advancedToggle",
+        "  Advanced field labels: 'Risk %' → t.advancedFields.riskPct, 'Max position %' → t.advancedFields.maxPositionPct, etc.",
+        "  'Reset to V5 defaults' → t.resetDefaults",
+        "  'Run Backtest' → t.runButton",
+        "  'Running…' → t.runningButton"
+      ],
+      "dictionary_path": "dict.backtest.form",
+      "verify": "Switch language in browser, form labels should translate"
+    },
+    {
+      "id": 2,
+      "title": "Wire TradeTable.tsx to i18n",
+      "priority": "HIGH",
+      "file": "src/components/TradeTable.tsx",
+      "action": "modify",
+      "instructions": [
+        "Add: import { useDictionary } from '@/lib/i18n/DictionaryProvider'",
+        "At top of component: const dict = useDictionary(); const t = dict.backtest.table;",
+        "Replace hardcoded strings:",
+        "  'No trades generated.' → t.noTrades",
+        "  'Trade Log · {count} trades' → `${t.heading} · ${trades.length} ${t.tradesSuffix}`",
+        "  Column headers '#','Side','Entry Date','Entry $','Exit Date','Exit $','PnL $','PnL %','R','Bars','Exit' → t.headers.id, t.headers.side, t.headers.entryDate, t.headers.entryPrice, t.headers.exitDate, t.headers.exitPrice, t.headers.pnl, t.headers.pnlPct, t.headers.rMultiple, t.headers.bars, t.headers.exit",
+        "  'Show all {count} trades' → `${t.showAll} ${sorted.length} ${t.tradesSuffix}`"
+      ],
+      "dictionary_path": "dict.backtest.table"
+    },
+    {
+      "id": 3,
+      "title": "Wire MetricsPanel.tsx to i18n",
+      "priority": "HIGH",
+      "file": "src/components/MetricsPanel.tsx",
+      "action": "modify",
+      "instructions": [
+        "Add: import { useDictionary } from '@/lib/i18n/DictionaryProvider'",
+        "At top of component: const dict = useDictionary(); const t = dict.backtest.metricsPanel;",
+        "Replace 'Full metrics breakdown' heading → t.heading",
+        "Replace section titles: 'Returns' → t.sections.returns, 'Risk' → t.sections.risk, 'Trade summary' → t.sections.tradeSummary, 'Trade quality' → t.sections.tradeQuality, 'Costs' → t.sections.costs",
+        "Replace all metric row labels with t.labels.* — e.g. 'Total Return' → t.labels.totalReturn, 'Sharpe Ratio' → t.labels.sharpeRatio, etc.",
+        "The en.ts metricsPanel.labels object has all 30+ metric names. Match each hardcoded label to its dictionary key."
+      ],
+      "dictionary_path": "dict.backtest.metricsPanel"
+    },
+    {
+      "id": 4,
+      "title": "Wire ExportToolbar.tsx to i18n",
+      "priority": "HIGH",
+      "file": "src/components/ExportToolbar.tsx",
+      "action": "modify",
+      "instructions": [
+        "Add: import { useDictionary } from '@/lib/i18n/DictionaryProvider'",
+        "At top of component: const dict = useDictionary(); const tExport = dict.backtest.results.exports; const tToast = dict.backtest.toast;",
+        "Replace button labels: 'Download CSV' → tExport.downloadCsv, 'Copy link' → tExport.copyLink, 'Chart PNG' → tExport.chartPng",
+        "Replace toast messages used with useToast():",
+        "  'CSV downloaded' → tToast.csvDownloaded",
+        "  'Link copied' → tToast.linkCopied",
+        "  'Copy failed' → tToast.copyFailed",
+        "  'Chart exported' → tToast.chartExported",
+        "  'No chart to export' → tToast.noChart"
+      ],
+      "dictionary_path": "dict.backtest.results.exports + dict.backtest.toast"
+    },
+    {
+      "id": 5,
+      "title": "Wire CommandPalette.tsx to i18n",
+      "priority": "HIGH",
+      "file": "src/components/CommandPalette.tsx",
+      "action": "modify",
+      "instructions": [
+        "Add: import { useDictionary } from '@/lib/i18n/DictionaryProvider'",
+        "Move the ITEMS array definition INSIDE the component function (after useDictionary call) so it can reference dict",
+        "At top of component: const dict = useDictionary(); const cp = dict.commandPalette;",
+        "Replace: 'Search or jump to…' placeholder → cp.placeholder",
+        "Replace navigation item labels: 'Home' → dict.nav.home, 'Backtest' → dict.nav.backtest, 'Forward Test' → dict.nav.live, 'About' → dict.nav.about",
+        "Replace group names: 'Navigate' → cp.groups.navigate, 'Quick run' → cp.groups.quickRun, 'External' → cp.groups.external (check if these keys exist in en.ts commandPalette section)",
+        "Replace: 'No results' → cp.empty",
+        "Replace footer hints: 'navigate' → cp.hints.navigate, 'select' → cp.hints.select, 'toggle' → cp.hints.toggle (if keys exist)",
+        "NOTE: Quick run labels like 'Run BTCUSDT 1H · 2023→today' contain dynamic data — keep the symbol/interval parts but translate 'Run' prefix if dict has a key for it, otherwise these can stay as-is since they are technical identifiers"
+      ],
+      "dictionary_path": "dict.commandPalette + dict.nav"
+    },
+    {
+      "id": 6,
+      "title": "Wire StageProgress.tsx to i18n",
+      "priority": "HIGH",
+      "file": "src/components/StageProgress.tsx",
+      "action": "modify",
+      "instructions": [
+        "This component receives a 'stages' prop with stage labels. Check how it's called from backtest/page.tsx.",
+        "Option A (preferred): If the parent (backtest/page.tsx) constructs the stages array, the parent should pass translated stage names from dict.backtest.progress.stages.fetch, dict.backtest.progress.stages.indicators, dict.backtest.progress.stages.backtest",
+        "Option B: Add useDictionary() to StageProgress itself and map stage keys to dictionary values",
+        "Choose whichever option requires fewer changes. The parent (backtest/page.tsx) is already being wired in step 9."
+      ],
+      "dictionary_path": "dict.backtest.progress.stages"
+    },
+    {
+      "id": 7,
+      "title": "Wire StickyKpiBar.tsx to i18n",
+      "priority": "HIGH",
+      "file": "src/components/StickyKpiBar.tsx",
+      "action": "modify",
+      "instructions": [
+        "Add: import { useDictionary } from '@/lib/i18n/DictionaryProvider'",
+        "At top of component: const dict = useDictionary(); const t = dict.backtest.results.kpis;",
+        "Replace metric abbreviations in the KPI cells:",
+        "  'Return' → t.totalReturn (or a shorter form if available)",
+        "  'Sharpe' → t.sharpe",
+        "  'Max DD' → t.maxDrawdown",
+        "  'Win' → t.winRate",
+        "  'PF' → t.profitFactor",
+        "  'Trades' — check if dict has a key, otherwise keep as-is (it's a technical label)",
+        "  'Net' — check if dict has a key",
+        "Note: These are abbreviated labels. If the dictionary only has full names, use the first word or abbreviate consistently."
+      ],
+      "dictionary_path": "dict.backtest.results.kpis"
+    },
+    {
+      "id": 8,
+      "title": "Wire LiveEquityChart.tsx to i18n",
+      "priority": "HIGH",
+      "file": "src/components/live/LiveEquityChart.tsx",
+      "action": "modify",
+      "instructions": [
+        "The component already receives a 'title' prop (good).",
+        "Replace the hardcoded 'Loading...' string (around line 147) — either:",
+        "  Option A: Add a 'loadingText' prop and pass dict.live.loading from the parent",
+        "  Option B: Import useDictionary() and use dict.live.loading directly",
+        "Option B is simpler. Add import, add const dict = useDictionary(); and replace 'Loading...' with dict.live.loading"
+      ],
+      "dictionary_path": "dict.live.loading"
+    },
+    {
+      "id": 9,
+      "title": "Wire backtest/page.tsx error messages to i18n",
+      "priority": "MEDIUM",
+      "file": "src/app/backtest/page.tsx",
+      "action": "modify",
+      "instructions": [
+        "This is already 'use client'. Add useDictionary() if not present.",
+        "Find all error messages and replace:",
+        "  'Invalid date range' → dict.backtest.errors.invalidDateRange",
+        "  'Symbol is required (e.g., BTCUSDT)' → dict.backtest.errors.symbolRequired",
+        "  'Not enough data: got' → dict.backtest.errors.notEnoughData",
+        "  'candles, need at least' → dict.backtest.errors.notEnoughDataNeed",
+        "  'Backtest failed' → dict.backtest.errors.generic",
+        "Also wire the progress/stage section: dict.backtest.progress.fetchingTitle, dict.backtest.progress.runningTitle",
+        "Also wire KPI labels: dict.backtest.results.kpis.*",
+        "Also wire empty state: dict.backtest.emptyState.*",
+        "Also wire the chart section titles: dict.backtest.charts.*"
+      ],
+      "dictionary_path": "dict.backtest.*"
+    },
+    {
+      "id": 10,
+      "title": "Wire error.tsx to i18n",
+      "priority": "MEDIUM",
+      "file": "src/app/error.tsx",
+      "action": "modify",
+      "instructions": [
+        "Error boundaries in Next.js are 'use client' components but they run outside the normal component tree when an error is thrown.",
+        "IMPORTANT: Check if useDictionary() works inside error.tsx. If DictionaryProvider is above the error boundary in layout.tsx (it is — layout wraps children in DictionaryProvider), then useDictionary() should work.",
+        "Add: import { useDictionary } from '@/lib/i18n/DictionaryProvider'",
+        "Replace: 'Something went wrong' → dict.errors.title (check en.ts for exact key path)",
+        "Replace: 'An unexpected error occurred...' → dict.errors.body",
+        "Replace: 'digest' → dict.errors.digest",
+        "Replace: 'Try again' → dict.errors.tryAgain"
+      ],
+      "dictionary_path": "dict.errors"
+    },
+    {
+      "id": 11,
+      "title": "Wire backtest/error.tsx to i18n",
+      "priority": "MEDIUM",
+      "file": "src/app/backtest/error.tsx",
+      "action": "modify",
+      "instructions": [
+        "Same pattern as step 10.",
+        "Replace: 'Backtest page crashed' → dict.errors.backtestTitle",
+        "Replace: 'Something went wrong while rendering the backtest page.' → dict.errors.backtestBody",
+        "Replace: 'Reload backtest' → dict.errors.reloadBacktest"
+      ],
+      "dictionary_path": "dict.errors"
+    },
+    {
+      "id": 12,
+      "title": "Wire LiveExitReasons.tsx to i18n",
+      "priority": "MEDIUM",
+      "file": "src/components/live/LiveExitReasons.tsx",
+      "action": "modify",
+      "instructions": [
+        "Replace hardcoded 'No data' with a prop or useDictionary().",
+        "Add a 'noData' key to live.tradeAnalytics.exitReasons in ALL 10 dictionary files:",
+        "  en: 'No data', de: 'Keine Daten', es: 'Sin datos', fr: 'Aucune donnée', ja: 'データなし', ko: '데이터 없음', pt: 'Sem dados', ru: 'Нет данных', tr: 'Veri yok', zh: '暂无数据'",
+        "This is the ONLY new dictionary key needed in this entire implementation."
+      ],
+      "dictionary_path": "dict.live.tradeAnalytics.exitReasons",
+      "new_key_required": true
+    },
+    {
+      "id": 13,
+      "title": "Wire about/page.tsx to i18n",
+      "priority": "LOW",
+      "file": "src/app/about/page.tsx",
+      "action": "modify",
+      "instructions": [
+        "This is a server component. Add: const { dict } = await getCurrentDictionary();",
+        "Replace all page content (headings, paragraphs, section titles) with dict.about.* references.",
+        "Check en.ts for the about section structure. All keys should already exist.",
+        "If the about page has large prose blocks, they should each have a dictionary key."
+      ],
+      "dictionary_path": "dict.about"
+    },
+    {
+      "id": 14,
+      "title": "Wire changelog/page.tsx to i18n",
+      "priority": "LOW",
+      "file": "src/app/changelog/page.tsx",
+      "action": "modify",
+      "instructions": [
+        "This is a server component. Add: const { dict } = await getCurrentDictionary();",
+        "Replace page title, release headings, descriptions, roadmap labels with dict.changelog.* references.",
+        "Status labels ('current', 'in-progress', 'planned', 'researching') should use dictionary keys.",
+        "Check en.ts for the changelog section structure."
+      ],
+      "dictionary_path": "dict.changelog"
+    }
+  ],
+
+  "verification": {
+    "commands": [
+      "npx tsc --noEmit",
+      "npm run build",
+      "npx vitest run"
+    ],
+    "manual_checks": [
+      "Open localhost in browser, set language to Turkish (TR)",
+      "Navigate to /backtest — form labels, button text, error messages should be in Turkish",
+      "Run a backtest — KPI labels, trade table headers, metrics panel labels in Turkish",
+      "Navigate to /live — entire page in Turkish (was already partially done)",
+      "Navigate to /about — page content in Turkish",
+      "Navigate to /changelog — release notes in Turkish",
+      "Press Cmd+K — command palette placeholder and navigation items in Turkish",
+      "Switch to Japanese — repeat spot checks",
+      "Switch back to English — everything should be in English"
+    ]
+  },
+
+  "constraints": [
+    "Do NOT add new dictionary keys (except 'noData' in step 12). All keys already exist in all 10 languages.",
+    "Do NOT change the DictionaryProvider or getDictionary infrastructure.",
+    "Do NOT translate technical terms (PnL, R, ATR, Sharpe, etc.) — project policy keeps these in English.",
+    "Preserve all existing functionality — only change string sources from hardcoded to dictionary.",
+    "For error boundaries (error.tsx), verify useDictionary() works before refactoring. If it doesn't, use a try-catch with English fallback.",
+    "Components that are NOT 'use client' must use getCurrentDictionary() (async server function), not useDictionary() (client hook).",
+    "The ITEMS array in CommandPalette must move inside the component function body to access the dictionary (currently it's a module-level constant)."
+  ]
+}

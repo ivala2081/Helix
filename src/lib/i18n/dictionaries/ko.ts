@@ -464,6 +464,39 @@ export const ko = {
       time: "시간",
     },
     updated: "업데이트",
+    tradeAnalytics: {
+      title: "거래 내역",
+      stats: {
+        winRate: "Win Rate",
+        avgWin: "Avg Win",
+        avgLoss: "Avg Loss",
+        profitFactor: "Profit Factor",
+        expectancy: "Expectancy",
+        totalPnl: "Total P&L",
+      },
+      filters: {
+        all: "전체",
+      },
+      table: {
+        coin: "코인",
+        side: "방향",
+        entryDate: "진입일",
+        entryPrice: "진입 $",
+        exitDate: "청산일",
+        exitPrice: "청산 $",
+        pnl: "PnL $",
+        pnlPct: "PnL %",
+        rMultiple: "R",
+        barsHeld: "Bars",
+        exitReason: "청산 사유",
+        noTrades: "아직 거래가 없습니다 — 포워드 테스트가 데이터를 수집 중입니다.",
+        showingOf: "{total}건 중 {from}–{to} 표시",
+      },
+      exitReasons: {
+        title: "청산 사유",
+      },
+      perTrade: "거래당",
+    },
   },
 
   language: {

@@ -5,6 +5,7 @@ import { LiveEquityChart } from "@/components/live/LiveEquityChart";
 import { LivePortfolioCard } from "@/components/live/LivePortfolioCard";
 import { LiveStatusBadge } from "@/components/live/LiveStatusBadge";
 import { OpenPositionsStrip } from "@/components/live/OpenPositionsStrip";
+import { LiveTradeAnalytics } from "@/components/live/LiveTradeAnalytics";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
 interface Portfolio {
@@ -27,18 +28,6 @@ interface Portfolio {
   updated_at: string;
 }
 
-interface TradeRow {
-  id: number;
-  symbol: string;
-  direction: string;
-  entry_price: number;
-  exit_price: number;
-  pnl: number;
-  pnl_pct: number;
-  exit_reason: string;
-  exit_ts: number;
-}
-
 interface CronRun {
   ran_at: string;
   duration_ms: number;
@@ -49,7 +38,6 @@ interface CronRun {
 
 interface LiveData {
   portfolios: Portfolio[];
-  recentTrades: TradeRow[];
   totalTradeCount: number;
   lastCronRun: CronRun | null;
   updatedAt: string;
@@ -125,11 +113,6 @@ export default function LivePage() {
         </p>
       </div>
 
-      {/* Disclaimer */}
-      <div className="mx-auto mt-6 max-w-3xl rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-3 text-center text-[11px] text-yellow-200/80">
-        {t.disclaimer}
-      </div>
-
       {error && (
         <div className="mx-auto mt-6 max-w-md rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-center text-sm text-red-400">
           {t.errorPrefix} {error}
@@ -191,74 +174,15 @@ export default function LivePage() {
             </div>
           )}
 
-          {/* Recent trades */}
-          {data.recentTrades.length > 0 && (
-            <div className="mt-10">
-              <h2 className="mb-4 text-xs font-medium uppercase tracking-wider text-[var(--color-muted)]">
-                {t.trades.title}
-              </h2>
-              <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]">
-                <table className="w-full text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-[var(--color-border)] bg-[var(--color-surface)]/60 text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
-                      <th className="px-3 py-2">{t.trades.coin}</th>
-                      <th className="px-3 py-2">{t.trades.dir}</th>
-                      <th className="px-3 py-2 text-right">{t.trades.entry}</th>
-                      <th className="px-3 py-2 text-right">{t.trades.exit}</th>
-                      <th className="px-3 py-2 text-right">{t.trades.pnl}</th>
-                      <th className="px-3 py-2">{t.trades.reason}</th>
-                      <th className="px-3 py-2">{t.trades.time}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.recentTrades.map((tr) => (
-                      <tr
-                        key={tr.id}
-                        className="border-b border-[var(--color-border)]/50 hover:bg-[var(--color-surface)]/40"
-                      >
-                        <td className="px-3 py-2 font-mono text-xs font-semibold">
-                          {tr.symbol.replace("USDT", "")}
-                        </td>
-                        <td className="px-3 py-2">
-                          <span
-                            className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
-                              tr.direction === "LONG"
-                                ? "bg-emerald-500/15 text-emerald-400"
-                                : "bg-red-500/15 text-red-400"
-                            }`}
-                          >
-                            {tr.direction}
-                          </span>
-                        </td>
-                        <td className="px-3 py-2 text-right font-mono text-xs tabular-nums">
-                          {tr.entry_price.toFixed(2)}
-                        </td>
-                        <td className="px-3 py-2 text-right font-mono text-xs tabular-nums">
-                          {tr.exit_price.toFixed(2)}
-                        </td>
-                        <td
-                          className={`px-3 py-2 text-right font-mono text-xs font-semibold tabular-nums ${
-                            tr.pnl >= 0 ? "text-emerald-400" : "text-red-400"
-                          }`}
-                        >
-                          {tr.pnl >= 0 ? "+" : ""}
-                          {tr.pnl.toFixed(2)}
-                        </td>
-                        <td className="px-3 py-2 text-xs text-[var(--color-muted)]">
-                          {tr.exit_reason}
-                        </td>
-                        <td className="px-3 py-2 text-xs text-[var(--color-muted)]">
-                          {new Date(tr.exit_ts).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+          {/* Trade Analytics */}
+          <LiveTradeAnalytics />
         </>
       )}
+
+      {/* Disclaimer */}
+      <div className="mx-auto mt-10 max-w-3xl rounded-lg border border-yellow-500/20 bg-yellow-500/5 p-3 text-center text-[11px] text-yellow-200/80">
+        {t.disclaimer}
+      </div>
     </div>
   );
 }

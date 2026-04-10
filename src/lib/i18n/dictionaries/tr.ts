@@ -463,6 +463,39 @@ export const tr = {
       time: "Zaman",
     },
     updated: "Güncellendi",
+    tradeAnalytics: {
+      title: "İşlem Geçmişi",
+      stats: {
+        winRate: "Win Rate",
+        avgWin: "Avg Win",
+        avgLoss: "Avg Loss",
+        profitFactor: "Profit Factor",
+        expectancy: "Expectancy",
+        totalPnl: "Total P&L",
+      },
+      filters: {
+        all: "Tümü",
+      },
+      table: {
+        coin: "Coin",
+        side: "Yön",
+        entryDate: "Giriş Tarihi",
+        entryPrice: "Giriş $",
+        exitDate: "Çıkış Tarihi",
+        exitPrice: "Çıkış $",
+        pnl: "PnL $",
+        pnlPct: "PnL %",
+        rMultiple: "R",
+        barsHeld: "Bars",
+        exitReason: "Çıkış",
+        noTrades: "Henüz işlem yok — forward test veri biriktiriyor.",
+        showingOf: "{total} içinden {from}–{to} gösteriliyor",
+      },
+      exitReasons: {
+        title: "Çıkış Sebepleri",
+      },
+      perTrade: "işlem başına",
+    },
   },
 
   language: {

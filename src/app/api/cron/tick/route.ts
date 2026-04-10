@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
     const symbol = portfolio.symbol as string;
     const candles = candleMap.get(symbol);
     if (!candles || candles.length === 0) {
-      results.push({ symbol, processed: 0, error: "No candles" });
+      results.push({ symbol, processed: 0 }); // already up-to-date, not an error
       continue;
     }
 
@@ -122,6 +122,8 @@ export async function GET(req: NextRequest) {
               pnl_pct: t.pnlPct,
               exit_reason: t.exitReason,
               commission: t.totalCommission,
+              r_multiple: t.rMultiple,
+              bars_held: t.barsHeld,
             });
           }
         }

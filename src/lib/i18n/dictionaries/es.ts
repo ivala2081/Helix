@@ -467,6 +467,39 @@ export const es = {
       time: "Hora",
     },
     updated: "Actualizado",
+    tradeAnalytics: {
+      title: "Historial de Trades",
+      stats: {
+        winRate: "Win Rate",
+        avgWin: "Avg Win",
+        avgLoss: "Avg Loss",
+        profitFactor: "Profit Factor",
+        expectancy: "Expectancy",
+        totalPnl: "Total P&L",
+      },
+      filters: {
+        all: "Todos",
+      },
+      table: {
+        coin: "Moneda",
+        side: "Lado",
+        entryDate: "Fecha entrada",
+        entryPrice: "Entrada $",
+        exitDate: "Fecha salida",
+        exitPrice: "Salida $",
+        pnl: "PnL $",
+        pnlPct: "PnL %",
+        rMultiple: "R",
+        barsHeld: "Bars",
+        exitReason: "Salida",
+        noTrades: "Aún no hay trades — el forward test está acumulando datos.",
+        showingOf: "Mostrando {from}–{to} de {total}",
+      },
+      exitReasons: {
+        title: "Razones de Salida",
+      },
+      perTrade: "por trade",
+    },
   },
 
   language: {

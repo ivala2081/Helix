@@ -1,0 +1,260 @@
+{
+  "meta": {
+    "name": "Forward Test — Professional Trade History & Analytics",
+    "version": "1.0",
+    "created": "2026-04-10",
+    "project": "Helix",
+    "repo": "c:\\Users\\ACER\\Documents\\GitHub\\Helix",
+    "description": "Upgrades the /live forward test dashboard's trade history from a basic 7-column table to institutional-grade: sortable 11-column trade log, coin filtering, trade stats strip, exit reason donut chart, paginated API, and full i18n support in 10 languages."
+  },
+
+  "prerequisites": {
+    "user_actions": [
+      "Run the SQL migration in Supabase Dashboard → SQL Editor (file: supabase/migrations/20260411000000_add_trade_analytics_columns.sql)"
+    ],
+    "existing_state": {
+      "forward_test_live": true,
+      "supabase_tables": ["live_portfolios", "live_trades", "live_equity_snapshots", "live_cron_runs"],
+      "vercel_deployed": "https://helix-coral-six.vercel.app",
+      "cron": "GitHub Actions, every hour at :02"
+    }
+  },
+
+  "steps": [
+    {
+      "id": 1,
+      "title": "DB migration: add analytics columns",
+      "action": "create_file",
+      "file": "supabase/migrations/20260411000000_add_trade_analytics_columns.sql",
+      "content_description": "ALTER TABLE live_trades ADD COLUMN r_multiple numeric; ALTER TABLE live_trades ADD COLUMN bars_held int;",
+      "notes": "User must manually run this in Supabase SQL Editor. Existing rows get NULL — UI handles gracefully."
+    },
+    {
+      "id": 2,
+      "title": "Cron worker: persist r_multiple + bars_held",
+      "action": "modify_file",
+      "file": "src/app/api/cron/tick/route.ts",
+      "change": "In the tradesToInsert.push({...}) block, add two fields: r_multiple: t.rMultiple, bars_held: t.barsHeld. These are already computed by closeFull() in backtester.ts — just persist them.",
+      "location_hint": "Search for 'tradesToInsert.push' — add after 'commission: t.totalCommission' line"
+    },
+    {
+      "id": 3,
+      "title": "API: paginated trade endpoint with stats",
+      "action": "create_file",
+      "file": "src/app/api/live/trades/route.ts",
+      "spec": {
+        "method": "GET",
+        "runtime": "nodejs (not edge)",
+        "query_params": {
+          "symbol": "optional, e.g. BTCUSDT — filters by coin",
+          "limit": "optional, default 50, max 200",
+          "offset": "optional, default 0",
+          "sort": "optional, default 'exit_ts', allowed: exit_ts, pnl, r_multiple, bars_held, entry_price, exit_price",
+          "dir": "optional, default 'desc', allowed: asc, desc"
+        },
+        "response_shape": {
+          "trades": "array of trade rows from live_trades table",
+          "total": "integer — total count of trades matching the filter (for pagination)",
+          "stats": {
+            "winCount": "trades where pnl > 0",
+            "lossCount": "trades where pnl <= 0",
+            "winRate": "winCount / total",
+            "avgWin": "avg pnl of winning trades",
+            "avgLoss": "avg abs(pnl) of losing trades",
+            "profitFactor": "sum(winning pnl) / sum(abs(losing pnl))",
+            "expectancy": "winRate * avgWin - (1 - winRate) * avgLoss",
+            "totalPnl": "sum of all pnl",
+            "exitReasons": "object mapping exit_reason string to count"
+          }
+        },
+        "stats_scope": "Stats are computed from ALL trades matching the symbol filter (not just the current page). Use Supabase aggregate queries or fetch all and compute server-side.",
+        "supabase_client": "Use createClient from @supabase/supabase-js with anon key (process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY). Public read via RLS.",
+        "caching": "Cache-Control: public, s-maxage=15, stale-while-revalidate=30"
+      }
+    },
+    {
+      "id": 4,
+      "title": "Component: LiveTradeTable",
+      "action": "create_file",
+      "file": "src/components/live/LiveTradeTable.tsx",
+      "spec": {
+        "directive": "use client",
+        "props": {
+          "initialSymbol": "string | null — pre-selected coin filter, null = all",
+          "dict": "Dictionary['live']['tradeAnalytics'] — i18n strings"
+        },
+        "features": [
+          "11 sortable columns: Coin, Side, Entry Date, Entry $, Exit Date, Exit $, PnL $, PnL %, R, Bars, Exit Reason",
+          "Coin filter tabs at top: All | BTC | ETH | SOL | XRP | BNB — clicking refetches from API",
+          "Pagination: 50 per page, prev/next buttons with 'Showing 1–50 of 127' text",
+          "Click any column header to sort (ascending/descending toggle) — refetches from API",
+          "Color coding: green (text-emerald-400) for wins (pnl > 0), red (text-red-400) for losses",
+          "Direction badge: LONG = bg-emerald-500/15 text-emerald-400, SHORT = bg-red-500/15 text-red-400",
+          "R-multiple and bars_held handle null (show '—' for legacy trades)",
+          "Empty state: 'No trades yet — forward test is accumulating data.' message"
+        ],
+        "internal_state": [
+          "symbol: string | null",
+          "page: number (0-indexed)",
+          "sortKey: string",
+          "sortDir: 'asc' | 'desc'",
+          "data: { trades, total, stats } | null",
+          "loading: boolean"
+        ],
+        "data_fetching": "useEffect that fetches /api/live/trades?symbol=X&limit=50&offset=page*50&sort=sortKey&dir=sortDir. Refetches when any of these change.",
+        "reuse": {
+          "sortable_header_pattern": "Replicate the Th component from src/components/TradeTable.tsx — a <th> that shows sort arrow icons and toggles on click",
+          "Badge": "Import from src/components/ui/Badge.tsx",
+          "format_utils": "Import fmtUsd, fmtPct, fmtNum, fmtDate from src/lib/utils/format.ts",
+          "cn": "Import from src/lib/utils/cn.ts",
+          "icons": "ArrowUp, ArrowDown from lucide-react"
+        },
+        "styling": "Match the existing forward test page dark theme. Use var(--color-border), var(--color-surface), var(--color-muted), var(--color-bg) CSS variables. Rounded-xl border. Font-mono tabular-nums for numbers."
+      }
+    },
+    {
+      "id": 5,
+      "title": "Component: LiveTradeStats",
+      "action": "create_file",
+      "file": "src/components/live/LiveTradeStats.tsx",
+      "spec": {
+        "directive": "use client",
+        "props": {
+          "stats": "{ winCount, lossCount, winRate, avgWin, avgLoss, profitFactor, expectancy, totalPnl } | null",
+          "dict": "Dictionary['live']['tradeAnalytics']['stats']"
+        },
+        "layout": "Horizontal grid of 6 mini KPI cards (grid-cols-2 sm:grid-cols-3 lg:grid-cols-6). Each card: label (10px uppercase muted) + value (lg font-mono bold). Same card style as the existing MiniKpi in page.tsx.",
+        "cards": [
+          { "label": "dict.winRate", "value": "fmtPct(stats.winRate * 100)", "tone": "positive if >= 50%" },
+          { "label": "dict.avgWin", "value": "fmtUsd(stats.avgWin)", "tone": "positive" },
+          { "label": "dict.avgLoss", "value": "fmtUsd(stats.avgLoss)", "tone": "negative" },
+          { "label": "dict.profitFactor", "value": "stats.profitFactor.toFixed(2)", "tone": "positive if > 1" },
+          { "label": "dict.expectancy", "value": "fmtUsd(stats.expectancy)", "tone": "based on sign" },
+          { "label": "dict.totalPnl", "value": "fmtUsd(stats.totalPnl)", "tone": "based on sign" }
+        ],
+        "null_handling": "If stats is null, show skeleton placeholders (animate-pulse)"
+      }
+    },
+    {
+      "id": 6,
+      "title": "Component: LiveExitReasons",
+      "action": "create_file",
+      "file": "src/components/live/LiveExitReasons.tsx",
+      "spec": {
+        "directive": "use client",
+        "props": {
+          "exitReasons": "Record<string, number> | null — e.g. { 'TP1': 5, 'Stop Loss': 12 }",
+          "totalTrades": "number",
+          "title": "string — i18n title"
+        },
+        "implementation": "Direct port of src/components/charts/ExitReasons.tsx pattern. Same Recharts PieChart (innerRadius=55, outerRadius=95, paddingAngle=2), same COLORS map, same legend grid below the chart. Only differences: (a) props are flat objects not Metrics type, (b) receives title from parent.",
+        "color_map": {
+          "TP1": "#34d399",
+          "TP2": "#10b981",
+          "TP3": "#059669",
+          "Stop Loss": "#ef4444",
+          "Hard Stop": "#7f1d1d",
+          "End of data": "#71717a"
+        },
+        "null_handling": "If exitReasons is null or empty, show 'No data' centered text"
+      }
+    },
+    {
+      "id": 7,
+      "title": "Update /live page: replace inline table",
+      "action": "modify_file",
+      "file": "src/app/live/page.tsx",
+      "changes": [
+        "Import LiveTradeTable, LiveTradeStats, LiveExitReasons",
+        "Remove the entire inline <table> block (the 'Recent trades' section with thead/tbody)",
+        "Remove recentTrades from the main /api/live fetch (or keep for backward compat)",
+        "Add a new section after 'Cron health' div with this layout: LiveTradeStats strip on top, then a 2-column grid: LiveTradeTable (wide) + LiveExitReasons (300px sidebar). LiveTradeTable manages its own data fetching internally.",
+        "Pass dict.live.tradeAnalytics as i18n props to each component"
+      ],
+      "remove_from_old_trades_section": "The entire {data.recentTrades.length > 0 && (...)} block with the inline table"
+    },
+    {
+      "id": 8,
+      "title": "i18n: add tradeAnalytics keys to all 10 dictionaries",
+      "action": "modify_files",
+      "files": [
+        "src/lib/i18n/dictionaries/en.ts",
+        "src/lib/i18n/dictionaries/de.ts",
+        "src/lib/i18n/dictionaries/es.ts",
+        "src/lib/i18n/dictionaries/fr.ts",
+        "src/lib/i18n/dictionaries/ja.ts",
+        "src/lib/i18n/dictionaries/ko.ts",
+        "src/lib/i18n/dictionaries/pt.ts",
+        "src/lib/i18n/dictionaries/ru.ts",
+        "src/lib/i18n/dictionaries/tr.ts",
+        "src/lib/i18n/dictionaries/zh.ts"
+      ],
+      "change": "Add a 'tradeAnalytics' object inside the existing 'live' object, after the 'updated' key. English keys listed in the plan. For other languages, translate the user-facing strings (labels, messages) but keep technical terms (PnL, R, Bars) in English per the project's translation policy (see en.ts line 4-6).",
+      "english_block": {
+        "tradeAnalytics": {
+          "title": "Trade History",
+          "stats": {
+            "winRate": "Win Rate",
+            "avgWin": "Avg Win",
+            "avgLoss": "Avg Loss",
+            "profitFactor": "Profit Factor",
+            "expectancy": "Expectancy",
+            "totalPnl": "Total P&L"
+          },
+          "filters": {
+            "all": "All"
+          },
+          "table": {
+            "coin": "Coin",
+            "side": "Side",
+            "entryDate": "Entry Date",
+            "entryPrice": "Entry $",
+            "exitDate": "Exit Date",
+            "exitPrice": "Exit $",
+            "pnl": "PnL $",
+            "pnlPct": "PnL %",
+            "rMultiple": "R",
+            "barsHeld": "Bars",
+            "exitReason": "Exit",
+            "noTrades": "No trades yet — forward test is accumulating data.",
+            "showingOf": "Showing {from}–{to} of {total}"
+          },
+          "exitReasons": {
+            "title": "Exit Reasons"
+          },
+          "perTrade": "per trade"
+        }
+      }
+    }
+  ],
+
+  "verification": {
+    "commands": [
+      "npx tsc --noEmit",
+      "npm run build",
+      "npx vitest run",
+      "npx vercel --prod --yes"
+    ],
+    "manual_checks": [
+      "Open /live locally — trade analytics section renders (empty state OK)",
+      "After deploy + cron tick with trade close: r_multiple and bars_held visible in table",
+      "Coin filter tabs work (API refetch on click)",
+      "Sort columns work (ascending/descending toggle)",
+      "Exit reasons donut chart renders with correct colors",
+      "Stats strip shows correct calculations",
+      "i18n: switch language, all labels translate"
+    ]
+  },
+
+  "constraints": [
+    "No new npm dependencies — recharts and lucide-react already installed",
+    "Reuse existing format utils (fmtUsd, fmtPct, fmtNum, fmtDate) — do not duplicate",
+    "Reuse Badge component from src/components/ui/Badge.tsx",
+    "Follow existing dark theme: var(--color-border), var(--color-surface), var(--color-muted), var(--color-bg)",
+    "All user-facing strings must use i18n dictionary (useDictionary hook) — no hardcoded English in components",
+    "Technical terms (PnL, R, ATR, Sharpe, Stop Loss, TP1/TP2/TP3) stay in English across all languages",
+    "Stats computed server-side in the API route, not client-side",
+    "Production-only cron guard stays intact — do not modify",
+    "Supabase reads use anon key (public RLS), writes use service_role"
+  ]
+}
