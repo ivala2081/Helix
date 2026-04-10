@@ -22,11 +22,6 @@ jobs:
           VERCEL_URL: ${{ secrets.VERCEL_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          # Debug: show secret presence + length (never the value itself)
-          echo "VERCEL_URL length: ${#VERCEL_URL}"
-          echo "CRON_SECRET length: ${#CRON_SECRET}"
-          echo "VERCEL_URL first 12 chars: ${VERCEL_URL:0:12}"
-
           if [ -z "$VERCEL_URL" ] || [ -z "$CRON_SECRET" ]; then
             echo "::error::Missing VERCEL_URL or CRON_SECRET secret"
             exit 1
