@@ -6,6 +6,7 @@ export const zh = {
   nav: {
     home: "首页",
     backtest: "Backtest",
+    live: "前向测试",
     about: "关于",
     changelog: "更新日志",
     github: "GitHub",
@@ -24,6 +25,7 @@ export const zh = {
     links: {
       home: "首页",
       backtest: "Backtest",
+      live: "前向测试",
       about: "关于",
       changelog: "更新日志",
       githubRepo: "GitHub 仓库",
@@ -433,6 +435,32 @@ export const zh = {
     backtestTitle: "Backtest 页面崩溃",
     backtestBody: "渲染 Backtest 页面时出了点问题。",
     reloadBacktest: "重新加载 Backtest",
+  },
+
+  live: {
+    badge: "前向测试始于",
+    title: "实时前向测试",
+    subtitle: "Helix V5 在5个币种上运行，每个币种使用$10,000虚拟资金。真实币安1小时K线，无前瞻，无重置。",
+    disclaimer: "Helix V5在BTC 1小时数据（2023年1月至2026年2月）上进行了优化。此实时面板是唯一真正的样本外测试。结果可能与回测有显著差异。",
+    loading: "正在加载实时数据...",
+    errorPrefix: "数据加载失败：",
+    kpis: {
+      totalEquity: "总资产",
+      totalReturn: "总回报",
+      bestPerformer: "最佳表现",
+      totalTrades: "总交易数",
+    },
+    trades: {
+      title: "最近交易",
+      coin: "币种",
+      dir: "方向",
+      entry: "入场",
+      exit: "出场",
+      pnl: "盈亏",
+      reason: "原因",
+      time: "时间",
+    },
+    updated: "已更新",
   },
 
   language: {

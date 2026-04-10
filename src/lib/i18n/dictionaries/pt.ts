@@ -6,6 +6,7 @@ export const pt = {
   nav: {
     home: "Inicio",
     backtest: "Backtest",
+    live: "Forward Test",
     about: "Sobre",
     changelog: "Historico",
     github: "GitHub",
@@ -24,6 +25,7 @@ export const pt = {
     links: {
       home: "Inicio",
       backtest: "Backtest",
+      live: "Forward Test",
       about: "Sobre",
       changelog: "Historico",
       githubRepo: "Repositorio GitHub",
@@ -433,6 +435,32 @@ export const pt = {
     backtestTitle: "A pagina de Backtest travou",
     backtestBody: "Algo deu errado ao renderizar a pagina de Backtest.",
     reloadBacktest: "Recarregar Backtest",
+  },
+
+  live: {
+    badge: "Forward test desde",
+    title: "Forward Test ao Vivo",
+    subtitle: "Helix V5 rodando em 5 moedas com $10.000 de capital virtual cada. Candles reais da Binance 1h, sem antecipação, sem resets.",
+    disclaimer: "Helix V5 foi otimizado com dados BTC 1h de Jan 2023 – Fev 2026. Este painel ao vivo é o único teste fora da amostra real. Os resultados podem diferir significativamente do backtest.",
+    loading: "Carregando dados ao vivo...",
+    errorPrefix: "Falha ao carregar dados:",
+    kpis: {
+      totalEquity: "Capital Total",
+      totalReturn: "Retorno Total",
+      bestPerformer: "Melhor Desempenho",
+      totalTrades: "Total de Trades",
+    },
+    trades: {
+      title: "Trades Recentes",
+      coin: "Moeda",
+      dir: "Dir",
+      entry: "Entrada",
+      exit: "Saída",
+      pnl: "L/P",
+      reason: "Motivo",
+      time: "Hora",
+    },
+    updated: "Atualizado",
   },
 
   language: {

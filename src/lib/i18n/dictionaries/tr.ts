@@ -5,6 +5,7 @@ export const tr = {
   nav: {
     home: "Ana Sayfa",
     backtest: "Backtest",
+    live: "Forward Test",
     about: "Hakkında",
     changelog: "Değişiklik Günlüğü",
     github: "GitHub",
@@ -23,6 +24,7 @@ export const tr = {
     links: {
       home: "Ana Sayfa",
       backtest: "Backtest",
+      live: "Forward Test",
       about: "Hakkında",
       changelog: "Değişiklik Günlüğü",
       githubRepo: "GitHub deposu",
@@ -432,6 +434,32 @@ export const tr = {
     backtestTitle: "Backtest sayfası çöktü",
     backtestBody: "Backtest sayfası oluşturulurken bir hata meydana geldi.",
     reloadBacktest: "Backtest'i yeniden yükle",
+  },
+
+  live: {
+    badge: "Forward test başlangıç",
+    title: "Canlı Forward Test",
+    subtitle: "Helix V5, 5 coinde her biri $10.000 sanal sermaye ile çalışıyor. Gerçek Binance 1s mumları, ileriye bakış yok, sıfırlama yok.",
+    disclaimer: "Helix V5, BTC 1s verisi üzerinde Oca 2023 – Şub 2026 arasında optimize edilmiştir. Bu canlı panel tek gerçek örneklem dışı testtir. Sonuçlar backtest'ten önemli ölçüde farklı olabilir.",
+    loading: "Canlı veriler yükleniyor...",
+    errorPrefix: "Veri yüklenemedi:",
+    kpis: {
+      totalEquity: "Toplam Varlık",
+      totalReturn: "Toplam Getiri",
+      bestPerformer: "En İyi Performans",
+      totalTrades: "Toplam İşlem",
+    },
+    trades: {
+      title: "Son İşlemler",
+      coin: "Coin",
+      dir: "Yön",
+      entry: "Giriş",
+      exit: "Çıkış",
+      pnl: "K/Z",
+      reason: "Sebep",
+      time: "Zaman",
+    },
+    updated: "Güncellendi",
   },
 
   language: {

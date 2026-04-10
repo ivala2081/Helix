@@ -6,6 +6,7 @@ export const ru = {
   nav: {
     home: "Главная",
     backtest: "Backtest",
+    live: "Форвард-тест",
     about: "О проекте",
     changelog: "История изменений",
     github: "GitHub",
@@ -24,6 +25,7 @@ export const ru = {
     links: {
       home: "Главная",
       backtest: "Backtest",
+      live: "Форвард-тест",
       about: "О проекте",
       changelog: "История изменений",
       githubRepo: "Репозиторий GitHub",
@@ -433,6 +435,32 @@ export const ru = {
     backtestTitle: "Страница Backtest упала",
     backtestBody: "Что-то пошло не так при отображении страницы Backtest.",
     reloadBacktest: "Перезагрузить Backtest",
+  },
+
+  live: {
+    badge: "Форвард-тест с",
+    title: "Живой Форвард-тест",
+    subtitle: "Helix V5 работает на 5 монетах с виртуальным капиталом $10 000 каждая. Реальные свечи Binance 1ч, без опережения, без сбросов.",
+    disclaimer: "Helix V5 был оптимизирован на данных BTC 1ч за Янв 2023 – Фев 2026. Эта живая панель — единственный настоящий тест вне выборки. Результаты могут существенно отличаться от бэктеста.",
+    loading: "Загрузка данных...",
+    errorPrefix: "Не удалось загрузить данные:",
+    kpis: {
+      totalEquity: "Общий капитал",
+      totalReturn: "Общая доходность",
+      bestPerformer: "Лучший результат",
+      totalTrades: "Всего сделок",
+    },
+    trades: {
+      title: "Последние сделки",
+      coin: "Монета",
+      dir: "Напр.",
+      entry: "Вход",
+      exit: "Выход",
+      pnl: "P&L",
+      reason: "Причина",
+      time: "Время",
+    },
+    updated: "Обновлено",
   },
 
   language: {

@@ -8,6 +8,7 @@ export const fr = {
   nav: {
     home: "Accueil",
     backtest: "Backtest",
+    live: "Forward Test",
     about: "À propos",
     changelog: "Historique des versions",
     github: "GitHub",
@@ -26,6 +27,7 @@ export const fr = {
     links: {
       home: "Accueil",
       backtest: "Backtest",
+      live: "Forward Test",
       about: "À propos",
       changelog: "Historique des versions",
       githubRepo: "Dépôt GitHub",
@@ -435,6 +437,32 @@ export const fr = {
     backtestTitle: "La page Backtest a planté",
     backtestBody: "Une erreur s'est produite lors du rendu de la page Backtest.",
     reloadBacktest: "Recharger le Backtest",
+  },
+
+  live: {
+    badge: "Forward test depuis",
+    title: "Forward Test en Direct",
+    subtitle: "Helix V5 fonctionne sur 5 cryptos avec 10 000 $ de capital virtuel chacune. Bougies Binance 1h réelles, sans anticipation, sans réinitialisation.",
+    disclaimer: "Helix V5 a été optimisé sur les données BTC 1h de Jan 2023 à Fév 2026. Ce tableau de bord en direct est le seul véritable test hors échantillon. Les résultats peuvent différer significativement du backtest.",
+    loading: "Chargement des données en direct...",
+    errorPrefix: "Échec du chargement :",
+    kpis: {
+      totalEquity: "Capital Total",
+      totalReturn: "Rendement Total",
+      bestPerformer: "Meilleur Performer",
+      totalTrades: "Total des Trades",
+    },
+    trades: {
+      title: "Trades Récents",
+      coin: "Crypto",
+      dir: "Dir",
+      entry: "Entrée",
+      exit: "Sortie",
+      pnl: "P&L",
+      reason: "Raison",
+      time: "Heure",
+    },
+    updated: "Mis à jour",
   },
 
   language: {

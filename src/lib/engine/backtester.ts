@@ -132,7 +132,7 @@ export async function runBacktest(
       }
 
       if (stoppedOut) {
-        const realized = closeFull(t, i, exitPrice, reason, params, candles);
+        const realized = closeFull(t, i, exitPrice, reason, params, candles[i].date);
         realizedPnl += realized;
         trades.push(t);
         openTrade = null;
@@ -162,7 +162,7 @@ export async function runBacktest(
         }
         // TP3 — full close
         if (t.tp2Hit && bar.high >= t.takeProfit3) {
-          const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candles);
+          const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candles[i].date);
           realizedPnl += realized;
           trades.push(t);
           openTrade = null;
@@ -188,7 +188,7 @@ export async function runBacktest(
           t.tp2Hit = true;
         }
         if (t.tp2Hit && bar.low <= t.takeProfit3) {
-          const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candles);
+          const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candles[i].date);
           realizedPnl += realized;
           trades.push(t);
           openTrade = null;
@@ -317,7 +317,7 @@ export async function runBacktest(
       last.close,
       "End of data",
       params,
-      candles,
+      last.date,
     );
     realizedPnl += realized;
     trades.push(openTrade);
@@ -356,9 +356,9 @@ export async function runBacktest(
   };
 }
 
-// ── Helpers ──
+// ── Helpers (exported for paper-engine reuse) ──
 
-function partialClose(
+export function partialClose(
   trade: Trade,
   exitPrice: number,
   closeSize: number,
@@ -383,13 +383,13 @@ function partialClose(
   return pnl;
 }
 
-function closeFull(
+export function closeFull(
   trade: Trade,
   barIdx: number,
   exitPrice: number,
   reason: ExitReason,
   params: BacktestParams,
-  candles: Candle[],
+  exitDate: string,
 ): number {
   // Apply slippage on stop / end-of-data exits (not TPs)
   let finalExit = exitPrice;
@@ -418,7 +418,7 @@ function closeFull(
   const totalPnl = trade.partialPnl + finalPnl;
   trade.exitBar = barIdx;
   trade.exitPrice = finalExit;
-  trade.exitDate = candles[barIdx].date;
+  trade.exitDate = exitDate;
   trade.exitReason = reason;
   trade.pnl = totalPnl;
   trade.pnlPct = trade.riskAmount > 0 ? (totalPnl / trade.riskAmount) * 100 : 0;

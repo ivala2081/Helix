@@ -6,6 +6,7 @@ export const ko = {
   nav: {
     home: "홈",
     backtest: "Backtest",
+    live: "포워드 테스트",
     about: "소개",
     changelog: "변경 이력",
     github: "GitHub",
@@ -24,6 +25,7 @@ export const ko = {
     links: {
       home: "홈",
       backtest: "Backtest",
+      live: "포워드 테스트",
       about: "소개",
       changelog: "변경 이력",
       githubRepo: "GitHub 저장소",
@@ -433,6 +435,32 @@ export const ko = {
     backtestTitle: "Backtest 페이지에 오류가 발생했습니다",
     backtestBody: "Backtest 페이지를 렌더링하는 중 문제가 발생했습니다.",
     reloadBacktest: "Backtest 새로고침",
+  },
+
+  live: {
+    badge: "포워드 테스트 시작",
+    title: "라이브 포워드 테스트",
+    subtitle: "Helix V5가 5개 코인에서 각 $10,000 가상 자본으로 운영 중. 실제 바이낸스 1시간 캔들, 미래 데이터 참조 없음, 리셋 없음.",
+    disclaimer: "Helix V5는 BTC 1h 데이터(2023년 1월 – 2026년 2월)에 최적화되었습니다. 이 라이브 대시보드는 유일한 진정한 아웃오브샘플 테스트입니다. 결과는 백테스트와 크게 다를 수 있습니다.",
+    loading: "라이브 데이터 로딩 중...",
+    errorPrefix: "데이터 로드 실패:",
+    kpis: {
+      totalEquity: "총 자산",
+      totalReturn: "총 수익률",
+      bestPerformer: "최고 성과",
+      totalTrades: "총 거래 수",
+    },
+    trades: {
+      title: "최근 거래",
+      coin: "코인",
+      dir: "방향",
+      entry: "진입",
+      exit: "청산",
+      pnl: "손익",
+      reason: "사유",
+      time: "시간",
+    },
+    updated: "업데이트",
   },
 
   language: {

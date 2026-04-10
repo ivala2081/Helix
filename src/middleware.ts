@@ -26,5 +26,5 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   // Skip Next internals + the klines API + static assets
-  matcher: ["/((?!_next|api|favicon.ico|icon|apple-icon|opengraph-image|manifest).*)"],
+  matcher: ["/((?!_next|api|cron|favicon.ico|icon|apple-icon|opengraph-image|manifest).*)"],
 };

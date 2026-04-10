@@ -107,6 +107,12 @@ export default async function RootLayout({
                     {dict.nav.backtest}
                   </Link>
                   <Link
+                    href="/live"
+                    className="rounded-md px-3 py-1.5 text-sm text-[var(--color-muted)] transition-colors hover:bg-[var(--color-surface)] hover:text-white"
+                  >
+                    {dict.nav.live}
+                  </Link>
+                  <Link
                     href="/about"
                     className="rounded-md px-3 py-1.5 text-sm text-[var(--color-muted)] transition-colors hover:bg-[var(--color-surface)] hover:text-white"
                   >

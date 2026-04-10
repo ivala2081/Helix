@@ -33,6 +33,12 @@ const ITEMS: {
   },
   {
     group: "Navigate",
+    label: "Forward Test",
+    icon: <Activity className="h-4 w-4" />,
+    href: "/live",
+  },
+  {
+    group: "Navigate",
     label: "About",
     icon: <Activity className="h-4 w-4" />,
     href: "/about",

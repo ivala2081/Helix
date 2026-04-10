@@ -6,6 +6,7 @@ export const ja = {
   nav: {
     home: "ホーム",
     backtest: "Backtest",
+    live: "フォワードテスト",
     about: "概要",
     changelog: "変更履歴",
     github: "GitHub",
@@ -24,6 +25,7 @@ export const ja = {
     links: {
       home: "ホーム",
       backtest: "Backtest",
+      live: "フォワードテスト",
       about: "概要",
       changelog: "変更履歴",
       githubRepo: "GitHub リポジトリ",
@@ -433,6 +435,32 @@ export const ja = {
     backtestTitle: "Backtest ページがクラッシュしました",
     backtestBody: "Backtest ページのレンダリング中に問題が発生しました。",
     reloadBacktest: "Backtest を再読み込み",
+  },
+
+  live: {
+    badge: "フォワードテスト開始",
+    title: "ライブフォワードテスト",
+    subtitle: "Helix V5が5つのコインで各$10,000の仮想資本で稼働中。リアルなBinance 1時間足、先読みなし、リセットなし。",
+    disclaimer: "Helix V5はBTC 1hデータ（2023年1月〜2026年2月）で最適化されました。このライブダッシュボードは唯一の真のアウトオブサンプルテストです。結果はバックテストと大きく異なる可能性があります。",
+    loading: "ライブデータを読み込み中...",
+    errorPrefix: "データの読み込みに失敗:",
+    kpis: {
+      totalEquity: "総資産",
+      totalReturn: "総リターン",
+      bestPerformer: "最高パフォーマー",
+      totalTrades: "総取引数",
+    },
+    trades: {
+      title: "最近の取引",
+      coin: "コイン",
+      dir: "方向",
+      entry: "エントリー",
+      exit: "イグジット",
+      pnl: "損益",
+      reason: "理由",
+      time: "時間",
+    },
+    updated: "更新",
   },
 
   language: {

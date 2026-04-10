@@ -87,6 +87,12 @@ export function MobileNav({ nav }: { nav: Nav }) {
                   {nav.backtest}
                 </Link>
                 <Link
+                  href="/live"
+                  className="flex h-12 items-center rounded-md px-3 text-base text-white hover:bg-[var(--color-surface)]"
+                >
+                  {nav.live}
+                </Link>
+                <Link
                   href="/about"
                   className="flex h-12 items-center rounded-md px-3 text-base text-white hover:bg-[var(--color-surface)]"
                 >

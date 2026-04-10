@@ -11,6 +11,7 @@ export async function Footer() {
   const PRODUCT = [
     { href: "/", label: t.links.home },
     { href: "/backtest", label: t.links.backtest },
+    { href: "/live", label: t.links.live },
     { href: "/about", label: t.links.about },
     { href: "/changelog", label: t.links.changelog },
   ];

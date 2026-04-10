@@ -6,6 +6,7 @@ export const de = {
   nav: {
     home: "Startseite",
     backtest: "Backtest",
+    live: "Forward-Test",
     about: "Über uns",
     changelog: "Änderungsprotokoll",
     github: "GitHub",
@@ -24,6 +25,7 @@ export const de = {
     links: {
       home: "Startseite",
       backtest: "Backtest",
+      live: "Forward-Test",
       about: "Über uns",
       changelog: "Änderungsprotokoll",
       githubRepo: "GitHub-Repository",
@@ -433,6 +435,32 @@ export const de = {
     backtestTitle: "Backtest-Seite abgestürzt",
     backtestBody: "Beim Rendern der Backtest-Seite ist etwas schiefgelaufen.",
     reloadBacktest: "Backtest neu laden",
+  },
+
+  live: {
+    badge: "Forward-Test seit",
+    title: "Live Forward-Test",
+    subtitle: "Helix V5 läuft auf 5 Coins mit je $10.000 virtuellem Kapital. Echte Binance 1h-Kerzen, kein Vorausblick, kein Zurücksetzen.",
+    disclaimer: "Helix V5 wurde auf BTC 1h-Daten von Jan 2023 – Feb 2026 optimiert. Dieses Live-Dashboard ist der einzige echte Out-of-Sample-Test. Ergebnisse können erheblich vom Backtest abweichen.",
+    loading: "Lade Live-Daten...",
+    errorPrefix: "Daten konnten nicht geladen werden:",
+    kpis: {
+      totalEquity: "Gesamtkapital",
+      totalReturn: "Gesamtrendite",
+      bestPerformer: "Bester Performer",
+      totalTrades: "Gesamte Trades",
+    },
+    trades: {
+      title: "Letzte Trades",
+      coin: "Coin",
+      dir: "Richtung",
+      entry: "Einstieg",
+      exit: "Ausstieg",
+      pnl: "G/V",
+      reason: "Grund",
+      time: "Zeit",
+    },
+    updated: "Aktualisiert",
   },
 
   language: {

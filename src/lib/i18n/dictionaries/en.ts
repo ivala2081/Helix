@@ -9,6 +9,7 @@ export const en = {
   nav: {
     home: "Home",
     backtest: "Backtest",
+    live: "Forward Test",
     about: "About",
     changelog: "Changelog",
     github: "GitHub",
@@ -27,6 +28,7 @@ export const en = {
     links: {
       home: "Home",
       backtest: "Backtest",
+      live: "Forward Test",
       about: "About",
       changelog: "Changelog",
       githubRepo: "GitHub repo",
@@ -436,6 +438,32 @@ export const en = {
     backtestTitle: "Backtest page crashed",
     backtestBody: "Something went wrong while rendering the backtest page.",
     reloadBacktest: "Reload backtest",
+  },
+
+  live: {
+    badge: "Forward testing since",
+    title: "Live Forward Test",
+    subtitle: "Helix V5 running on 5 coins with $10,000 virtual capital each. Real Binance 1h candles, no look-ahead, no resets.",
+    disclaimer: "Helix V5 was optimized on BTC 1h data Jan 2023 – Feb 2026. This live dashboard is the only true out-of-sample test. Results may differ significantly from backtest.",
+    loading: "Loading live data...",
+    errorPrefix: "Failed to load data:",
+    kpis: {
+      totalEquity: "Total Equity",
+      totalReturn: "Total Return",
+      bestPerformer: "Best Performer",
+      totalTrades: "Total Trades",
+    },
+    trades: {
+      title: "Recent Trades",
+      coin: "Coin",
+      dir: "Dir",
+      entry: "Entry",
+      exit: "Exit",
+      pnl: "PnL",
+      reason: "Reason",
+      time: "Time",
+    },
+    updated: "Updated",
   },
 
   language: {
