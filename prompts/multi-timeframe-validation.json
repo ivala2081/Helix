@@ -1,0 +1,184 @@
+{
+  "meta": {
+    "name": "Multi-Timeframe Strategy Validation",
+    "version": "1.0",
+    "created": "2026-04-13",
+    "project": "Helix",
+    "repo": "c:\\Users\\ACER\\Documents\\GitHub\\Helix",
+    "description": "Validates whether V5 strategy (designed for 1H) generalizes to 15m and 30m timeframes. If a shorter timeframe passes validation, a parallel forward test can be launched for faster data accumulation — without touching the existing 1H forward test."
+  },
+
+  "motivation": {
+    "problem": "1H forward test generates ~1 trade per 5 days per coin. Meaningful results (30+ trades) require 4-6 weeks. This is structurally slow and cannot be accelerated without changing timeframe.",
+    "question": "Does V5 strategy work on shorter timeframes (15m, 30m)? If yes, a parallel forward test on 15m would generate 4x more data points and reach statistical significance in 1-2 weeks instead of 4-6.",
+    "risk": "V5 was optimized on 1H. Shorter timeframes have different ATR magnitudes, more noise in Market Structure signals, noisier FVG fills, and higher relative commission impact. The strategy may fail badly.",
+    "decision_framework": "Run full validation suite on 15m and 30m. If PASS (3/4+ checks), launch parallel forward test. If FAIL, do NOT launch — wait for 1H results."
+  },
+
+  "prerequisites": {
+    "existing_files": {
+      "validation_suite": "validate_strategy.py — 4-test robustness suite (OOS, Monte Carlo, Sensitivity, Multi-Asset)",
+      "data_fetcher": "data_fetcher.py — Binance historical kline downloader",
+      "existing_1h_data": [
+        "data/BTCUSDT_1h_2023-01-01_to_2026-04-13.csv",
+        "data/ETHUSDT_1h_2023-01-01_to_2026-04-13.csv",
+        "data/SOLUSDT_1h_2023-01-01_to_2026-04-13.csv"
+      ]
+    },
+    "python_deps": ["numpy", "pandas", "requests"],
+    "user_actions": []
+  },
+
+  "steps": [
+    {
+      "id": 1,
+      "title": "Download 15m and 30m historical data",
+      "action": "run_commands",
+      "commands": [
+        "cd c:/Users/ACER/Documents/GitHub/Helix",
+        "python data_fetcher.py --symbol BTCUSDT --interval 15m --start 2024-01-01",
+        "python data_fetcher.py --symbol ETHUSDT --interval 15m --start 2024-01-01",
+        "python data_fetcher.py --symbol SOLUSDT --interval 15m --start 2024-01-01",
+        "python data_fetcher.py --symbol BTCUSDT --interval 30m --start 2024-01-01",
+        "python data_fetcher.py --symbol ETHUSDT --interval 30m --start 2024-01-01",
+        "python data_fetcher.py --symbol SOLUSDT --interval 30m --start 2024-01-01"
+      ],
+      "expected": "6 CSV files in data/ directory, each with 50,000-100,000 candles",
+      "timeout": "5 minutes (Binance rate limits)",
+      "notes": [
+        "Start from 2024-01-01 (not 2023) — shorter timeframes generate more bars, 1 year is sufficient",
+        "PYTHONIOENCODING=utf-8 may be needed on Windows for console output"
+      ]
+    },
+
+    {
+      "id": 2,
+      "title": "Create multi-timeframe validation script",
+      "action": "create_file",
+      "file": "validate_timeframes.py",
+      "spec": {
+        "description": "Runs the same 4 validation tests from validate_strategy.py on 15m and 30m data. Uses identical V5 WINNER_PARAMS — no parameter tuning for shorter timeframes.",
+        "structure": {
+          "imports": "Same as validate_strategy.py (numpy, pandas, Backtester, walk_forward_test, SizingMethod)",
+          "WINNER_PARAMS": "Exact copy of V5 params from validate_strategy.py — DO NOT MODIFY for shorter timeframes. The whole point is testing if 1H params generalize as-is.",
+          "TIMEFRAMES": ["15m", "30m"],
+          "SYMBOLS": ["BTCUSDT", "ETHUSDT", "SOLUSDT"]
+        },
+        "tests_per_timeframe": [
+          {
+            "name": "Out-of-Sample (80/20 split)",
+            "logic": "Same as validate_strategy.py test_out_of_sample(). Load largest CSV for symbol+interval, 80% train / 20% test, check OOS profitable.",
+            "pass_condition": "OOS return > 0%"
+          },
+          {
+            "name": "Monte Carlo (10,000 shuffles)",
+            "logic": "Same as validate_strategy.py test_monte_carlo(). Run strategy on BTC data for the interval, shuffle PnLs 10,000 times.",
+            "pass_condition": "P(Negative return) < 5% AND 95th percentile DD < 25%"
+          },
+          {
+            "name": "Sensitivity Analysis",
+            "logic": "Same as validate_strategy.py test_sensitivity(). Vary SL mult (1.0-3.5), TP1 mult (1.0-3.0), Risk pct (0.01-0.03), Confluence (0.25-0.75).",
+            "pass_condition": "Profitable at 60%+ of SL values"
+          },
+          {
+            "name": "Multi-Asset Generalization",
+            "logic": "Same as validate_strategy.py test_multi_asset(). Run on BTC, ETH, SOL for this interval. Include 5-fold walk-forward per asset.",
+            "pass_condition": "Profitable on 2+/3 assets"
+          }
+        ],
+        "output_format": {
+          "per_timeframe_summary": [
+            "Print header: ═══ {INTERVAL} VALIDATION ═══",
+            "Run all 4 tests, print results exactly like validate_strategy.py",
+            "Print checklist: 5 checks (OOS, MC loss, MC DD, multi-asset, SL sensitivity)",
+            "Print verdict: PASS (3+/5) or FAIL"
+          ],
+          "final_comparison_table": {
+            "description": "Side-by-side comparison of 1H vs 15m vs 30m",
+            "columns": ["Metric", "1H (reference)", "30m", "15m"],
+            "rows": [
+              "BTC Total Return %",
+              "BTC Sharpe Ratio",
+              "BTC Max Drawdown %",
+              "BTC Win Rate %",
+              "BTC Profit Factor",
+              "BTC Trade Count",
+              "ETH Total Return %",
+              "SOL Total Return %",
+              "OOS Profitable?",
+              "Monte Carlo Robust?",
+              "Multi-Asset Pass?",
+              "Validation Score (X/5)"
+            ]
+          },
+          "final_recommendation": {
+            "logic": [
+              "If 15m scores 4+/5 AND Sharpe > 2.0 AND PF > 2.0: 'RECOMMENDED — launch 15m parallel forward test'",
+              "If 15m scores 3/5: 'MARGINAL — review metrics before deciding'",
+              "If 15m scores <3/5: 'NOT RECOMMENDED — stay with 1H only'",
+              "Same logic for 30m independently"
+            ]
+          }
+        },
+        "important_notes": [
+          "DO NOT modify WINNER_PARAMS for shorter timeframes. If V5 params don't work on 15m, that's the answer.",
+          "The load_data() function selects the LARGEST CSV for a given symbol+interval pattern. Ensure fresh data was downloaded in step 1.",
+          "Print comparison with 1H results. 1H reference values: BTC +1093%, Sharpe 5.43, DD 8.57%, WR 85%, PF 12.75, 235 trades.",
+          "Use PYTHONIOENCODING=utf-8 on Windows to handle Unicode box-drawing characters."
+        ]
+      }
+    },
+
+    {
+      "id": 3,
+      "title": "Run the multi-timeframe validation",
+      "action": "run_command",
+      "command": "cd c:/Users/ACER/Documents/GitHub/Helix && PYTHONIOENCODING=utf-8 python validate_timeframes.py",
+      "timeout": "15 minutes (Monte Carlo simulations x2 timeframes)",
+      "expected_output": "Full validation results for 15m and 30m, comparison table, final recommendation"
+    },
+
+    {
+      "id": 4,
+      "title": "Report results back",
+      "action": "user_task",
+      "instructions": [
+        "Copy the FULL terminal output from step 3",
+        "Paste it in the next Claude session",
+        "Include the final comparison table and recommendation",
+        "Claude will analyze the results and decide whether to launch a parallel forward test"
+      ]
+    }
+  ],
+
+  "decision_tree_after_results": {
+    "if_15m_passes": {
+      "action": "Create a new prompt: 'parallel-forward-test-15m.json'",
+      "details": [
+        "Add 5 new rows to live_portfolios for 15m (BTCUSDT_15m, etc.)",
+        "Modify cron to process both 1H and 15m intervals",
+        "Dashboard: add interval toggle to switch between 1H and 15m views",
+        "Telegram: include interval tag in notifications",
+        "Keep 1H forward test completely untouched"
+      ]
+    },
+    "if_15m_fails_30m_passes": {
+      "action": "Launch 30m parallel forward test instead",
+      "details": "Same as above but with 30m interval. 2x faster than 1H, not as fast as 15m but more reliable."
+    },
+    "if_both_fail": {
+      "action": "Stay with 1H only",
+      "details": "The strategy is 1H-specific. Wait for 1H forward test results (4-6 weeks). Use the time for signal attribution analysis or other research."
+    }
+  },
+
+  "constraints": [
+    "DO NOT modify V5 WINNER_PARAMS for shorter timeframes — test them AS-IS",
+    "DO NOT touch the existing 1H forward test, cron route, or any production code",
+    "DO NOT deploy anything — this is a local research task only",
+    "Data download uses public Binance API, no API key needed",
+    "validate_timeframes.py is a standalone script, does not import from Next.js code",
+    "All results are printed to stdout — no database writes, no file outputs",
+    "If Binance rate-limits, add sleep(0.5) between requests (data_fetcher.py already handles this)"
+  ]
+}

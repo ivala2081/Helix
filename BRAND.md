@@ -91,6 +91,7 @@ no static PNGs committed to the repo. They rebuild automatically on each deploy.
 | `src/app/opengraph-image.tsx` | 1200×630 | OpenGraph social card | `/opengraph-image` |
 | `src/app/twitter-image.tsx` | 1200×600 | Twitter/X summary_large_image | `/twitter-image` |
 | `src/app/github-social/route.tsx` | 1280×640 | GitHub social preview (download) | `/github-social` |
+| `src/app/telegram-avatar/route.tsx` | 800×800 | Telegram bot profile picture | `/telegram-avatar` |
 
 ### Maskable icon safe zone
 
@@ -116,6 +117,13 @@ so no launcher shape touches the helix:
 2. Open `/github-social` in a browser
 3. Right-click → Save Image As → `helix-social.png`
 4. Go to GitHub → repo → Settings → Social preview → Upload
+
+### How to set the Telegram bot profile picture
+
+1. Deploy to Vercel (or run `npm run dev`)
+2. Open `/telegram-avatar` in a browser
+3. Right-click → Save Image As → `helix-telegram.png`
+4. Open @BotFather on Telegram → `/setuserpic` → select your bot → upload the PNG
 
 ---
 
