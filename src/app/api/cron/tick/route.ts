@@ -8,6 +8,12 @@ import { stepCandle, type StrategyState } from "@/lib/engine/paper-engine";
 import { V5_DEFAULTS } from "@/lib/engine/defaults";
 import { FORWARD_TEST_INTERVAL_MS } from "@/lib/engine/live-config";
 import type { Candle } from "@/lib/engine/types";
+import {
+  sendTelegramMessage,
+  formatTradeOpened,
+  formatTradeClosed,
+  formatCronSummary,
+} from "@/lib/telegram";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -104,8 +110,11 @@ export async function GET(req: NextRequest) {
         processed++;
         totalCandlesProcessed++;
 
-        // Collect trade events
+        // Collect trade events + send Telegram alerts (fire-and-forget)
         for (const event of result.events) {
+          if (event.type === "tradeOpened" && event.trade) {
+            sendTelegramMessage(formatTradeOpened(symbol, event.trade));
+          }
           if (event.type === "tradeClosed" && event.trade) {
             const t = event.trade;
             totalTradesClosed++;
@@ -125,6 +134,16 @@ export async function GET(req: NextRequest) {
               r_multiple: t.rMultiple,
               bars_held: t.barsHeld,
             });
+            sendTelegramMessage(
+              formatTradeClosed(
+                symbol,
+                t,
+                state.equity,
+                portfolio.initial_capital as number,
+                tradesToInsert.filter((tr) => (tr.pnl as number) > 0).length,
+                tradesToInsert.filter((tr) => (tr.pnl as number) <= 0).length,
+              ),
+            );
           }
         }
 
@@ -200,6 +219,10 @@ export async function GET(req: NextRequest) {
     status,
     errors: errors.length > 0 ? errors : null,
   });
+
+  // Telegram summary (only when noteworthy — trades closed or errors)
+  const summaryMsg = formatCronSummary(results, duration, totalTradesClosed);
+  if (summaryMsg) sendTelegramMessage(summaryMsg);
 
   return NextResponse.json({
     message: "Tick complete",

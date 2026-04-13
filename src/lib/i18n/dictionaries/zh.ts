@@ -497,6 +497,38 @@ export const zh = {
       },
       perTrade: "每笔交易",
     },
+    portfolioAnalytics: {
+      title: "投资组合分析",
+      table: {
+        rank: "#",
+        coin: "Coin",
+        return: "收益率",
+        equity: "余额",
+        realized: "已实现",
+        unrealized: "未实现",
+        trades: "交易",
+        winRate: "Win Rate",
+        maxDD: "Max DD",
+        status: "状态",
+        idle: "空闲",
+        active: "活跃",
+      },
+      allocation: {
+        title: "资金分配",
+      },
+      drawdown: {
+        title: "投资组合 Drawdown",
+        empty: "Drawdown数据积累中...",
+      },
+      risk: {
+        totalReturn: "总收益率",
+        realizedPnl: "已实现 P&L",
+        sharpe: "Sharpe",
+        sortino: "Sortino",
+        maxDD: "Max DD",
+        winRate: "Win Rate",
+      },
+    },
   },
 
   language: {

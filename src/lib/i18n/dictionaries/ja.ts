@@ -497,6 +497,38 @@ export const ja = {
       },
       perTrade: "1取引あたり",
     },
+    portfolioAnalytics: {
+      title: "ポートフォリオ分析",
+      table: {
+        rank: "#",
+        coin: "Coin",
+        return: "リターン",
+        equity: "残高",
+        realized: "実現損益",
+        unrealized: "未実現損益",
+        trades: "取引数",
+        winRate: "Win Rate",
+        maxDD: "Max DD",
+        status: "状態",
+        idle: "待機中",
+        active: "取引中",
+      },
+      allocation: {
+        title: "資本配分",
+      },
+      drawdown: {
+        title: "ポートフォリオ Drawdown",
+        empty: "Drawdownデータを蓄積中...",
+      },
+      risk: {
+        totalReturn: "総リターン",
+        realizedPnl: "実現 P&L",
+        sharpe: "Sharpe",
+        sortino: "Sortino",
+        maxDD: "Max DD",
+        winRate: "Win Rate",
+      },
+    },
   },
 
   language: {

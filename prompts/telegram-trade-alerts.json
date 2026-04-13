@@ -1,0 +1,222 @@
+{
+  "meta": {
+    "name": "Telegram Trade Alerts",
+    "version": "1.0",
+    "created": "2026-04-13",
+    "project": "Helix",
+    "repo": "c:\\Users\\ACER\\Documents\\GitHub\\Helix",
+    "description": "Sends Telegram notifications when forward test trades open or close. Fire-and-forget (never blocks cron), rich HTML formatting, zero new dependencies."
+  },
+
+  "motivation": {
+    "problem": "Forward test runs hourly via cron. The only way to know if a trade happened is to open the /live dashboard and check. With ~1 trade per 5 days per coin, most dashboard checks show no change. This creates unnecessary friction and anxiety.",
+    "value": "Push notification on trade events means zero-effort monitoring. Phone buzzes when something happens, silence when nothing does. Perfect for a multi-week forward test.",
+    "audience": "Strategy owner who needs to know about trade events immediately without polling a dashboard."
+  },
+
+  "prerequisites": {
+    "user_actions": [
+      "Create a Telegram bot via @BotFather — save the token",
+      "Get your chat ID: send /start to @userinfobot or add bot to a channel and get channel ID",
+      "Add TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID to .env.local and Vercel environment variables",
+      "Add same secrets to GitHub repo settings (for GitHub Actions cron)"
+    ],
+    "existing_state": {
+      "cron_route": "src/app/api/cron/tick/route.ts — processes candles hourly",
+      "trade_events": "stepCandle() emits 'tradeOpened' and 'tradeClosed' events with full Trade object",
+      "env_vars_in_use": ["NODE_ENV", "ALLOW_LOCAL_CRON", "CRON_SECRET", "NEXT_PUBLIC_SUPABASE_URL", "NEXT_PUBLIC_SUPABASE_ANON_KEY", "SUPABASE_SERVICE_ROLE_KEY"]
+    }
+  },
+
+  "steps": [
+    {
+      "id": 1,
+      "title": "Create Telegram utility module",
+      "action": "create_file",
+      "file": "src/lib/telegram.ts",
+      "spec": {
+        "description": "Thin wrapper around Telegram Bot API sendMessage. Fire-and-forget pattern — never throws, never blocks caller.",
+        "exports": [
+          {
+            "name": "sendTelegramMessage",
+            "signature": "(text: string) => Promise<void>",
+            "logic": [
+              "Read TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID from process.env",
+              "If either is missing, return silently (no-op in dev environments)",
+              "POST to https://api.telegram.org/bot{token}/sendMessage",
+              "Body: { chat_id, text, parse_mode: 'HTML', disable_web_page_preview: true }",
+              "Timeout: 5000ms (AbortController)",
+              "Wrap entire function in try-catch — on ANY error, console.warn and return (never throw)",
+              "Do NOT await this function in the cron route — call it and let it resolve in background"
+            ]
+          },
+          {
+            "name": "formatTradeOpened",
+            "signature": "(symbol: string, trade: Trade) => string",
+            "logic": [
+              "Returns HTML-formatted message for trade open notification",
+              "Uses Telegram HTML tags: <b>, <i>, <code>"
+            ],
+            "output_template": [
+              "📈 <b>{SYMBOL} {DIRECTION} OPENED</b>",
+              "",
+              "Entry: <code>${entryPrice}</code>",
+              "Size: <code>{size} {base}</code> (${usdValue})",
+              "Signal: <code>{signalScore}</code> ({signalReasons joined})",
+              "",
+              "Stop Loss: <code>${stopLoss}</code> ({slDistancePct}%)",
+              "Hard Stop: <code>${hardStop}</code>",
+              "TP1: <code>${tp1}</code> | TP2: <code>${tp2}</code> | TP3: <code>${tp3}</code>",
+              "",
+              "Risk: <code>${riskAmount}</code> ({riskPct}% of equity)"
+            ],
+            "notes": [
+              "Use 📈 for LONG, 📉 for SHORT",
+              "Calculate SL distance as percentage from entry",
+              "Format prices with appropriate decimals (BTC=2, others=4)",
+              "base = symbol without USDT suffix"
+            ]
+          },
+          {
+            "name": "formatTradeClosed",
+            "signature": "(symbol: string, trade: Trade) => string",
+            "logic": [
+              "Returns HTML-formatted message for trade close notification",
+              "Color-coded: win (✅) or loss (❌) prefix"
+            ],
+            "output_template": [
+              "{✅|❌} <b>{SYMBOL} {DIRECTION} CLOSED — {exitReason}</b>",
+              "",
+              "Entry: <code>${entryPrice}</code> → Exit: <code>${exitPrice}</code>",
+              "PnL: <code>{+/-}${pnl}</code> ({pnlPct}%)",
+              "R-Multiple: <code>{rMultiple}R</code>",
+              "Duration: <code>{barsHeld} bars</code> (~{barsHeld}h)",
+              "Commission: <code>${commission}</code>",
+              "",
+              "TP1: {✓|✗} | TP2: {✓|✗} | Breakeven: {✓|✗}"
+            ],
+            "notes": [
+              "✅ if pnl > 0, ❌ if pnl <= 0",
+              "Show TP hit status (tp1Hit, tp2Hit)",
+              "barsHeld ≈ hours on 1h timeframe",
+              "Format R-multiple to 2 decimal places"
+            ]
+          },
+          {
+            "name": "formatCronSummary",
+            "signature": "(results: CronResult[], duration: number, tradesClosed: number) => string | null",
+            "logic": [
+              "Returns summary message ONLY when something noteworthy happened",
+              "Return null (no message) if: 0 trades closed AND 0 errors",
+              "Return message if: trades were closed OR errors occurred",
+              "This prevents hourly spam — only sends when there's news"
+            ],
+            "output_template": [
+              "⏰ <b>Cron Tick Summary</b>",
+              "",
+              "Duration: <code>{duration}ms</code>",
+              "Candles: <code>{totalProcessed}</code>",
+              "Trades closed: <code>{tradesClosed}</code>",
+              "{errors section if any: ⚠️ Errors: symbol1: message, symbol2: message}"
+            ]
+          }
+        ],
+        "implementation_notes": [
+          "Use native fetch() — no axios or node-telegram-bot-api dependency needed",
+          "AbortController with 5s timeout prevents hanging the cron worker",
+          "console.warn on failure, never console.error (it's a notification, not critical path)",
+          "Export a TELEGRAM_ENABLED constant: Boolean(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID)"
+        ]
+      }
+    },
+
+    {
+      "id": 2,
+      "title": "Hook notifications into cron route",
+      "action": "modify_file",
+      "file": "src/app/api/cron/tick/route.ts",
+      "changes": [
+        {
+          "location": "imports (top of file)",
+          "add": "import { sendTelegramMessage, formatTradeOpened, formatTradeClosed, formatCronSummary } from '@/lib/telegram';"
+        },
+        {
+          "location": "inside the event loop (line 108-129), after tradeClosed event collection",
+          "description": "Add tradeOpened notification and tradeClosed notification",
+          "code_pattern": "for (const event of result.events) {\n  if (event.type === 'tradeClosed' && event.trade) {\n    // ... existing tradesToInsert code ...\n    sendTelegramMessage(formatTradeClosed(symbol, event.trade)); // ← ADD: fire-and-forget\n  }\n  if (event.type === 'tradeOpened' && event.trade) {\n    sendTelegramMessage(formatTradeOpened(symbol, event.trade)); // ← ADD: fire-and-forget\n  }\n}"
+        },
+        {
+          "location": "after cron health log insert (after line 202)",
+          "description": "Send summary notification only when noteworthy (trades closed or errors)",
+          "code_pattern": "const summaryMsg = formatCronSummary(results, duration, totalTradesClosed);\nif (summaryMsg) sendTelegramMessage(summaryMsg);"
+        }
+      ],
+      "critical_rules": [
+        "DO NOT await sendTelegramMessage() — it must be fire-and-forget to avoid blocking the cron",
+        "sendTelegramMessage handles its own errors internally — no try-catch needed in the caller",
+        "The cron must NEVER fail because Telegram is down — this is a notification, not a dependency",
+        "Trade notifications are sent BEFORE database insert — if DB fails, at least we know the trade happened"
+      ]
+    },
+
+    {
+      "id": 3,
+      "title": "Add environment variables documentation",
+      "action": "create_file",
+      "file": ".env.example",
+      "content_description": "Document all required and optional env vars",
+      "content": {
+        "required": {
+          "NEXT_PUBLIC_SUPABASE_URL": "https://xxxxx.supabase.co",
+          "NEXT_PUBLIC_SUPABASE_ANON_KEY": "eyJhb...",
+          "SUPABASE_SERVICE_ROLE_KEY": "eyJhb...",
+          "CRON_SECRET": "random-hex-string"
+        },
+        "optional_telegram": {
+          "TELEGRAM_BOT_TOKEN": "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11",
+          "TELEGRAM_CHAT_ID": "-1001234567890 (group/channel) or 123456789 (personal)"
+        },
+        "github_secrets": {
+          "VERCEL_URL": "https://helix-coral-six.vercel.app",
+          "CRON_SECRET": "must match server-side CRON_SECRET"
+        }
+      }
+    }
+  ],
+
+  "verification": {
+    "commands": [
+      "npx tsc --noEmit",
+      "npm run build"
+    ],
+    "local_test": {
+      "description": "Test Telegram sending without running full cron",
+      "steps": [
+        "Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env.local",
+        "Create a temporary test script or API route that calls sendTelegramMessage('Test from Helix')",
+        "Verify message arrives in Telegram",
+        "Delete test script",
+        "Test with ALLOW_LOCAL_CRON=1: curl -H 'Authorization: Bearer YOUR_SECRET' http://localhost:3000/api/cron/tick"
+      ]
+    },
+    "production_test": [
+      "Deploy to Vercel with Telegram env vars set",
+      "Wait for next cron tick (hourly)",
+      "If a trade opens/closes, notification should arrive within seconds",
+      "If no trade events, no notification should be sent (no spam)"
+    ]
+  },
+
+  "constraints": [
+    "Zero new npm dependencies — use native fetch() for Telegram API",
+    "Fire-and-forget: sendTelegramMessage must NEVER be awaited in the cron route",
+    "Fail-safe: Telegram errors are console.warn only, never thrown",
+    "5-second timeout on Telegram API calls via AbortController",
+    "No notification spam: cron summary only sent when trades closed or errors occurred",
+    "parse_mode: HTML (not Markdown) — safer for price strings with special characters",
+    "disable_web_page_preview: true — prevent URL preview clutter",
+    "Graceful degradation: if TELEGRAM_BOT_TOKEN is not set, all notification functions are no-ops",
+    "Do NOT modify the existing cron logic flow — only ADD notification calls alongside existing code",
+    "Trade open and close messages are separate (not combined into one message)"
+  ]
+}

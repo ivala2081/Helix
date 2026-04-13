@@ -497,6 +497,38 @@ export const ko = {
       },
       perTrade: "거래당",
     },
+    portfolioAnalytics: {
+      title: "포트폴리오 분석",
+      table: {
+        rank: "#",
+        coin: "Coin",
+        return: "수익률",
+        equity: "잔고",
+        realized: "실현 손익",
+        unrealized: "미실현 손익",
+        trades: "거래",
+        winRate: "Win Rate",
+        maxDD: "Max DD",
+        status: "상태",
+        idle: "대기",
+        active: "거래중",
+      },
+      allocation: {
+        title: "자본 배분",
+      },
+      drawdown: {
+        title: "포트폴리오 Drawdown",
+        empty: "Drawdown 데이터 수집 중...",
+      },
+      risk: {
+        totalReturn: "총 수익률",
+        realizedPnl: "실현 P&L",
+        sharpe: "Sharpe",
+        sortino: "Sortino",
+        maxDD: "Max DD",
+        winRate: "Win Rate",
+      },
+    },
   },
 
   language: {

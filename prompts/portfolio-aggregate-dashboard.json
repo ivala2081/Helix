@@ -1,0 +1,392 @@
+{
+  "meta": {
+    "name": "Portfolio Aggregate Analytics Dashboard",
+    "version": "1.0",
+    "created": "2026-04-13",
+    "project": "Helix",
+    "repo": "c:\\Users\\ACER\\Documents\\GitHub\\Helix",
+    "description": "Adds a portfolio-level analytics section to the /live dashboard: per-coin performance ranking table, equity allocation donut chart, drawdown area chart, and aggregate risk KPIs (Sharpe, Sortino, Max DD, Calmar). All computed server-side from existing Supabase tables, zero new dependencies."
+  },
+
+  "motivation": {
+    "problem": "The /live dashboard shows individual portfolio cards and a combined equity chart, but there is no portfolio-level analytics view. You cannot answer: 'Which coin is underperforming?', 'How is my capital allocated right now?', 'What is the portfolio-wide drawdown?', 'What is the aggregate Sharpe ratio?'",
+    "value": "This is critical for monitoring a 5-coin forward test. Without aggregate analytics, you are flying blind on risk. With 3 days of data already accumulated, the basics (allocation, ranking, drawdown) are immediately useful. Risk metrics (Sharpe, Sortino) will become meaningful as data grows.",
+    "audience": "Strategy owner reviewing forward test performance daily."
+  },
+
+  "prerequisites": {
+    "existing_state": {
+      "forward_test_live": true,
+      "supabase_tables": ["live_portfolios", "live_trades", "live_equity_snapshots", "live_cron_runs"],
+      "existing_api_routes": ["/api/live", "/api/live/equity", "/api/live/trades"],
+      "existing_components": [
+        "LivePortfolioCard", "LiveEquityChart", "LiveTradeAnalytics",
+        "LiveTradeStats", "LiveExitReasons", "LiveTradeTable",
+        "OpenPositionsStrip", "LiveStatusBadge"
+      ],
+      "ui_libraries_installed": ["recharts", "lightweight-charts", "lucide-react", "framer-motion"]
+    },
+    "user_actions": []
+  },
+
+  "steps": [
+    {
+      "id": 1,
+      "title": "API: portfolio aggregate analytics endpoint",
+      "action": "create_file",
+      "file": "src/app/api/live/aggregate/route.ts",
+      "spec": {
+        "method": "GET",
+        "runtime": "nodejs",
+        "description": "Computes portfolio-level analytics from live_portfolios + live_equity_snapshots. No new DB tables needed.",
+        "response_shape": {
+          "ranking": {
+            "description": "Array of per-coin objects, sorted by return % descending",
+            "item": {
+              "symbol": "string",
+              "equity": "number — current equity",
+              "initialCapital": "number",
+              "returnPct": "number — (equity - initial) / initial * 100",
+              "realizedPnl": "number",
+              "unrealizedPnl": "number — equity - initialCapital - realizedPnl",
+              "tradeCount": "number — count from live_trades for this symbol",
+              "winRate": "number | null — wins / total for this symbol",
+              "maxDrawdownPct": "number — max drawdown_pct from equity snapshots for this symbol",
+              "currentDrawdownPct": "number — latest drawdown_pct from equity snapshots",
+              "hasOpenTrade": "boolean",
+              "rank": "number — 1-based rank by returnPct"
+            }
+          },
+          "allocation": {
+            "description": "Current equity distribution across coins",
+            "items": "Array of { symbol: string, equity: number, pct: number (equity / totalEquity * 100) }"
+          },
+          "aggregate": {
+            "totalEquity": "number — sum of all equities",
+            "totalInitial": "number — sum of all initial_capital",
+            "totalReturnPct": "number",
+            "totalRealizedPnl": "number",
+            "totalUnrealizedPnl": "number",
+            "totalTrades": "number",
+            "overallWinRate": "number | null",
+            "overallProfitFactor": "number | null",
+            "portfolioMaxDrawdownPct": "number — max combined drawdown across all snapshots at same timestamp",
+            "portfolioCurrentDrawdownPct": "number — latest combined drawdown",
+            "sharpeRatio": "number | null — computed from hourly portfolio returns, null if < 24 snapshots",
+            "sortinoRatio": "number | null — same, using downside deviation only",
+            "calmarRatio": "number | null — annualized return / max drawdown"
+          },
+          "drawdownSeries": {
+            "description": "Time series for aggregate drawdown chart",
+            "items": "Array of { ts: number (ms epoch), drawdownPct: number (combined portfolio DD at that timestamp) }",
+            "note": "Compute by grouping equity snapshots by ts, summing equity across all symbols at each timestamp, then computing running max and drawdown from the combined equity series"
+          }
+        },
+        "computation_logic": {
+          "ranking_and_allocation": [
+            "Query live_portfolios for all active symbols",
+            "Query live_trades grouped by symbol: SELECT symbol, count(*) as trade_count, count(*) FILTER (WHERE pnl > 0) as win_count FROM live_trades GROUP BY symbol",
+            "Query live_equity_snapshots: for each symbol, get max(drawdown_pct) and latest drawdown_pct",
+            "Combine into ranking array, sort by returnPct desc, assign rank"
+          ],
+          "aggregate_risk_metrics": [
+            "Query ALL equity snapshots ordered by ts",
+            "Group by ts (timestamp) — sum equities across all symbols at each hour",
+            "Build combined equity series: [{ts, combinedEquity}]",
+            "Compute hourly returns: r[i] = (equity[i] - equity[i-1]) / equity[i-1]",
+            "Sharpe = mean(returns) / std(returns) * sqrt(8760) — annualized, 8760 hours/year",
+            "Sortino = mean(returns) / downside_std(returns) * sqrt(8760) — only negative returns for std",
+            "Combined max drawdown: running_max of combinedEquity, DD = (equity - peak) / peak * 100",
+            "Calmar = annualized_return / abs(max_drawdown)",
+            "Return null for Sharpe/Sortino if fewer than 24 data points (1 day)"
+          ],
+          "drawdown_series": [
+            "Same combined equity series from above",
+            "For each timestamp: drawdownPct = (combinedEquity - runningMax) / runningMax * 100",
+            "Return as array for charting (max 2000 points, downsample if needed)"
+          ]
+        },
+        "supabase_client": "createClient with anon key (public RLS read)",
+        "caching": "Cache-Control: public, s-maxage=30, stale-while-revalidate=60",
+        "error_handling": "Return { error, detail } with 500 status on DB failure. Return partial data if some queries fail."
+      }
+    },
+
+    {
+      "id": 2,
+      "title": "Component: PortfolioRanking — per-coin performance table",
+      "action": "create_file",
+      "file": "src/components/live/PortfolioRanking.tsx",
+      "spec": {
+        "directive": "use client",
+        "props": {
+          "ranking": "Array of ranking items from /api/live/aggregate (see step 1)",
+          "dict": "Dictionary['live']['portfolioAnalytics']"
+        },
+        "layout": "Responsive table inside a rounded-xl bordered card. Title at top-left.",
+        "columns": [
+          { "key": "rank", "label": "dict.table.rank", "content": "#1, #2, etc. — bold gold for #1, silver for #2, bronze for #3" },
+          { "key": "symbol", "label": "dict.table.coin", "content": "Symbol without USDT suffix, e.g. 'BTC'" },
+          { "key": "returnPct", "label": "dict.table.return", "content": "fmtPct(returnPct), green/red tone" },
+          { "key": "equity", "label": "dict.table.equity", "content": "fmtUsd(equity, 0)" },
+          { "key": "realizedPnl", "label": "dict.table.realized", "content": "fmtUsd(realizedPnl), green/red tone" },
+          { "key": "unrealizedPnl", "label": "dict.table.unrealized", "content": "fmtUsd(unrealizedPnl), green/red tone" },
+          { "key": "tradeCount", "label": "dict.table.trades", "content": "integer" },
+          { "key": "winRate", "label": "dict.table.winRate", "content": "fmtPct(winRate * 100) or '—' if null" },
+          { "key": "maxDrawdownPct", "label": "dict.table.maxDD", "content": "fmtPct(maxDrawdownPct), always red tone" },
+          { "key": "status", "label": "dict.table.status", "content": "Green dot if hasOpenTrade, gray 'Idle' text otherwise" }
+        ],
+        "features": [
+          "Rank column: medal colors (#1=amber-400, #2=zinc-400, #3=amber-600)",
+          "Row highlight: subtle bg-emerald-500/5 for #1 performer",
+          "Responsive: on mobile (< sm), hide unrealized, maxDD, status columns",
+          "Empty state: should not happen (always 5 coins), but handle gracefully"
+        ],
+        "styling": "Match existing dark theme. font-mono tabular-nums for numbers. var(--color-border), var(--color-surface).",
+        "reuse": {
+          "format_utils": "fmtUsd, fmtPct from src/lib/utils/format.ts",
+          "cn": "from src/lib/utils/cn.ts"
+        }
+      }
+    },
+
+    {
+      "id": 3,
+      "title": "Component: PortfolioAllocation — equity distribution donut",
+      "action": "create_file",
+      "file": "src/components/live/PortfolioAllocation.tsx",
+      "spec": {
+        "directive": "use client",
+        "props": {
+          "allocation": "Array of { symbol, equity, pct } from /api/live/aggregate",
+          "title": "string — i18n title"
+        },
+        "implementation": "Recharts PieChart donut (same pattern as LiveExitReasons.tsx / ExitReasons.tsx). innerRadius=60, outerRadius=100, paddingAngle=2.",
+        "color_map": {
+          "BTCUSDT": "#f59e0b",
+          "ETHUSDT": "#3b82f6",
+          "SOLUSDT": "#8b5cf6",
+          "XRPUSDT": "#10b981",
+          "BNBUSDT": "#fbbf24"
+        },
+        "center_label": "Total equity amount (fmtCompact) centered inside the donut",
+        "legend": "Grid below chart: colored dot + symbol (without USDT) + pct% + equity amount. One row per coin.",
+        "null_handling": "If allocation is empty or null, show 'No data' centered.",
+        "sizing": "Max width 320px, centered in its grid cell."
+      }
+    },
+
+    {
+      "id": 4,
+      "title": "Component: PortfolioDrawdown — combined drawdown area chart",
+      "action": "create_file",
+      "file": "src/components/live/PortfolioDrawdown.tsx",
+      "spec": {
+        "directive": "use client",
+        "props": {
+          "series": "Array of { ts: number, drawdownPct: number } from /api/live/aggregate",
+          "title": "string — i18n title"
+        },
+        "implementation": "Recharts AreaChart with single red-gradient fill.",
+        "chart_config": {
+          "width": "100% (ResponsiveContainer)",
+          "height": 200,
+          "area_fill": "linear gradient from red-500/30 (top) to transparent (bottom)",
+          "area_stroke": "#ef4444 (red-500), strokeWidth 1.5",
+          "xAxis": "timestamp formatted as MMM DD (fmtDate helper), tick every ~24h",
+          "yAxis": "drawdown % (inverted, negative values → show as positive with minus sign), domain auto",
+          "tooltip": "Date + Drawdown: -X.XX%",
+          "reference_line": "dashed horizontal line at y=0 (no drawdown baseline)"
+        },
+        "empty_state": "If series is empty or < 2 points, show message: 'Drawdown data accumulating...'",
+        "note": "Drawdown values are negative (e.g., -2.5%). Display as '-2.5%' in tooltip. The chart area should fill downward from 0."
+      }
+    },
+
+    {
+      "id": 5,
+      "title": "Component: AggregateRiskKPIs — portfolio-wide risk metrics",
+      "action": "create_file",
+      "file": "src/components/live/AggregateRiskKPIs.tsx",
+      "spec": {
+        "directive": "use client",
+        "props": {
+          "aggregate": "The aggregate object from /api/live/aggregate response",
+          "dict": "Dictionary['live']['portfolioAnalytics']['risk']"
+        },
+        "layout": "Horizontal grid of 6 mini KPI cards (grid-cols-2 sm:grid-cols-3 lg:grid-cols-6). Same card style as MiniKpi in live/page.tsx.",
+        "cards": [
+          { "label": "dict.totalReturn", "value": "fmtPct(aggregate.totalReturnPct)", "tone": "based on sign" },
+          { "label": "dict.realizedPnl", "value": "fmtUsd(aggregate.totalRealizedPnl)", "tone": "based on sign" },
+          { "label": "dict.sharpe", "value": "aggregate.sharpeRatio?.toFixed(2) ?? '—'", "tone": "positive if > 1" },
+          { "label": "dict.sortino", "value": "aggregate.sortinoRatio?.toFixed(2) ?? '—'", "tone": "positive if > 1" },
+          { "label": "dict.maxDD", "value": "fmtPct(aggregate.portfolioMaxDrawdownPct)", "tone": "always negative (red)" },
+          { "label": "dict.winRate", "value": "fmtPct((aggregate.overallWinRate ?? 0) * 100)", "tone": "positive if >= 50%" }
+        ],
+        "null_handling": "If aggregate is null, show 6 skeleton cards (animate-pulse bg-[var(--color-surface)] rounded-lg h-16)."
+      }
+    },
+
+    {
+      "id": 6,
+      "title": "Orchestrator: PortfolioAggregate — fetches data, renders children",
+      "action": "create_file",
+      "file": "src/components/live/PortfolioAggregate.tsx",
+      "spec": {
+        "directive": "use client",
+        "description": "Container component that fetches /api/live/aggregate and passes data to children. Manages loading/error state.",
+        "imports": [
+          "PortfolioRanking", "PortfolioAllocation", "PortfolioDrawdown", "AggregateRiskKPIs",
+          "useDictionary from @/lib/i18n/DictionaryProvider"
+        ],
+        "data_fetching": {
+          "endpoint": "/api/live/aggregate",
+          "interval": "60_000 (60s refresh)",
+          "visibility_check": "Skip fetch when tab is backgrounded (same pattern as live/page.tsx)",
+          "refetch_on_focus": true
+        },
+        "layout": [
+          "Section title: dict.live.portfolioAnalytics.title — styled like the existing 'Trade History' heading in LiveTradeAnalytics",
+          "AggregateRiskKPIs (full width, 6 KPI cards)",
+          "Two-column grid (lg:grid-cols-3): PortfolioRanking (col-span-2) + PortfolioAllocation (col-span-1)",
+          "PortfolioDrawdown (full width below)"
+        ],
+        "loading_state": "Skeleton placeholders matching each child component's layout",
+        "error_state": "Red bordered card with error message, same style as live/page.tsx error display"
+      }
+    },
+
+    {
+      "id": 7,
+      "title": "Wire PortfolioAggregate into /live page",
+      "action": "modify_file",
+      "file": "src/app/live/page.tsx",
+      "changes": [
+        "Import PortfolioAggregate from @/components/live/PortfolioAggregate",
+        "Add <PortfolioAggregate /> between the equity chart (<LiveEquityChart />) and the open positions strip (<OpenPositionsStrip />)",
+        "No props needed — PortfolioAggregate manages its own data fetching"
+      ],
+      "placement": "After line 164 (LiveEquityChart), before line 167 (OpenPositionsStrip). Add a mt-6 wrapper div for spacing."
+    },
+
+    {
+      "id": 8,
+      "title": "i18n: add portfolioAnalytics keys to all 10 dictionaries",
+      "action": "modify_files",
+      "files": [
+        "src/lib/i18n/dictionaries/en.ts",
+        "src/lib/i18n/dictionaries/de.ts",
+        "src/lib/i18n/dictionaries/es.ts",
+        "src/lib/i18n/dictionaries/fr.ts",
+        "src/lib/i18n/dictionaries/ja.ts",
+        "src/lib/i18n/dictionaries/ko.ts",
+        "src/lib/i18n/dictionaries/pt.ts",
+        "src/lib/i18n/dictionaries/ru.ts",
+        "src/lib/i18n/dictionaries/tr.ts",
+        "src/lib/i18n/dictionaries/zh.ts"
+      ],
+      "location": "Inside the 'live' object, after the 'tradeAnalytics' block (before the closing brace of 'live')",
+      "english_block": {
+        "portfolioAnalytics": {
+          "title": "Portfolio Analytics",
+          "table": {
+            "rank": "#",
+            "coin": "Coin",
+            "return": "Return",
+            "equity": "Equity",
+            "realized": "Realized",
+            "unrealized": "Unrealized",
+            "trades": "Trades",
+            "winRate": "Win Rate",
+            "maxDD": "Max DD",
+            "status": "Status",
+            "idle": "Idle",
+            "active": "Active"
+          },
+          "allocation": {
+            "title": "Capital Allocation"
+          },
+          "drawdown": {
+            "title": "Portfolio Drawdown",
+            "empty": "Drawdown data accumulating..."
+          },
+          "risk": {
+            "totalReturn": "Total Return",
+            "realizedPnl": "Realized P&L",
+            "sharpe": "Sharpe",
+            "sortino": "Sortino",
+            "maxDD": "Max DD",
+            "winRate": "Win Rate"
+          }
+        }
+      },
+      "turkish_block": {
+        "portfolioAnalytics": {
+          "title": "Portföy Analizi",
+          "table": {
+            "rank": "#",
+            "coin": "Coin",
+            "return": "Getiri",
+            "equity": "Bakiye",
+            "realized": "Realize",
+            "unrealized": "Açık P&L",
+            "trades": "İşlem",
+            "winRate": "Win Rate",
+            "maxDD": "Max DD",
+            "status": "Durum",
+            "idle": "Boşta",
+            "active": "Aktif"
+          },
+          "allocation": {
+            "title": "Sermaye Dağılımı"
+          },
+          "drawdown": {
+            "title": "Portföy Drawdown",
+            "empty": "Drawdown verisi birikiyor..."
+          },
+          "risk": {
+            "totalReturn": "Toplam Getiri",
+            "realizedPnl": "Realize P&L",
+            "sharpe": "Sharpe",
+            "sortino": "Sortino",
+            "maxDD": "Max DD",
+            "winRate": "Win Rate"
+          }
+        }
+      },
+      "note": "For the other 8 languages (de, es, fr, ja, ko, pt, ru, zh), translate the natural-language strings. Keep technical terms (Sharpe, Sortino, Max DD, Win Rate, P&L, Drawdown, Coin) in English per project translation policy."
+    }
+  ],
+
+  "verification": {
+    "commands": [
+      "npx tsc --noEmit",
+      "npm run build"
+    ],
+    "manual_checks": [
+      "Open /live locally — Portfolio Analytics section appears between equity chart and open positions",
+      "6 risk KPI cards render (values may show '—' for Sharpe/Sortino if < 24 hours of data)",
+      "Per-coin ranking table shows 5 rows sorted by return %, with rank medals",
+      "Allocation donut chart shows 5 slices with correct coin colors",
+      "Drawdown chart renders (may show flat line at 0% if no drawdown yet)",
+      "Switch language to Turkish — all labels translate correctly",
+      "Responsive: check mobile layout (table hides some columns, charts stack vertically)",
+      "30s after page load: data should auto-refresh without page reload"
+    ]
+  },
+
+  "constraints": [
+    "No new npm dependencies — recharts and lucide-react already installed",
+    "No new database tables or migrations — compute everything from existing live_portfolios, live_trades, live_equity_snapshots",
+    "Reuse existing format utilities (fmtUsd, fmtPct, fmtNum, fmtCompact, fmtDate) from src/lib/utils/format.ts",
+    "Reuse cn() from src/lib/utils/cn.ts",
+    "Follow existing dark theme: var(--color-border), var(--color-surface), var(--color-muted), var(--color-bg)",
+    "All user-facing strings via i18n dictionary — no hardcoded English in components",
+    "Technical terms (Sharpe, Sortino, Drawdown, P&L, Win Rate) stay in English across all languages",
+    "Supabase reads use anon key (public RLS)",
+    "API caching: s-maxage=30, stale-while-revalidate=60",
+    "Sharpe/Sortino return null (display '—') if fewer than 24 equity snapshots — avoid meaningless metrics",
+    "PortfolioAggregate fetches independently from the main /api/live call — do not couple them",
+    "Skeleton loading states for all components — never show blank or broken layout while loading"
+  ]
+}

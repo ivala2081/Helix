@@ -497,6 +497,38 @@ export const ru = {
       },
       perTrade: "за сделку",
     },
+    portfolioAnalytics: {
+      title: "Аналитика портфеля",
+      table: {
+        rank: "#",
+        coin: "Coin",
+        return: "Доходность",
+        equity: "Баланс",
+        realized: "Реализовано",
+        unrealized: "Нереализовано",
+        trades: "Сделки",
+        winRate: "Win Rate",
+        maxDD: "Max DD",
+        status: "Статус",
+        idle: "Ожидание",
+        active: "Активно",
+      },
+      allocation: {
+        title: "Распределение капитала",
+      },
+      drawdown: {
+        title: "Просадка портфеля",
+        empty: "Данные просадки накапливаются...",
+      },
+      risk: {
+        totalReturn: "Общая доходность",
+        realizedPnl: "Реализ. P&L",
+        sharpe: "Sharpe",
+        sortino: "Sortino",
+        maxDD: "Max DD",
+        winRate: "Win Rate",
+      },
+    },
   },
 
   language: {

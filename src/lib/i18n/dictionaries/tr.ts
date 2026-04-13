@@ -496,6 +496,38 @@ export const tr = {
       },
       perTrade: "işlem başına",
     },
+    portfolioAnalytics: {
+      title: "Portföy Analizi",
+      table: {
+        rank: "#",
+        coin: "Coin",
+        return: "Getiri",
+        equity: "Bakiye",
+        realized: "Realize",
+        unrealized: "Açık P&L",
+        trades: "İşlem",
+        winRate: "Win Rate",
+        maxDD: "Max DD",
+        status: "Durum",
+        idle: "Boşta",
+        active: "Aktif",
+      },
+      allocation: {
+        title: "Sermaye Dağılımı",
+      },
+      drawdown: {
+        title: "Portföy Drawdown",
+        empty: "Drawdown verisi birikiyor...",
+      },
+      risk: {
+        totalReturn: "Toplam Getiri",
+        realizedPnl: "Realize P&L",
+        sharpe: "Sharpe",
+        sortino: "Sortino",
+        maxDD: "Max DD",
+        winRate: "Win Rate",
+      },
+    },
   },
 
   language: {

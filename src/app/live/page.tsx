@@ -6,6 +6,7 @@ import { LivePortfolioCard } from "@/components/live/LivePortfolioCard";
 import { LiveStatusBadge } from "@/components/live/LiveStatusBadge";
 import { OpenPositionsStrip } from "@/components/live/OpenPositionsStrip";
 import { LiveTradeAnalytics } from "@/components/live/LiveTradeAnalytics";
+import { PortfolioAggregate } from "@/components/live/PortfolioAggregate";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
 interface Portfolio {
@@ -162,6 +163,9 @@ export default function LivePage() {
 
           {/* Equity curve (all coins overlay) */}
           <LiveEquityChart title={t.chartTitle} />
+
+          {/* Portfolio Aggregate Analytics */}
+          <PortfolioAggregate />
 
           {/* Open positions */}
           <OpenPositionsStrip portfolios={data.portfolios} title={t.openPositionsTitle} />

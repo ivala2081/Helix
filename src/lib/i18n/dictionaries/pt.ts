@@ -497,6 +497,38 @@ export const pt = {
       },
       perTrade: "por trade",
     },
+    portfolioAnalytics: {
+      title: "Análise do Portfólio",
+      table: {
+        rank: "#",
+        coin: "Coin",
+        return: "Retorno",
+        equity: "Capital",
+        realized: "Realizado",
+        unrealized: "Não realizado",
+        trades: "Trades",
+        winRate: "Win Rate",
+        maxDD: "Max DD",
+        status: "Status",
+        idle: "Inativo",
+        active: "Ativo",
+      },
+      allocation: {
+        title: "Alocação de Capital",
+      },
+      drawdown: {
+        title: "Drawdown do Portfólio",
+        empty: "Acumulando dados de drawdown...",
+      },
+      risk: {
+        totalReturn: "Retorno Total",
+        realizedPnl: "P&L Realizado",
+        sharpe: "Sharpe",
+        sortino: "Sortino",
+        maxDD: "Max DD",
+        winRate: "Win Rate",
+      },
+    },
   },
 
   language: {
