@@ -489,7 +489,10 @@ class Backtester:
                 continue
 
             # ── OPEN NEW TRADE ──
-            entry_price = df["close"].iloc[i]
+            # Signal at bar i close → fill at bar i+1 open (no look-ahead)
+            if i + 1 >= n:
+                continue  # Can't fill — no next bar
+            entry_price = df["open"].iloc[i + 1]
             direction = Direction.LONG if decision["action"] == SignalType.LONG else Direction.SHORT
 
             # Apply slippage to entry (market fill — adverse direction)
@@ -537,7 +540,7 @@ class Backtester:
             trailing_stop = None
             trailing_active = False
 
-            date_str = str(df["date"].iloc[i]) if "date" in df.columns else str(i)
+            date_str = str(df["date"].iloc[i + 1]) if "date" in df.columns else str(i + 1)
 
             # Calculate hard stop (catastrophic protection during SL suppression)
             hard_stop_price = None
@@ -548,7 +551,7 @@ class Backtester:
                     hard_stop_price = entry_price + self.hard_stop_atr_mult * atr
 
             open_trade = Trade(
-                entry_bar=i,
+                entry_bar=i + 1,
                 entry_price=entry_price,
                 entry_date=date_str,
                 direction="LONG" if direction == Direction.LONG else "SHORT",

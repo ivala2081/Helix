@@ -62,15 +62,19 @@ class MarketStructure:
         df["swing_high"] = np.nan
         df["swing_low"] = np.nan
 
-        for i in range(lb, n - lb):
-            window_high = df["high"].iloc[i - lb:i + lb + 1]
-            window_low = df["low"].iloc[i - lb:i + lb + 1]
+        # No look-ahead: at bar i, confirm swing at bar[i-lb] using
+        # window [i-2*lb, i]. All data in window is in the past.
+        # Swing is written at bar i (when confirmed), not at candidate.
+        for i in range(2 * lb, n):
+            candidate = i - lb
+            window_high = df["high"].iloc[candidate - lb:i + 1]
+            window_low = df["low"].iloc[candidate - lb:i + 1]
 
-            if df["high"].iloc[i] == window_high.max():
-                df.iloc[i, df.columns.get_loc("swing_high")] = df["high"].iloc[i]
+            if df["high"].iloc[candidate] == window_high.max():
+                df.iloc[i, df.columns.get_loc("swing_high")] = df["high"].iloc[candidate]
 
-            if df["low"].iloc[i] == window_low.min():
-                df.iloc[i, df.columns.get_loc("swing_low")] = df["low"].iloc[i]
+            if df["low"].iloc[candidate] == window_low.min():
+                df.iloc[i, df.columns.get_loc("swing_low")] = df["low"].iloc[candidate]
 
         # ── Forward-fill last known swing points ──
         df["last_swing_high"] = df["swing_high"].ffill()
@@ -338,6 +342,8 @@ class FairValueGap:
                 if fvg.filled:
                     continue
                 age = i - fvg.creation_bar
+                if age < 2:
+                    continue  # FVG must be at least 2 bars old to avoid same-bar signal
                 if age > self.max_age_bars:
                     fvg.filled = True  # expired
                     continue
