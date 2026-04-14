@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "warmup": "npx tsx scripts/warmup.ts",
+    "cron-tick": "npx tsx scripts/cron-tick.ts",
     "test": "vitest run"
   },
   "dependencies": {

@@ -1,44 +1,42 @@
 name: Forward Test Cron
 
-# Triggers the /api/cron/tick endpoint on Vercel every hour at :02.
-# (:02 instead of :00 to ensure Binance has fully closed the 1h candle.)
+# Runs the cron tick logic directly on the GitHub-hosted runner instead of
+# calling a Vercel route. Binance API blocks AWS IP ranges (HTTP 451), so all
+# Vercel regions fail. GitHub runners run on Azure with currently-allowed IPs.
 #
 # Required GitHub secrets:
-#   VERCEL_URL    — base URL of the production deployment (e.g. https://helix.vercel.app)
-#   CRON_SECRET   — same value as the Vercel CRON_SECRET env var
+#   NEXT_PUBLIC_SUPABASE_URL    — Supabase project URL
+#   SUPABASE_SERVICE_ROLE_KEY   — Supabase service-role key (server-side write)
+# Optional secrets:
+#   TELEGRAM_BOT_TOKEN          — for trade alerts
+#   TELEGRAM_CHAT_ID            — for trade alerts
 
 on:
   schedule:
     - cron: "2 * * * *"
-  workflow_dispatch: # allow manual trigger from Actions tab
+  workflow_dispatch:
 
 jobs:
   tick:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Call /api/cron/tick
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Run cron tick
         env:
-          VERCEL_URL: ${{ secrets.VERCEL_URL }}
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        run: |
-          if [ -z "$VERCEL_URL" ] || [ -z "$CRON_SECRET" ]; then
-            echo "::error::Missing VERCEL_URL or CRON_SECRET secret"
-            exit 1
-          fi
-
-          response=$(curl -sS -w "\nHTTP_STATUS:%{http_code}" \
-            -H "Authorization: Bearer $CRON_SECRET" \
-            "$VERCEL_URL/api/cron/tick")
-
-          http_status=$(echo "$response" | grep HTTP_STATUS | cut -d: -f2)
-          body=$(echo "$response" | sed '/HTTP_STATUS/d')
-
-          echo "HTTP Status: $http_status"
-          echo "Response body:"
-          echo "$body"
-
-          if [ "$http_status" != "200" ]; then
-            echo "::error::Cron tick failed with status $http_status"
-            exit 1
-          fi
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: npm run cron-tick
