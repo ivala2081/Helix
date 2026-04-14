@@ -31,7 +31,10 @@ jobs:
           cache: "npm"
 
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        # Use `npm install` instead of `npm ci` because the lockfile was
+        # generated on Windows and is missing Linux-specific native deps
+        # (e.g. @emnapi/runtime). `npm install` resolves them on the runner.
+        run: npm install --no-audit --no-fund --no-save
 
       - name: Run cron tick
         env:
