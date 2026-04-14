@@ -18,6 +18,9 @@ import {
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
+// Binance API blocks US IPs (HTTP 451). Default Vercel region is iad1 (US East),
+// so pin this route to Frankfurt where Binance is reachable.
+export const preferredRegion = "fra1";
 
 const INTERVAL_MS = FORWARD_TEST_INTERVAL_MS;
 
@@ -69,13 +72,16 @@ export async function GET(req: NextRequest) {
   // ── Fetch latest candles per symbol ──
   const symbolSet = new Set(portfolios.map((p) => p.symbol as string));
   const candleMap = new Map<string, Candle[]>();
+  const fetchErrors = new Map<string, string>();
 
   for (const symbol of symbolSet) {
     try {
       const candles = await fetchClosedCandles(symbol, portfolios);
       candleMap.set(symbol, candles);
     } catch (err) {
-      console.error(`Failed to fetch candles for ${symbol}:`, err);
+      const msg = (err as Error).message;
+      console.error(`Failed to fetch candles for ${symbol}:`, msg);
+      fetchErrors.set(symbol, msg);
     }
   }
 
@@ -84,6 +90,10 @@ export async function GET(req: NextRequest) {
 
   for (const portfolio of portfolios) {
     const symbol = portfolio.symbol as string;
+    if (fetchErrors.has(symbol)) {
+      results.push({ symbol, processed: 0, error: `fetch: ${fetchErrors.get(symbol)}` });
+      continue;
+    }
     const candles = candleMap.get(symbol);
     if (!candles || candles.length === 0) {
       results.push({ symbol, processed: 0 }); // already up-to-date, not an error
