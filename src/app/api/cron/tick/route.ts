@@ -278,7 +278,10 @@ async function fetchClosedCandles(
       limit: "1000",
     });
 
-    const url = `https://api.binance.com/api/v3/klines?${params.toString()}`;
+    // data-api.binance.vision is Binance's public market-data endpoint — no API
+    // key, same response shape, but fewer geo restrictions than api.binance.com
+    // (which blocks most AWS IPs including Vercel fra1/iad1).
+    const url = `https://data-api.binance.vision/api/v3/klines?${params.toString()}`;
     const r = await fetch(url, { headers: { Accept: "application/json" } });
     if (!r.ok) {
       throw new Error(`Binance ${r.status}: ${await r.text().catch(() => "")}`);
