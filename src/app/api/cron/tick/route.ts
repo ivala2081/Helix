@@ -283,11 +283,13 @@ async function fetchClosedCandles(
     // (which blocks most AWS IPs including Vercel fra1/iad1).
     const url = `https://data-api.binance.vision/api/v3/klines?${params.toString()}`;
     const r = await fetch(url, { headers: { Accept: "application/json" } });
+    console.log(`[cron.fetch] ${symbol} page=${page} status=${r.status} cursor=${cursor} endTime=${currentHourStart}`);
     if (!r.ok) {
       throw new Error(`Binance ${r.status}: ${await r.text().catch(() => "")}`);
     }
 
     const raw = (await r.json()) as unknown[][];
+    console.log(`[cron.fetch] ${symbol} raw.length=${Array.isArray(raw) ? raw.length : `non-array (${typeof raw})`}`);
     if (!Array.isArray(raw) || raw.length === 0) break;
 
     for (const row of raw) {
