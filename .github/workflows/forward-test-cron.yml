@@ -12,11 +12,8 @@ name: Forward Test Cron
 #   TELEGRAM_CHAT_ID            — for trade alerts
 
 on:
-  # Schedule temporarily disabled for state reset (2026-04-15) after engine
-  # look-ahead bias fixes. Re-enable by uncommenting once warmup verifies clean
-  # baseline (5 portfolios @ equity=10000, bar_index=150, trades=0).
-  # schedule:
-  #   - cron: "2 * * * *"
+  schedule:
+    - cron: "2 * * * *"
   workflow_dispatch:
 
 jobs:
