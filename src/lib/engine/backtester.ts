@@ -218,7 +218,11 @@ export async function runBacktest(
     if (decision.score < params.minSignalScore) continue;
 
     // ── (C) OPEN NEW TRADE ──
-    let entryPrice = bar.close;
+    // Signal at bar i close → fill at bar i+1 open (no look-ahead).
+    // ATR snapshot is from signal bar i (variable `atr` above).
+    if (i + 1 >= n) continue;
+    const fillBar = candles[i + 1];
+    let entryPrice = fillBar.open;
     const dir: Direction = decision.action as Direction;
 
     // Slippage on entry (adverse)
@@ -276,8 +280,8 @@ export async function runBacktest(
     const trade: Trade = {
       id: nextTradeId++,
       direction: dir,
-      entryBar: i,
-      entryDate: bar.date,
+      entryBar: i + 1,
+      entryDate: fillBar.date,
       entryPrice,
       initialStopLoss: stopLoss,
       stopLoss,

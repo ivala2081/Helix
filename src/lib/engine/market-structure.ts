@@ -29,20 +29,21 @@ export function computeMarketStructure(candles: Candle[]): MsState {
   const swingHigh: (number | undefined)[] = new Array(n).fill(undefined);
   const swingLow: (number | undefined)[] = new Array(n).fill(undefined);
 
-  // ── Swing detection (lookback on both sides) ──
-  for (let i = lb; i < n - lb; i++) {
+  // ── Swing detection (trailing-only window — no look-ahead) ──
+  // At bar i, confirm a candidate swing at bar (i - lb) using window [i-2*lb, i].
+  // Value is the candidate's high/low; position written to is i (confirmation bar).
+  for (let i = 2 * lb; i < n; i++) {
+    const candidate = i - lb;
     let isHigh = true;
     let isLow = true;
-    const h = candles[i].high;
-    const l = candles[i].low;
-    for (let j = i - lb; j <= i + lb; j++) {
-      if (j === i) continue;
+    const h = candles[candidate].high;
+    const l = candles[candidate].low;
+    for (let j = candidate - lb; j <= i; j++) {
+      if (j === candidate) continue;
       if (candles[j].high > h) isHigh = false;
       if (candles[j].low < l) isLow = false;
       if (!isHigh && !isLow) break;
     }
-    // Python uses == max() so equal-to-max counts as a swing.
-    // Our implementation uses strictly-greater for disqualification, which matches.
     if (isHigh) swingHigh[i] = h;
     if (isLow) swingLow[i] = l;
   }

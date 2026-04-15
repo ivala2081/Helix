@@ -73,6 +73,8 @@ export function computeFvg(candles: Candle[]): FvgState {
     for (const fvg of active) {
       if (fvg.filled) continue;
       const age = i - fvg.creationBar;
+      // FVG must be at least 2 bars old to avoid same-bar (look-ahead) signal
+      if (age < 2) continue;
       if (age > MAX_AGE_BARS) {
         fvg.filled = true; // expired
         continue;

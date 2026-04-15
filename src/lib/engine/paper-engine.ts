@@ -47,12 +47,25 @@ interface InternalFVG {
   testedThisBar: boolean; // signal fires only on first-test bar
 }
 
+// Signal at bar i close → fill at bar (i+1) open. Snapshot of signal-bar
+// data needed at fill time. Persisted in StrategyState across cron cycles.
+export interface PendingEntry {
+  direction: Direction;
+  decisionScore: number;
+  decisionReasons: string[];
+  signalSl: number | undefined;
+  atrAtSignal: number;
+  signalBarIndex: number;
+  signalBarTimestamp: number;
+}
+
 // ─── Strategy State ─────────────────────────────────────────────────
 
 export interface StrategyState {
   // Trade state
   realizedPnl: number;
   openTrade: Trade | null;
+  pendingEntry: PendingEntry | null;
   nextTradeId: number;
   barIndex: number;
   warmupComplete: boolean;
@@ -128,6 +141,7 @@ export function createInitialState(initialCapital: number): StrategyState {
   return {
     realizedPnl: 0,
     openTrade: null,
+    pendingEntry: null,
     nextTradeId: 1,
     barIndex: 0,
     warmupComplete: false,
@@ -211,6 +225,81 @@ export function stepCandle(
   if (atr === undefined || !isFinite(atr) || atr <= 0) {
     state.barIndex++;
     return makeResult(events, state);
+  }
+
+  // ── (PE) FILL pendingEntry (signal at bar i-1 → fill at bar i open) ──
+  // Falls through to manage block on success: SL is suppressed on fill bar
+  // (barsInTrade=0 < minBarsBeforeSl) but hardStop and TPs are checked.
+  if (state.pendingEntry !== null && state.openTrade === null) {
+    const pe = state.pendingEntry;
+    const sigAtr = pe.atrAtSignal;
+    let entryPrice = candle.open;
+    if (params.slippagePct > 0) {
+      const slip = (entryPrice * params.slippagePct) / 100;
+      entryPrice += pe.direction === "LONG" ? slip : -slip;
+    }
+
+    let stopLoss: number;
+    if (pe.direction === "LONG") {
+      const atrSl = entryPrice - params.slAtrMult * sigAtr;
+      stopLoss = pe.signalSl !== undefined ? Math.max(pe.signalSl, atrSl) : atrSl;
+    } else {
+      const atrSl = entryPrice + params.slAtrMult * sigAtr;
+      stopLoss = pe.signalSl !== undefined ? Math.min(pe.signalSl, atrSl) : atrSl;
+    }
+
+    const tp1 = pe.direction === "LONG"
+      ? entryPrice + params.tp1AtrMult * sigAtr
+      : entryPrice - params.tp1AtrMult * sigAtr;
+    const tp2 = pe.direction === "LONG"
+      ? entryPrice + params.tp2AtrMult * sigAtr
+      : entryPrice - params.tp2AtrMult * sigAtr;
+    const tp3 = pe.direction === "LONG"
+      ? entryPrice + params.tp3AtrMult * sigAtr
+      : entryPrice - params.tp3AtrMult * sigAtr;
+
+    const sizing = calculatePositionSize(
+      state.equity, entryPrice, stopLoss, pe.direction, params.riskPct, params.maxPositionPct,
+    );
+
+    if (sizing.size > 0) {
+      let hardStop: number | null = null;
+      if (params.useHardStop) {
+        hardStop = pe.direction === "LONG"
+          ? entryPrice - params.hardStopAtrMult * sigAtr
+          : entryPrice + params.hardStopAtrMult * sigAtr;
+      }
+      const trade: Trade = {
+        id: state.nextTradeId++,
+        direction: pe.direction,
+        entryBar: i,
+        entryTs: candle.timestamp,
+        entryDate: candle.date,
+        entryPrice,
+        initialStopLoss: stopLoss,
+        stopLoss,
+        hardStop,
+        takeProfit1: tp1,
+        takeProfit2: tp2,
+        takeProfit3: tp3,
+        size: sizing.size,
+        remainingSize: sizing.size,
+        riskAmount: sizing.riskAmount,
+        signalScore: pe.decisionScore,
+        signalReasons: pe.decisionReasons,
+        tp1Hit: false,
+        tp2Hit: false,
+        partialPnl: 0,
+        entryCommission: 0,
+        exitCommission: 0,
+        totalCommission: 0,
+        maxFavorable: 0,
+        maxAdverse: 0,
+      };
+      state.openTrade = trade;
+      events.push({ type: "tradeOpened", trade: { ...trade } });
+    }
+    state.pendingEntry = null;
   }
 
   // ── (A) MANAGE OPEN POSITION ──────────────────────────────────────
@@ -347,80 +436,16 @@ export function stepCandle(
     return makeResult(events, state);
   }
 
-  // ── (C) OPEN NEW TRADE ────────────────────────────────────────────
-  let entryPrice = candle.close;
-  const dir: Direction = decision.action as Direction;
-
-  if (params.slippagePct > 0) {
-    const slip = (entryPrice * params.slippagePct) / 100;
-    entryPrice += dir === "LONG" ? slip : -slip;
-  }
-
-  const signalSl = decision.stopLoss;
-  let stopLoss: number;
-  if (dir === "LONG") {
-    const atrSl = entryPrice - params.slAtrMult * atr;
-    stopLoss = signalSl !== undefined ? Math.max(signalSl, atrSl) : atrSl;
-  } else {
-    const atrSl = entryPrice + params.slAtrMult * atr;
-    stopLoss = signalSl !== undefined ? Math.min(signalSl, atrSl) : atrSl;
-  }
-
-  const tp1 = dir === "LONG"
-    ? entryPrice + params.tp1AtrMult * atr
-    : entryPrice - params.tp1AtrMult * atr;
-  const tp2 = dir === "LONG"
-    ? entryPrice + params.tp2AtrMult * atr
-    : entryPrice - params.tp2AtrMult * atr;
-  const tp3 = dir === "LONG"
-    ? entryPrice + params.tp3AtrMult * atr
-    : entryPrice - params.tp3AtrMult * atr;
-
-  const equity = state.equity;
-  const sizing = calculatePositionSize(
-    equity, entryPrice, stopLoss, dir, params.riskPct, params.maxPositionPct,
-  );
-  if (sizing.size <= 0) {
-    state.barIndex++;
-    return makeResult(events, state);
-  }
-
-  let hardStop: number | null = null;
-  if (params.useHardStop) {
-    hardStop = dir === "LONG"
-      ? entryPrice - params.hardStopAtrMult * atr
-      : entryPrice + params.hardStopAtrMult * atr;
-  }
-
-  const trade: Trade = {
-    id: state.nextTradeId++,
-    direction: dir,
-    entryBar: i,
-    entryTs: candle.timestamp,
-    entryDate: candle.date,
-    entryPrice,
-    initialStopLoss: stopLoss,
-    stopLoss,
-    hardStop,
-    takeProfit1: tp1,
-    takeProfit2: tp2,
-    takeProfit3: tp3,
-    size: sizing.size,
-    remainingSize: sizing.size,
-    riskAmount: sizing.riskAmount,
-    signalScore: decision.score,
-    signalReasons: decision.reasons,
-    tp1Hit: false,
-    tp2Hit: false,
-    partialPnl: 0,
-    entryCommission: 0,
-    exitCommission: 0,
-    totalCommission: 0,
-    maxFavorable: 0,
-    maxAdverse: 0,
+  // ── (C) SET pendingEntry — fill happens at next bar's open ──────
+  state.pendingEntry = {
+    direction: decision.action as Direction,
+    decisionScore: decision.score,
+    decisionReasons: decision.reasons,
+    signalSl: decision.stopLoss,
+    atrAtSignal: atr,
+    signalBarIndex: i,
+    signalBarTimestamp: candle.timestamp,
   };
-  state.openTrade = trade;
-  events.push({ type: "tradeOpened", trade: { ...trade } });
 
   state.barIndex++;
   return makeResult(events, state);
@@ -471,6 +496,10 @@ function updateAtr(state: StrategyState, candle: Candle): void {
 function updateMarketStructure(state: StrategyState, candle: Candle): void {
   const ms = state.ms;
   const RING_SIZE = SWING_LOOKBACK * 2 + 1; // 11
+
+  // Capture trend at start of this bar — batch CHoCH compares prev-bar trend
+  // to current-bar trend, not prev-event to current-event. (Python parity.)
+  ms.prevTrend = ms.trend;
 
   // Push candle into ring buffer
   ms.candleRing[ms.ringIdx] = candle;
@@ -530,8 +559,6 @@ function updateMarketStructure(state: StrategyState, candle: Candle): void {
 }
 
 function updateTrend(ms: StrategyState["ms"]): void {
-  const prevTrend = ms.trend;
-
   if (ms.lastShType === "HH" && ms.lastSlType === "HL") {
     ms.trend = "BULLISH";
   } else if (ms.lastShType === "LH" && ms.lastSlType === "LL") {
@@ -552,11 +579,7 @@ function updateTrend(ms: StrategyState["ms"]): void {
   }
   ms.trendMaturity = Math.max(ms.consecBull, ms.consecBear);
 
-  // CHoCH detection
-  if (ms.trend !== prevTrend && ms.trend !== "NEUTRAL" && prevTrend !== "NEUTRAL") {
-    // CHoCH occurred — we track prevTrend for BOS/CHoCH signal generation
-  }
-  ms.prevTrend = prevTrend;
+  // CHoCH/prevTrend bookkeeping is owned by updateMarketStructure (bar-based).
 }
 
 // ─── Market Structure signal generation ─────────────────────────────
@@ -686,6 +709,8 @@ function updateFvg(state: StrategyState, candle: Candle): void {
     for (const fvg of f.activeFvgs) {
       if (fvg.filled) continue;
       const age = barIndex - fvg.creationBar;
+      // FVG must be at least 2 bars old to avoid same-bar (look-ahead) signal
+      if (age < 2) continue;
       if (age > FVG_MAX_AGE_BARS) { fvg.filled = true; continue; }
 
       if (fvg.direction === "bullish") {
