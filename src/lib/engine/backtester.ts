@@ -425,7 +425,12 @@ export function closeFull(
   trade.exitDate = exitDate;
   trade.exitReason = reason;
   trade.pnl = totalPnl;
-  trade.pnlPct = trade.riskAmount > 0 ? (totalPnl / trade.riskAmount) * 100 : 0;
+  // pnlPct = position-return %: pnl as a fraction of notional exposure at
+  // entry. Matches what exchanges/brokers show per trade. Kept separate from
+  // rMultiple (below) which is pnl relative to risk budget — same info as the
+  // old pnlPct×100 formula, just without the misleading "%" label.
+  const notional = trade.entryPrice * trade.size;
+  trade.pnlPct = notional > 0 ? (totalPnl / notional) * 100 : 0;
   trade.rMultiple = trade.riskAmount > 0 ? totalPnl / trade.riskAmount : 0;
   trade.barsHeld = barIdx - trade.entryBar;
   return finalPnl;

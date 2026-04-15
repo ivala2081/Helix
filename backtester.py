@@ -642,7 +642,11 @@ class Backtester:
         trade.exit_date = date_str
         trade.exit_reason = reason
         trade.pnl = total_pnl
-        trade.pnl_pct = total_pnl / trade.risk_amount * 100 if trade.risk_amount > 0 else 0
+        # pnl_pct = position return % (pnl / notional). Matches exchange trade
+        # log convention; the old formula (pnl / risk × 100) produced R-multiple-
+        # style values under a misleading "%" label.
+        notional = trade.entry_price * trade.size
+        trade.pnl_pct = total_pnl / notional * 100 if notional > 0 else 0
         trade.bars_held = bar_idx - trade.entry_bar
 
     # ═══════════════════════════════════════════════════════════
