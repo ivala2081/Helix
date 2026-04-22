@@ -7,6 +7,7 @@ import { LiveStatusBadge } from "@/components/live/LiveStatusBadge";
 import { OpenPositionsStrip } from "@/components/live/OpenPositionsStrip";
 import { LiveTradeAnalytics } from "@/components/live/LiveTradeAnalytics";
 import { PortfolioAggregate } from "@/components/live/PortfolioAggregate";
+import { QuantMonitor } from "@/components/live/QuantMonitor";
 import { useDictionary } from "@/lib/i18n/DictionaryProvider";
 
 interface Portfolio {
@@ -177,6 +178,9 @@ export default function LivePage() {
               {data.lastCronRun.duration_ms}ms · {data.lastCronRun.status}
             </div>
           )}
+
+          {/* Quant Monitor — live vs backtest diagnostics */}
+          <QuantMonitor />
 
           {/* Trade Analytics */}
           <LiveTradeAnalytics />

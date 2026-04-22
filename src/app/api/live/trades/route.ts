@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
   // Build full query for stats (all matching trades)
   let full = db
     .from("live_trades")
-    .select("pnl, exit_reason, r_multiple, bars_held");
+    .select("pnl, exit_reason, r_multiple, bars_held, entry_ts");
 
   if (symbol) {
     paged = paged.eq("symbol", symbol);
@@ -70,7 +70,11 @@ export async function GET(req: NextRequest) {
   let sumWin = 0;
   let sumLoss = 0;
   let totalPnl = 0;
+  let sumR = 0;
+  let rCount = 0;
+  const rMultiples: number[] = [];
   const exitReasons: Record<string, number> = {};
+  let earliestEntryTs: number | null = null;
 
   for (const t of allTrades) {
     const pnl = t.pnl ?? 0;
@@ -84,6 +88,15 @@ export async function GET(req: NextRequest) {
     }
     const reason = t.exit_reason ?? "Unknown";
     exitReasons[reason] = (exitReasons[reason] ?? 0) + 1;
+    if (typeof t.r_multiple === "number") {
+      sumR += t.r_multiple;
+      rCount++;
+      rMultiples.push(t.r_multiple);
+    }
+    const ts = t.entry_ts;
+    if (typeof ts === "number" && (earliestEntryTs == null || ts < earliestEntryTs)) {
+      earliestEntryTs = ts;
+    }
   }
 
   const tradeCount = winCount + lossCount;
@@ -94,6 +107,20 @@ export async function GET(req: NextRequest) {
   const expectancy = tradeCount > 0
     ? winRate * avgWin - (1 - winRate) * avgLoss
     : 0;
+  const avgR = rCount > 0 ? sumR / rCount : 0;
+  const medianR = rMultiples.length
+    ? [...rMultiples].sort((a, b) => a - b)[Math.floor(rMultiples.length / 2)]
+    : 0;
+
+  const tp1Count =
+    (exitReasons["TP1"] ?? 0) +
+    (exitReasons["TP2"] ?? 0) +
+    (exitReasons["TP3"] ?? 0);
+  const tp2Count = (exitReasons["TP2"] ?? 0) + (exitReasons["TP3"] ?? 0);
+  const tp3Count = exitReasons["TP3"] ?? 0;
+  const tp1Rate = tradeCount > 0 ? tp1Count / tradeCount : 0;
+  const tp2Rate = tradeCount > 0 ? tp2Count / tradeCount : 0;
+  const tp3Rate = tradeCount > 0 ? tp3Count / tradeCount : 0;
 
   return NextResponse.json(
     {
@@ -108,6 +135,12 @@ export async function GET(req: NextRequest) {
         profitFactor,
         expectancy,
         totalPnl,
+        avgR,
+        medianR,
+        tp1Rate,
+        tp2Rate,
+        tp3Rate,
+        earliestEntryTs,
       },
       exitReasons,
     },
