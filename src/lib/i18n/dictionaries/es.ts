@@ -190,7 +190,7 @@ export const es = {
     },
     emptyState: {
       title: "Listo cuando tú lo estés",
-      body: "Configura a la izquierda y haz clic en Ejecutar Backtest. Prueba los valores predeterminados V5 en BTCUSDT 1H para reproducir la ejecución de referencia de +949%.",
+      body: "Configura a la izquierda y haz clic en Ejecutar Backtest. Prueba los valores predeterminados V5 en BTCUSDT 1H para reproducir la ejecución de referencia de +87%.",
       runBacktest: "Ejecutar Backtest",
     },
     progress: {

@@ -2,8 +2,9 @@
 Helix V5 — Quant Analysis Suite
 ================================
 
-Objective: decide whether to public-launch the forward-test on 2026-04-29
-based on overfit-adjusted statistics of the 3.3-year backtest.
+Objective: produce overfit-adjusted statistics of the 3.3-year backtest
+as ONE input into the launch decision. The actual launch decision uses
+docs/launch-gates.md applied against live forward-test data on 2026-06-15.
 
 Three analyses produced:
   1) Walk-Forward OOS decay — IS vs OOS Sharpe across rolling windows
@@ -392,7 +393,7 @@ def main():
         print(line)
 
     verdict_labels = {
-        "LAUNCH": "GO — launch 2026-04-29 as planned, full risk.",
+        "LAUNCH": "GO — evaluate against launch-gates.md on 2026-06-15.",
         "LAUNCH_CAUTIOUS": "GO CAUTIOUS — launch with reduced risk cap + prominent disclaimer.",
         "DELAY_1_MONTH": "DELAY — fix biases (TP wick, portfolio limit) and re-run.",
         "KILL_OR_REWORK": "KILL — strategy likely overfit; do not public-launch V5 as-is.",

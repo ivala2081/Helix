@@ -187,7 +187,7 @@ export const de = {
     },
     emptyState: {
       title: "Bereit, wenn Sie es sind",
-      body: "Konfigurieren Sie links und klicken Sie auf Backtest starten. Probieren Sie die V5-Standardwerte auf BTCUSDT 1H, um den +949%-Referenzlauf zu reproduzieren.",
+      body: "Konfigurieren Sie links und klicken Sie auf Backtest starten. Probieren Sie die V5-Standardwerte auf BTCUSDT 1H, um den +87%-Referenzlauf zu reproduzieren.",
       runBacktest: "Backtest starten",
     },
     progress: {

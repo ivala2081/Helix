@@ -132,19 +132,23 @@ export async function runBacktest(
       }
 
       if (stoppedOut) {
-        const realized = closeFull(t, i, exitPrice, reason, params, candles[i].date);
+        const realized = closeFull(t, i, exitPrice, reason, params, candles[i].date, atr);
         realizedPnl += realized;
         trades.push(t);
         openTrade = null;
         continue;
       }
 
-      // ── Take profits ──
+      // ── Take profits — P1 realism patch (require close confirmation) ──
+      const longTpHit = (tp: number) =>
+        bar.high >= tp && (!params.tpRequireClose || bar.close >= tp);
+      const shortTpHit = (tp: number) =>
+        bar.low <= tp && (!params.tpRequireClose || bar.close <= tp);
+
       if (dir === "LONG") {
-        // TP1
-        if (!t.tp1Hit && bar.high >= t.takeProfit1) {
+        if (!t.tp1Hit && longTpHit(t.takeProfit1)) {
           const closeSize = t.size * params.tp1ClosePct;
-          const sliceRealized = partialClose(t, t.takeProfit1, closeSize, params);
+          const sliceRealized = partialClose(t, t.takeProfit1, closeSize, params, atr);
           realizedPnl += sliceRealized;
           t.remainingSize -= closeSize;
           t.tp1Hit = true;
@@ -152,17 +156,15 @@ export async function runBacktest(
             t.stopLoss = t.entryPrice + params.beBufferAtr * atr;
           }
         }
-        // TP2
-        if (t.tp1Hit && !t.tp2Hit && bar.high >= t.takeProfit2) {
+        if (t.tp1Hit && !t.tp2Hit && longTpHit(t.takeProfit2)) {
           const closeSize = t.size * params.tp2ClosePct;
-          const sliceRealized = partialClose(t, t.takeProfit2, closeSize, params);
+          const sliceRealized = partialClose(t, t.takeProfit2, closeSize, params, atr);
           realizedPnl += sliceRealized;
           t.remainingSize -= closeSize;
           t.tp2Hit = true;
         }
-        // TP3 — full close
-        if (t.tp2Hit && bar.high >= t.takeProfit3) {
-          const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candles[i].date);
+        if (t.tp2Hit && longTpHit(t.takeProfit3)) {
+          const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candles[i].date, atr);
           realizedPnl += realized;
           trades.push(t);
           openTrade = null;
@@ -170,9 +172,9 @@ export async function runBacktest(
         }
       } else {
         // SHORT
-        if (!t.tp1Hit && bar.low <= t.takeProfit1) {
+        if (!t.tp1Hit && shortTpHit(t.takeProfit1)) {
           const closeSize = t.size * params.tp1ClosePct;
-          const sliceRealized = partialClose(t, t.takeProfit1, closeSize, params);
+          const sliceRealized = partialClose(t, t.takeProfit1, closeSize, params, atr);
           realizedPnl += sliceRealized;
           t.remainingSize -= closeSize;
           t.tp1Hit = true;
@@ -180,15 +182,15 @@ export async function runBacktest(
             t.stopLoss = t.entryPrice - params.beBufferAtr * atr;
           }
         }
-        if (t.tp1Hit && !t.tp2Hit && bar.low <= t.takeProfit2) {
+        if (t.tp1Hit && !t.tp2Hit && shortTpHit(t.takeProfit2)) {
           const closeSize = t.size * params.tp2ClosePct;
-          const sliceRealized = partialClose(t, t.takeProfit2, closeSize, params);
+          const sliceRealized = partialClose(t, t.takeProfit2, closeSize, params, atr);
           realizedPnl += sliceRealized;
           t.remainingSize -= closeSize;
           t.tp2Hit = true;
         }
-        if (t.tp2Hit && bar.low <= t.takeProfit3) {
-          const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candles[i].date);
+        if (t.tp2Hit && shortTpHit(t.takeProfit3)) {
+          const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candles[i].date, atr);
           realizedPnl += realized;
           trades.push(t);
           openTrade = null;
@@ -225,11 +227,9 @@ export async function runBacktest(
     let entryPrice = fillBar.open;
     const dir: Direction = decision.action as Direction;
 
-    // Slippage on entry (adverse)
-    if (params.slippagePct > 0) {
-      const slip = (entryPrice * params.slippagePct) / 100;
-      entryPrice += dir === "LONG" ? slip : -slip;
-    }
+    // Adverse execution cost on entry: %-slippage + ATR-slippage + half-spread.
+    const entryCost = executionCost(entryPrice, atr, params);
+    entryPrice += dir === "LONG" ? entryCost : -entryCost;
 
     // Stop loss: tighter of signal SL and ATR-based SL
     const signalSl = decision.stopLoss;
@@ -322,6 +322,7 @@ export async function runBacktest(
       "End of data",
       params,
       last.date,
+      last.atr14,
     );
     realizedPnl += realized;
     trades.push(openTrade);
@@ -362,20 +363,44 @@ export async function runBacktest(
 
 // ── Helpers (exported for paper-engine reuse) ──
 
+// Adverse execution cost applied at every fill: classic %-slippage +
+// ATR-scaled slippage + half-spread (bid/ask). All components together
+// represent the realistic "you pay more / receive less than the limit"
+// gap. Returns the absolute price adjustment (always positive); the
+// caller subtracts for sells and adds for buys. See docs/launch-gates.md.
+export function executionCost(
+  price: number,
+  atr: number | undefined,
+  params: BacktestParams,
+): number {
+  const pctSlip = (price * (params.slippagePct ?? 0)) / 100;
+  const atrSlip = atr && isFinite(atr) ? (params.slippageAtrFrac ?? 0) * atr : 0;
+  const halfSpread = atr && isFinite(atr) ? 0.5 * (params.spreadAtrFrac ?? 0) * atr : 0;
+  return pctSlip + atrSlip + halfSpread;
+}
+
 export function partialClose(
   trade: Trade,
   exitPrice: number,
   closeSize: number,
   params: BacktestParams,
+  atr?: number,
 ): number {
-  // Partial close at TP — no slippage applied (TPs are limit orders)
+  // Partial close at TP — apply ATR-scaled slippage + half-spread.
+  // (legacy slippagePct stays at 0 for TPs to preserve historical limit-order behavior.)
+  let finalExit = exitPrice;
+  const atrSlip = atr && isFinite(atr) ? (params.slippageAtrFrac ?? 0) * atr : 0;
+  const halfSpread = atr && isFinite(atr) ? 0.5 * (params.spreadAtrFrac ?? 0) * atr : 0;
+  const cost = atrSlip + halfSpread;
+  finalExit += trade.direction === "LONG" ? -cost : cost;
+
   let pnl: number;
   if (trade.direction === "LONG") {
-    pnl = (exitPrice - trade.entryPrice) * closeSize;
+    pnl = (finalExit - trade.entryPrice) * closeSize;
   } else {
-    pnl = (trade.entryPrice - exitPrice) * closeSize;
+    pnl = (trade.entryPrice - finalExit) * closeSize;
   }
-  const exitComm = (exitPrice * closeSize * params.commissionPct) / 100;
+  const exitComm = (finalExit * closeSize * params.commissionPct) / 100;
   const entryComm = (trade.entryPrice * closeSize * params.commissionPct) / 100;
   const totalComm = exitComm + entryComm;
   pnl -= totalComm;
@@ -394,15 +419,24 @@ export function closeFull(
   reason: ExitReason,
   params: BacktestParams,
   exitDate: string,
+  atr?: number,
 ): number {
-  // Apply slippage on stop / end-of-data exits (not TPs)
+  // Apply full execution cost on stop / end-of-data exits (legacy %-slippage
+  // only fired for stops); TPs get just the ATR-scaled portion via partialClose.
   let finalExit = exitPrice;
   if (
-    params.slippagePct > 0 &&
-    (reason === "Stop Loss" || reason === "Hard Stop" || reason === "End of data")
+    reason === "Stop Loss" ||
+    reason === "Hard Stop" ||
+    reason === "End of data"
   ) {
-    const slip = (finalExit * params.slippagePct) / 100;
-    finalExit += trade.direction === "LONG" ? -slip : slip;
+    const cost = executionCost(finalExit, atr, params);
+    finalExit += trade.direction === "LONG" ? -cost : cost;
+  } else {
+    // TP3 closing path — apply ATR + spread but not legacy %-slippage.
+    const atrSlip = atr && isFinite(atr) ? (params.slippageAtrFrac ?? 0) * atr : 0;
+    const halfSpread = atr && isFinite(atr) ? 0.5 * (params.spreadAtrFrac ?? 0) * atr : 0;
+    const cost = atrSlip + halfSpread;
+    finalExit += trade.direction === "LONG" ? -cost : cost;
   }
 
   let finalPnl: number;

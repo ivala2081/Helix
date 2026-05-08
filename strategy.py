@@ -96,9 +96,16 @@ STRATEGY_PARAMS = {
     "commission_pct": 0.075,             # Binance taker fee
     "slippage_pct": 0.02,                # realistic BTC 1H slippage
 
-    # Hard stop — catastrophic protection during SL suppression
+    # Realism patches (2026-05-08). See docs/launch-gates.md.
+    "tp_require_close": True,            # P1: TP fills only when bar closes beyond the level
+    "slippage_atr_frac": 0.05,           # P2: extra ATR-fraction slippage on every fill
+    "spread_atr_frac": 0.03,             # P3: bid/ask spread as fraction of ATR
+
+    # Hard stop — catastrophic protection during SL suppression.
+    # P4: tightened from 15× ATR to 8× ATR (2026-05-08). Old floor was wide
+    # enough to mask real risk-of-ruin during the 50-bar SL suppression window.
     "use_hard_stop": True,
-    "hard_stop_atr_mult": 15.0,         # 15x ATR catastrophic floor (black swan only)
+    "hard_stop_atr_mult": 8.0,
 }
 
 

@@ -34,11 +34,13 @@ from quant_analysis import (
 MTRL_TARGET_SR1 = 19
 MTRL_TARGET_SR2 = 42
 
-# Backtest reference values (from reports/quant_analysis_20260422_132943.json)
+# Realism-patched backtest reference values (Phase 2 of launch plan, 2026-05-08).
+# Source: reports/realism_patched_baseline.json. P1 (TP close confirm) is the
+# largest contributor to the drop from the pre-patch numbers.
 BACKTEST_REF = {
-    "BTCUSDT": {"win_rate": 0.778, "profit_factor": 6.80, "sharpe_per_trade": 0.516, "mean_r": 1.54},
-    "ETHUSDT": {"win_rate": 0.767, "profit_factor": 4.31, "sharpe_per_trade": 0.450, "mean_r": 1.16},
-    "SOLUSDT": {"win_rate": 0.822, "profit_factor": 5.46, "sharpe_per_trade": 0.468, "mean_r": 1.25},
+    "BTCUSDT": {"win_rate": 0.646, "profit_factor": 1.71, "sharpe_per_trade": None, "mean_r": None},
+    "ETHUSDT": {"win_rate": 0.619, "profit_factor": 1.33, "sharpe_per_trade": None, "mean_r": None},
+    "SOLUSDT": {"win_rate": 0.702, "profit_factor": 1.89, "sharpe_per_trade": None, "mean_r": None},
 }
 
 REPORTS_DIR = Path(__file__).parent / "reports"
@@ -183,12 +185,15 @@ def compare_to_backtest(live: dict) -> dict | None:
     ref = BACKTEST_REF.get(sym)
     if not ref:
         return None
-    return {
+    out = {
         "win_rate_delta": live["win_rate"] - ref["win_rate"],
         "profit_factor_delta": (live["profit_factor"] or 0) - ref["profit_factor"],
-        "sharpe_per_trade_delta": live["sharpe_per_trade"] - ref["sharpe_per_trade"],
-        "mean_r_delta": live["mean_r_multiple"] - ref["mean_r"],
     }
+    if ref.get("sharpe_per_trade") is not None:
+        out["sharpe_per_trade_delta"] = live["sharpe_per_trade"] - ref["sharpe_per_trade"]
+    if ref.get("mean_r") is not None:
+        out["mean_r_delta"] = live["mean_r_multiple"] - ref["mean_r"]
+    return out
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -237,11 +242,13 @@ def main():
         _print_block(block, mtrl_ref=MTRL_TARGET_SR1)
         cmp = compare_to_backtest(block)
         if cmp:
-            print("  vs backtest reference:")
+            print("  vs realism-patched backtest reference:")
             print(f"    d Win Rate:           {cmp['win_rate_delta']:+.3f}")
             print(f"    d Profit Factor:      {cmp['profit_factor_delta']:+.2f}")
-            print(f"    d Sharpe (per-trade): {cmp['sharpe_per_trade_delta']:+.3f}")
-            print(f"    d Mean R-multiple:    {cmp['mean_r_delta']:+.2f}R")
+            if "sharpe_per_trade_delta" in cmp:
+                print(f"    d Sharpe (per-trade): {cmp['sharpe_per_trade_delta']:+.3f}")
+            if "mean_r_delta" in cmp:
+                print(f"    d Mean R-multiple:    {cmp['mean_r_delta']:+.2f}R")
 
     # Launch-decision view
     print("\n[LAUNCH DECISION PROJECTION]")

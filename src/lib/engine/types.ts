@@ -120,6 +120,14 @@ export interface BacktestParams {
   warmupBars: number;
   commissionPct: number;
   slippagePct: number;
+  // Realism patches (Phase 2 of launch plan, 2026-05-08).
+  // tpRequireClose: TP fills only if the bar's close confirms the level;
+  //   wick-only pokes do not trigger TP. Eliminates the wick-fill bias.
+  // slippageAtrFrac: ATR-scaled additive slippage (in addition to slippagePct).
+  // spreadAtrFrac: bid/ask spread cost as a fraction of ATR; applied to fills.
+  tpRequireClose: boolean;
+  slippageAtrFrac: number;
+  spreadAtrFrac: number;
   // Hard stop
   useHardStop: boolean;
   hardStopAtrMult: number;

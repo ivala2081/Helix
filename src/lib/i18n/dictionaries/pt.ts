@@ -187,7 +187,7 @@ export const pt = {
     },
     emptyState: {
       title: "Pronto quando voce estiver",
-      body: "Configure a esquerda e clique em Executar Backtest. Experimente os padroes V5 no BTCUSDT 1H para reproduzir a execucao de referencia de +949%.",
+      body: "Configure a esquerda e clique em Executar Backtest. Experimente os padroes V5 no BTCUSDT 1H para reproduzir a execucao de referencia de +87%.",
       runBacktest: "Executar Backtest",
     },
     progress: {

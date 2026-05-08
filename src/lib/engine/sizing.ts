@@ -21,6 +21,10 @@ export function calculatePositionSize(
   direction: Direction,
   riskPct: number,
   maxPositionPct: number,
+  // Optional dynamic allocation multiplier (0..1). Multiplied with riskPct so
+  // a symbol whose recent edge is weak takes smaller risk per trade.
+  // Default 1.0 keeps backward-compatible behavior.
+  allocationMultiplier: number = 1.0,
 ): SizingResult {
   if (equity <= 0) {
     return { size: 0, usdValue: 0, riskAmount: 0, riskPerUnit: 0 };
@@ -32,7 +36,8 @@ export function calculatePositionSize(
     return { size: 0, usdValue: 0, riskAmount: 0, riskPerUnit: 0 };
   }
 
-  let riskAmount = equity * riskPct;
+  const effectiveRiskPct = riskPct * Math.max(0, allocationMultiplier);
+  let riskAmount = equity * effectiveRiskPct;
   let size = riskAmount / riskPerUnit;
   let usdValue = size * entryPrice;
 

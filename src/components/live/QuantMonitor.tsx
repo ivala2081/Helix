@@ -2,21 +2,26 @@
 
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils/cn";
+import {
+  computeConfidence,
+  type ConfidenceScore,
+  type HistoricalWindowsFile,
+  type LiveTrade,
+} from "@/lib/quant/confidence-score";
 
-// Backtest reference values, from quant_analysis.py (2026-04-22 run, BTC 1H, 189 trades)
-// Source: reports/quant_analysis_20260422_132943.json
+// Realism-patched backtest reference (2026-05-08, see docs/launch-gates.md).
+// Source: reports/realism_patched_baseline.json — BTC 1H, n=178.
 const BACKTEST_REF = {
-  winRate: 0.778,
-  profitFactor: 6.80,
-  meanR: 1.54,
-  // Estimated from high PF + tp3_close_pct=0.65 in WINNER_PARAMS
-  tp3Rate: 0.35,
-  tp1Rate: 0.80,
+  winRate: 0.646,
+  profitFactor: 1.71,
+  meanR: 0.40, // Approximated from PF and WR; precise value TBD post-walk-forward.
+  tp3Rate: 0.20,
+  tp1Rate: 0.65,
 };
 
-// Minimum Track Record Length for SR > 1 annualized at 95% confidence
-// Source: quant_analysis.py MTRL calc on BTC 1H (189 trades), = 19 trades
-const MTRL_TARGET = 19;
+// Launch-gate G1 trade count (see docs/launch-gates.md). Was 19 (MTRL for SR>1)
+// before the realism patches; now we hold ourselves to the higher gate of 35.
+const MTRL_TARGET = 35;
 
 interface TradeStatsPayload {
   winCount: number;
@@ -43,6 +48,7 @@ interface ApiResponse {
 export function QuantMonitor() {
   const [stats, setStats] = useState<TradeStatsPayload | null>(null);
   const [total, setTotal] = useState(0);
+  const [confidence, setConfidence] = useState<ConfidenceScore | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +62,28 @@ export function QuantMonitor() {
         }
       } catch {
         // swallow, panel just shows dashes
+      }
+
+      // Confidence score: pull recent live trades + historical windows JSON,
+      // then run the computeConfidence function (pure, client-side).
+      try {
+        const [tradesResp, histResp] = await Promise.all([
+          fetch("/api/live/trades?limit=200&offset=0"),
+          fetch("/data/historical-windows.json"),
+        ]);
+        const tradesJson = await tradesResp.json();
+        const histJson: HistoricalWindowsFile = await histResp.json();
+        const liveTrades: LiveTrade[] = (tradesJson.trades ?? []).map(
+          (t: { exit_ts: number; pnl: number; r_multiple: number | null }) => ({
+            exit_ts: t.exit_ts,
+            pnl: t.pnl,
+            r_multiple: t.r_multiple,
+          }),
+        );
+        const score = computeConfidence(liveTrades, histJson);
+        if (!cancelled) setConfidence(score);
+      } catch {
+        // optional — confidence panel just hidden if hist file or trades fail
       }
     };
     load();
@@ -165,6 +193,55 @@ export function QuantMonitor() {
             : "Below threshold — early-sample noise expected. Do not over-interpret individual trades."}
         </div>
       </div>
+
+      {/* Bayesian confidence score */}
+      {confidence && (
+        <div className="mt-4 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-muted)]/30 p-3">
+          <div className="flex items-baseline justify-between text-[11px]">
+            <span className="text-[var(--color-muted)]">
+              Confidence Score (live vs backtest distribution)
+            </span>
+            <span
+              className={cn(
+                "font-mono tabular-nums text-sm",
+                confidence.band === "extreme_low"
+                  ? "text-red-400"
+                  : confidence.band === "low"
+                    ? "text-amber-400"
+                    : confidence.band === "normal"
+                      ? "text-emerald-400"
+                      : confidence.band === "high"
+                        ? "text-emerald-400"
+                        : "text-amber-400",
+              )}
+            >
+              {confidence.score.toFixed(0)} / 100
+            </span>
+          </div>
+          <div className="mt-1 h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+            <div
+              className={cn(
+                "h-full transition-all",
+                confidence.band === "extreme_low"
+                  ? "bg-red-500"
+                  : confidence.band === "low"
+                    ? "bg-amber-500"
+                    : confidence.band === "normal"
+                      ? "bg-emerald-500"
+                      : confidence.band === "high"
+                        ? "bg-emerald-500"
+                        : "bg-amber-500",
+              )}
+              style={{ width: `${Math.max(2, confidence.score)}%` }}
+            />
+          </div>
+          <p className="mt-2 text-[10px] leading-relaxed text-[var(--color-muted)]">
+            {confidence.interpretation} Live n={confidence.nLive} over last
+            {" "}{confidence.windowDays} days; ranked vs {confidence.histWindowsCount}{" "}
+            historical windows from realism-patched backtest.
+          </p>
+        </div>
+      )}
 
       {/* Live vs backtest table */}
       <div className="mt-4 overflow-hidden rounded-lg border border-[var(--color-border)]">

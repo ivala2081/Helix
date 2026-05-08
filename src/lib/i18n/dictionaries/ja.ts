@@ -187,7 +187,7 @@ export const ja = {
     },
     emptyState: {
       title: "準備完了",
-      body: "左側で設定して「Backtest を実行」をクリック。V5 デフォルトで BTCUSDT 1H の +949% 参考結果を再現してみましょう。",
+      body: "左側で設定して「Backtest を実行」をクリック。V5 デフォルトで BTCUSDT 1H の +87% 参考結果を再現してみましょう。",
       runBacktest: "Backtest を実行",
     },
     progress: {

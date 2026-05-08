@@ -187,7 +187,7 @@ export const zh = {
     },
     emptyState: {
       title: "准备就绪",
-      body: "在左侧配置参数并点击运行 Backtest。使用 V5 默认值在 BTCUSDT 1H 上复现 +949% 的参考结果。",
+      body: "在左侧配置参数并点击运行 Backtest。使用 V5 默认值在 BTCUSDT 1H 上复现 +87% 的参考结果。",
       runBacktest: "运行 Backtest",
     },
     progress: {

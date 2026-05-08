@@ -118,6 +118,10 @@ class Backtester:
         # ── Hard stop (catastrophic protection during SL suppression) ──
         use_hard_stop: bool = False,         # enable hard stop during suppression
         hard_stop_atr_mult: float = 15.0,    # 15x ATR catastrophic stop (black swan only)
+        # ── Realism patches (Phase 2 of launch plan, 2026-05-08) ──
+        tp_require_close: bool = False,      # P1: TP fills only when bar's close confirms the level
+        slippage_atr_frac: float = 0.0,      # P2: ATR-scaled slippage component (added to slippage_pct)
+        spread_atr_frac: float = 0.0,        # P3: bid/ask spread as fraction of ATR (half applied per fill)
     ):
         self.initial_capital = initial_capital
         self.risk_pct = risk_pct
@@ -167,6 +171,10 @@ class Backtester:
         # Hard stop
         self.use_hard_stop = use_hard_stop
         self.hard_stop_atr_mult = hard_stop_atr_mult
+        # Realism patches
+        self.tp_require_close = tp_require_close
+        self.slippage_atr_frac = slippage_atr_frac
+        self.spread_atr_frac = spread_atr_frac
 
         # Indicator instances
         self.ms = MarketStructure(swing_lookback=5) if use_market_structure else None
@@ -342,11 +350,19 @@ class Backtester:
                     continue
 
                 # ── Take Profit Checks (progressive) ──
+                # P1 realism patch (2026-05-08): when tp_require_close, the bar
+                # must close at or beyond the TP for the fill to be honored.
+                close_px = df["close"].iloc[i]
+                def _long_tp_hit(level: float) -> bool:
+                    return high >= level and (not self.tp_require_close or close_px >= level)
+                def _short_tp_hit(level: float) -> bool:
+                    return low <= level and (not self.tp_require_close or close_px <= level)
+
                 if open_trade.direction == "LONG":
                     # TP1
-                    if not tp1_hit and high >= open_trade.take_profit_1:
+                    if not tp1_hit and _long_tp_hit(open_trade.take_profit_1):
                         close_size = open_trade.size * self.tp1_close_pct
-                        self._partial_close(sm, position_id, open_trade, close_size, open_trade.take_profit_1)
+                        self._partial_close(sm, position_id, open_trade, close_size, open_trade.take_profit_1, atr=atr)
                         remaining_size -= close_size
                         tp1_hit = True
                         # Move SL to breakeven after TP1
@@ -355,9 +371,9 @@ class Backtester:
                             open_trade.stop_loss = be_price
 
                     # TP2
-                    if tp1_hit and not tp2_hit and high >= open_trade.take_profit_2:
+                    if tp1_hit and not tp2_hit and _long_tp_hit(open_trade.take_profit_2):
                         close_size = open_trade.size * self.tp2_close_pct
-                        self._partial_close(sm, position_id, open_trade, close_size, open_trade.take_profit_2)
+                        self._partial_close(sm, position_id, open_trade, close_size, open_trade.take_profit_2, atr=atr)
                         remaining_size -= close_size
                         tp2_hit = True
                         # V3B: Activate trailing after TP2
@@ -366,7 +382,7 @@ class Backtester:
                             trailing_stop = high - atr * self.trail_after_tp2_atr
 
                     # TP3 — full close (skip if trail_after_tp2 — let trailing ride)
-                    if tp2_hit and not self.trail_after_tp2 and high >= open_trade.take_profit_3:
+                    if tp2_hit and not self.trail_after_tp2 and _long_tp_hit(open_trade.take_profit_3):
                         self._close_trade(open_trade, i, open_trade.take_profit_3, "TP3", remaining_size, df, sm, position_id)
                         closed_trades.append(open_trade)
                         # V3E: Edge monitor update
@@ -397,9 +413,9 @@ class Backtester:
                                 trailing_stop = new_trail
 
                 elif open_trade.direction == "SHORT":
-                    if not tp1_hit and low <= open_trade.take_profit_1:
+                    if not tp1_hit and _short_tp_hit(open_trade.take_profit_1):
                         close_size = open_trade.size * self.tp1_close_pct
-                        self._partial_close(sm, position_id, open_trade, close_size, open_trade.take_profit_1)
+                        self._partial_close(sm, position_id, open_trade, close_size, open_trade.take_profit_1, atr=atr)
                         remaining_size -= close_size
                         tp1_hit = True
                         # Move SL to breakeven after TP1
@@ -407,9 +423,9 @@ class Backtester:
                             be_price = open_trade.entry_price - self.be_buffer_atr * atr
                             open_trade.stop_loss = be_price
 
-                    if tp1_hit and not tp2_hit and low <= open_trade.take_profit_2:
+                    if tp1_hit and not tp2_hit and _short_tp_hit(open_trade.take_profit_2):
                         close_size = open_trade.size * self.tp2_close_pct
-                        self._partial_close(sm, position_id, open_trade, close_size, open_trade.take_profit_2)
+                        self._partial_close(sm, position_id, open_trade, close_size, open_trade.take_profit_2, atr=atr)
                         remaining_size -= close_size
                         tp2_hit = True
                         # V3B: Activate trailing after TP2
@@ -418,7 +434,7 @@ class Backtester:
                             trailing_stop = low + atr * self.trail_after_tp2_atr
 
                     # TP3 — full close (skip if trail_after_tp2)
-                    if tp2_hit and not self.trail_after_tp2 and low <= open_trade.take_profit_3:
+                    if tp2_hit and not self.trail_after_tp2 and _short_tp_hit(open_trade.take_profit_3):
                         self._close_trade(open_trade, i, open_trade.take_profit_3, "TP3", remaining_size, df, sm, position_id)
                         closed_trades.append(open_trade)
                         # V3E: Edge monitor update
@@ -495,10 +511,13 @@ class Backtester:
             entry_price = df["open"].iloc[i + 1]
             direction = Direction.LONG if decision["action"] == SignalType.LONG else Direction.SHORT
 
-            # Apply slippage to entry (market fill — adverse direction)
-            if self.slippage_pct > 0:
-                slip = entry_price * self.slippage_pct / 100
-                entry_price += slip if direction == Direction.LONG else -slip
+            # Adverse execution cost on entry: legacy %-slippage + ATR-slippage
+            # + half-spread. P2/P3 realism patches (2026-05-08).
+            pct_slip = entry_price * self.slippage_pct / 100 if self.slippage_pct > 0 else 0.0
+            atr_slip = self.slippage_atr_frac * atr if self.slippage_atr_frac > 0 else 0.0
+            half_spread = 0.5 * self.spread_atr_frac * atr if self.spread_atr_frac > 0 else 0.0
+            entry_cost = pct_slip + atr_slip + half_spread
+            entry_price += entry_cost if direction == Direction.LONG else -entry_cost
 
             # Use signal's stop loss or calculate from ATR
             signal_sl = decision.get("stop_loss", None)
@@ -589,8 +608,16 @@ class Backtester:
             "stake_stats": sm.get_stats(),
         }
 
-    def _partial_close(self, sm, position_id, trade, close_size, price):
+    def _partial_close(self, sm, position_id, trade, close_size, price, atr=None):
         """Record partial close PnL without closing the position in SM."""
+        # P2/P3 realism: ATR-slippage + half-spread on every partial fill
+        # (not legacy %-slippage, which is reserved for stops/EOD).
+        if atr is not None:
+            atr_slip = self.slippage_atr_frac * atr if self.slippage_atr_frac > 0 else 0.0
+            half_spread = 0.5 * self.spread_atr_frac * atr if self.spread_atr_frac > 0 else 0.0
+            cost = atr_slip + half_spread
+            price += -cost if trade.direction == "LONG" else cost
+
         if trade.direction == "LONG":
             pnl = (price - trade.entry_price) * close_size
         else:
@@ -609,10 +636,18 @@ class Backtester:
 
     def _close_trade(self, trade, bar_idx, exit_price, reason, remaining_size, df, sm, position_id):
         """Finalize and close a trade. Combines partial + final close PnL."""
-        # Apply slippage on stop-loss and end-of-data exits (market/stop fills)
-        if self.slippage_pct > 0 and reason in ("Stop Loss", "Trailing Stop", "Hard Stop", "End of data"):
-            slip = exit_price * self.slippage_pct / 100
-            exit_price += -slip if trade.direction == "LONG" else slip
+        # Adverse execution cost: legacy %-slippage on stops + ATR-slippage +
+        # half-spread on every fill type (TP3 included). P2/P3 realism patches.
+        atr_at_exit = float(df["atr_14"].iloc[bar_idx]) if "atr_14" in df.columns else 0.0
+        if pd.isna(atr_at_exit):
+            atr_at_exit = 0.0
+        is_stop_like = reason in ("Stop Loss", "Trailing Stop", "Hard Stop", "End of data")
+        pct_slip = exit_price * self.slippage_pct / 100 if (self.slippage_pct > 0 and is_stop_like) else 0.0
+        atr_slip = self.slippage_atr_frac * atr_at_exit if self.slippage_atr_frac > 0 else 0.0
+        half_spread = 0.5 * self.spread_atr_frac * atr_at_exit if self.spread_atr_frac > 0 else 0.0
+        cost = pct_slip + atr_slip + half_spread
+        if cost > 0:
+            exit_price += -cost if trade.direction == "LONG" else cost
 
         if trade.direction == "LONG":
             final_pnl = (exit_price - trade.entry_price) * remaining_size

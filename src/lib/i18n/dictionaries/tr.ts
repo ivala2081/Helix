@@ -186,7 +186,7 @@ export const tr = {
     },
     emptyState: {
       title: "Hazır olduğunuzda başlayın",
-      body: "Sol panelden yapılandırın ve Backtest Başlat'a tıklayın. +%949 referans çalışmasını yeniden üretmek için BTCUSDT 1H üzerinde V5 varsayılanlarını deneyin.",
+      body: "Sol panelden yapılandırın ve Backtest Başlat'a tıklayın. +%87 referans çalışmasını (gerçekçilik yamalı baseline) yeniden üretmek için BTCUSDT 1H üzerinde V5 varsayılanlarını deneyin.",
       runBacktest: "Backtest Başlat",
     },
     progress: {

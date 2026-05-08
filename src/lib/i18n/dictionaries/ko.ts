@@ -187,7 +187,7 @@ export const ko = {
     },
     emptyState: {
       title: "준비 완료",
-      body: "왼쪽에서 설정하고 Backtest 실행을 클릭하세요. V5 기본값으로 BTCUSDT 1H에서 +949% 참조 결과를 재현해 보세요.",
+      body: "왼쪽에서 설정하고 Backtest 실행을 클릭하세요. V5 기본값으로 BTCUSDT 1H에서 +87% 참조 결과를 재현해 보세요.",
       runBacktest: "Backtest 실행",
     },
     progress: {

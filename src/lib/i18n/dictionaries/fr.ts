@@ -189,7 +189,7 @@ export const fr = {
     },
     emptyState: {
       title: "Prêt quand vous l'êtes",
-      body: "Configurez à gauche et cliquez sur Lancer le Backtest. Essayez les valeurs V5 par défaut sur BTCUSDT 1H pour reproduire le rendement de référence de +949%.",
+      body: "Configurez à gauche et cliquez sur Lancer le Backtest. Essayez les valeurs V5 par défaut sur BTCUSDT 1H pour reproduire le rendement de référence de +87%.",
       runBacktest: "Lancer le Backtest",
     },
     progress: {

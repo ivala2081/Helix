@@ -190,7 +190,7 @@ export const en = {
     },
     emptyState: {
       title: "Ready when you are",
-      body: "Configure on the left and click Run Backtest. Try V5 defaults on BTCUSDT 1H to reproduce the +949% reference run.",
+      body: "Configure on the left and click Run Backtest. Try V5 defaults on BTCUSDT 1H to reproduce the +87% reference run.",
       runBacktest: "Run Backtest",
     },
     progress: {

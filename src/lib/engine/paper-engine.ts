@@ -17,7 +17,7 @@
 //               computeFvg → incremental FVG tracker.
 
 import { aggregate } from "./aggregator";
-import { partialClose, closeFull } from "./backtester";
+import { partialClose, closeFull, executionCost } from "./backtester";
 import { calculatePositionSize } from "./sizing";
 import type {
   BacktestParams,
@@ -188,13 +188,26 @@ export function createInitialState(initialCapital: number): StrategyState {
 
 // ─── stepCandle ─────────────────────────────────────────────────────
 
+export interface StepOptions {
+  // When true, the engine still updates indicators and manages open positions
+  // (TP/SL/hard-stop) but skips signal evaluation and pending-entry fills.
+  // Used by the live cron when a portfolio is paused by the kill-switch.
+  tradingPaused?: boolean;
+  // Multiplier applied to params.riskPct to implement per-symbol dynamic
+  // allocation. 1.0 = neutral (equal-weight baseline). See computeAllocation.
+  allocationMultiplier?: number;
+}
+
 export function stepCandle(
   state: StrategyState,
   candle: Candle,
   params: BacktestParams,
+  options?: StepOptions,
 ): StepResult {
   const events: StepEvent[] = [];
   const i = state.barIndex;
+  const tradingPaused = options?.tradingPaused === true;
+  const allocationMultiplier = options?.allocationMultiplier ?? 1.0;
 
   // (1) Record equity at START of bar (parity rule #1)
   state.equity = params.initialCapital + state.realizedPnl;
@@ -230,14 +243,17 @@ export function stepCandle(
   // ── (PE) FILL pendingEntry (signal at bar i-1 → fill at bar i open) ──
   // Falls through to manage block on success: SL is suppressed on fill bar
   // (barsInTrade=0 < minBarsBeforeSl) but hardStop and TPs are checked.
+  // While tradingPaused, drop any pending entry instead of filling.
+  if (tradingPaused && state.pendingEntry !== null) {
+    state.pendingEntry = null;
+  }
   if (state.pendingEntry !== null && state.openTrade === null) {
     const pe = state.pendingEntry;
     const sigAtr = pe.atrAtSignal;
     let entryPrice = candle.open;
-    if (params.slippagePct > 0) {
-      const slip = (entryPrice * params.slippagePct) / 100;
-      entryPrice += pe.direction === "LONG" ? slip : -slip;
-    }
+    // Adverse execution cost at entry: %-slippage + ATR-slippage + half-spread.
+    const entryCost = executionCost(entryPrice, sigAtr, params);
+    entryPrice += pe.direction === "LONG" ? entryCost : -entryCost;
 
     let stopLoss: number;
     if (pe.direction === "LONG") {
@@ -260,6 +276,7 @@ export function stepCandle(
 
     const sizing = calculatePositionSize(
       state.equity, entryPrice, stopLoss, pe.direction, params.riskPct, params.maxPositionPct,
+      allocationMultiplier,
     );
 
     if (sizing.size > 0) {
@@ -349,7 +366,7 @@ export function stepCandle(
     }
 
     if (stoppedOut) {
-      const realized = closeFull(t, i, exitPrice, reason, params, candle.date);
+      const realized = closeFull(t, i, exitPrice, reason, params, candle.date, atr);
       state.realizedPnl += realized;
       events.push({ type: "tradeClosed", trade: { ...t } });
       state.openTrade = null;
@@ -357,25 +374,32 @@ export function stepCandle(
       return makeResult(events, state);
     }
 
-    // Take profits (parity rule #4 — TP1 → TP2 → TP3 in order)
+    // Take profits (parity rule #4 — TP1 → TP2 → TP3 in order).
+    // P1 (realism patch): when params.tpRequireClose, the bar must close at or
+    // beyond the TP for the fill to be honored. Wick-only pokes don't count.
+    const longTpHit = (tp: number) =>
+      candle.high >= tp && (!params.tpRequireClose || candle.close >= tp);
+    const shortTpHit = (tp: number) =>
+      candle.low <= tp && (!params.tpRequireClose || candle.close <= tp);
+
     if (dir === "LONG") {
-      if (!t.tp1Hit && candle.high >= t.takeProfit1) {
+      if (!t.tp1Hit && longTpHit(t.takeProfit1)) {
         const closeSize = t.size * params.tp1ClosePct;
-        state.realizedPnl += partialClose(t, t.takeProfit1, closeSize, params);
+        state.realizedPnl += partialClose(t, t.takeProfit1, closeSize, params, atr);
         t.remainingSize -= closeSize;
         t.tp1Hit = true;
         if (params.beAfterTp1) {
           t.stopLoss = t.entryPrice + params.beBufferAtr * atr;
         }
       }
-      if (t.tp1Hit && !t.tp2Hit && candle.high >= t.takeProfit2) {
+      if (t.tp1Hit && !t.tp2Hit && longTpHit(t.takeProfit2)) {
         const closeSize = t.size * params.tp2ClosePct;
-        state.realizedPnl += partialClose(t, t.takeProfit2, closeSize, params);
+        state.realizedPnl += partialClose(t, t.takeProfit2, closeSize, params, atr);
         t.remainingSize -= closeSize;
         t.tp2Hit = true;
       }
-      if (t.tp2Hit && candle.high >= t.takeProfit3) {
-        const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candle.date);
+      if (t.tp2Hit && longTpHit(t.takeProfit3)) {
+        const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candle.date, atr);
         state.realizedPnl += realized;
         events.push({ type: "tradeClosed", trade: { ...t } });
         state.openTrade = null;
@@ -384,23 +408,23 @@ export function stepCandle(
       }
     } else {
       // SHORT
-      if (!t.tp1Hit && candle.low <= t.takeProfit1) {
+      if (!t.tp1Hit && shortTpHit(t.takeProfit1)) {
         const closeSize = t.size * params.tp1ClosePct;
-        state.realizedPnl += partialClose(t, t.takeProfit1, closeSize, params);
+        state.realizedPnl += partialClose(t, t.takeProfit1, closeSize, params, atr);
         t.remainingSize -= closeSize;
         t.tp1Hit = true;
         if (params.beAfterTp1) {
           t.stopLoss = t.entryPrice - params.beBufferAtr * atr;
         }
       }
-      if (t.tp1Hit && !t.tp2Hit && candle.low <= t.takeProfit2) {
+      if (t.tp1Hit && !t.tp2Hit && shortTpHit(t.takeProfit2)) {
         const closeSize = t.size * params.tp2ClosePct;
-        state.realizedPnl += partialClose(t, t.takeProfit2, closeSize, params);
+        state.realizedPnl += partialClose(t, t.takeProfit2, closeSize, params, atr);
         t.remainingSize -= closeSize;
         t.tp2Hit = true;
       }
-      if (t.tp2Hit && candle.low <= t.takeProfit3) {
-        const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candle.date);
+      if (t.tp2Hit && shortTpHit(t.takeProfit3)) {
+        const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candle.date, atr);
         state.realizedPnl += realized;
         events.push({ type: "tradeClosed", trade: { ...t } });
         state.openTrade = null;
@@ -410,6 +434,13 @@ export function stepCandle(
     }
 
     // Position still open — don't evaluate new signals
+    state.barIndex++;
+    return makeResult(events, state);
+  }
+
+  // While paused, indicator state has been updated above; do not emit new
+  // signals or pending entries.
+  if (tradingPaused) {
     state.barIndex++;
     return makeResult(events, state);
   }
