@@ -22,11 +22,11 @@ interface EquityResponse {
 }
 
 const COIN_COLORS: Record<string, string> = {
-  BTCUSDT: "#f59e0b", // amber
-  ETHUSDT: "#60a5fa", // blue-400
-  SOLUSDT: "#a78bfa", // violet-400
-  XRPUSDT: "#34d399", // emerald-400
-  BNBUSDT: "#fbbf24", // amber-300
+  BTCUSDT: "#f97316", // orange-500  (Bitcoin signature)
+  ETHUSDT: "#60a5fa", // blue-400    (Ethereum)
+  SOLUSDT: "#a78bfa", // violet-400  (Solana)
+  XRPUSDT: "#34d399", // emerald-400 (XRP)
+  BNBUSDT: "#facc15", // yellow-400  (Binance) — distinct from BTC's orange
 };
 
 export function LiveEquityChart({ title }: { title: string }) {
