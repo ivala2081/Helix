@@ -12,17 +12,8 @@
 import { createClient } from "@supabase/supabase-js";
 import { stepCandle, type StrategyState } from "../src/lib/engine/paper-engine";
 import { V5_DEFAULTS } from "../src/lib/engine/defaults";
-import {
-  FORWARD_TEST_INTERVAL_MS,
-  LIVE_RISK_PCT_OVERRIDE,
-} from "../src/lib/engine/live-config";
+import { FORWARD_TEST_INTERVAL_MS } from "../src/lib/engine/live-config";
 import type { Candle } from "../src/lib/engine/types";
-import {
-  evaluateKillSwitch,
-  type KillSwitchState,
-  type MinimalTrade,
-} from "../src/lib/engine/kill-switch";
-import { computeAllocation, type SymbolTrades } from "../src/lib/engine/allocation";
 import {
   sendTelegramMessage,
   formatTradeOpened,
@@ -30,11 +21,13 @@ import {
   formatCronSummary,
 } from "../src/lib/telegram";
 
-// Live evaluation-window params: V5_DEFAULTS with reduced risk_pct.
-// See docs/launch-gates.md and src/lib/engine/live-config.ts.
-const LIVE_PARAMS = { ...V5_DEFAULTS, riskPct: LIVE_RISK_PCT_OVERRIDE };
-
-const KILL_SWITCH_LOOKBACK_TRADES = 60; // enough to compute 30-day rolling DD comfortably
+// Live = backtest mode (2026-05-25). The strategy runs with V5_DEFAULTS,
+// the exact same params used by the backtester. Allowed divergence sources
+// are limited to: slippage (P2 model), spread (P3), gap/halt events, and
+// multi-symbol concurrent execution noise. All other LIVE-only protections
+// (risk_pct override, per-symbol allocation, kill-switch preflight) are
+// suspended so live behavior mirrors backtest. Kill-switch code remains
+// available in src/lib/engine/kill-switch.ts but is not invoked here.
 
 const INTERVAL_MS = FORWARD_TEST_INTERVAL_MS;
 const MAX_PAGES = 10;
@@ -56,11 +49,12 @@ async function main() {
   let totalCandlesProcessed = 0;
   let totalTradesClosed = 0;
 
-  // Load active and kill-switch-paused portfolios. Paused ones may auto-resume.
+  // Load active portfolios only. Kill-switch preflight is disabled in
+  // live=backtest mode; paused portfolios stay paused until manual resume.
   const { data: portfolios, error: fetchErr } = await db
     .from("live_portfolios")
     .select("*")
-    .in("status", ["active", "paused_kill_switch"]);
+    .eq("status", "active");
 
   if (fetchErr || !portfolios) {
     console.error("Failed to load portfolios:", fetchErr?.message);
@@ -72,33 +66,7 @@ async function main() {
     return;
   }
 
-  console.log(`Loaded ${portfolios.length} portfolios (active + paused)`);
-
-  // ── Compute per-symbol allocation weights from trailing trade history ──
-  const { data: allTradesForAlloc } = await db
-    .from("live_trades")
-    .select("symbol,exit_ts,r_multiple")
-    .order("exit_ts", { ascending: true });
-  const symbolTradesMap = new Map<string, number[]>();
-  for (const row of allTradesForAlloc ?? []) {
-    const sym = String(row.symbol);
-    const r = row.r_multiple == null ? null : Number(row.r_multiple);
-    if (r == null) continue;
-    if (!symbolTradesMap.has(sym)) symbolTradesMap.set(sym, []);
-    symbolTradesMap.get(sym)!.push(r);
-  }
-  const symbolTrades: SymbolTrades[] = portfolios.map((p) => ({
-    symbol: p.symbol as string,
-    rMultiples: symbolTradesMap.get(p.symbol as string) ?? [],
-  }));
-  const allocation = computeAllocation(symbolTrades);
-  const N = portfolios.length;
-  const equalWeight = N > 0 ? 1 / N : 0;
-  console.log(
-    `  Allocation weights: ${[...allocation.weights.entries()]
-      .map(([s, w]) => `${s}=${w.toFixed(2)}`)
-      .join(", ")}`,
-  );
+  console.log(`Loaded ${portfolios.length} active portfolios`);
 
   const symbolSet = new Set(portfolios.map((p) => p.symbol as string));
   const candleMap = new Map<string, Candle[]>();
@@ -141,57 +109,12 @@ async function main() {
         continue;
       }
 
-      // ── Kill-switch pre-flight ────────────────────────────────────
-      const now = Date.now();
-      const { data: recentRows } = await db
-        .from("live_trades")
-        .select("exit_ts,pnl,r_multiple")
-        .eq("symbol", symbol)
-        .order("exit_ts", { ascending: false })
-        .limit(KILL_SWITCH_LOOKBACK_TRADES);
-      const recentTrades: MinimalTrade[] = (recentRows ?? []).map((r) => ({
-        exitTs: Number(r.exit_ts),
-        pnl: Number(r.pnl ?? 0),
-        rMultiple: r.r_multiple == null ? null : Number(r.r_multiple),
-      }));
-      const currentKs =
-        (portfolio.kill_switch_state as KillSwitchState | null) ?? null;
-      const ks = evaluateKillSwitch({
-        now,
-        initialCapital: portfolio.initial_capital as number,
-        recentTrades,
-        parityLastPassedAt: now, // populated by CI; falls back to "now" if absent
-        currentState: currentKs,
-      });
-
-      if (ks.resumeNow) {
-        sendTelegramMessage(
-          `🟢 ${symbol}: kill-switch auto-resumed (${currentKs?.rule})`,
-        );
-        console.log(`  ${symbol}: kill-switch auto-resumed`);
-      }
-      if (ks.paused && !currentKs?.triggered) {
-        const det = ks.state.details;
-        const detStr = det
-          ? ` value=${det.metricValue.toFixed(3)} threshold=${det.threshold.toFixed(3)}`
-          : "";
-        sendTelegramMessage(`🛑 ${symbol}: kill-switch ${ks.state.rule}${detStr}`);
-        console.log(`  ${symbol}: kill-switch triggered ${ks.state.rule}${detStr}`);
-      }
-
-      const tradingPaused = ks.paused;
-      const symbolWeight = allocation.weights.get(symbol) ?? equalWeight;
-      const allocationMultiplier =
-        equalWeight > 0 ? symbolWeight / equalWeight : 1.0;
-
       const tradesToInsert: Record<string, unknown>[] = [];
       const snapshotsToInsert: Record<string, unknown>[] = [];
 
       for (const candle of newCandles) {
-        const result = stepCandle(state, candle, LIVE_PARAMS, {
-          tradingPaused,
-          allocationMultiplier,
-        });
+        // Live = backtest: V5_DEFAULTS as-is, no overrides, no options.
+        const result = stepCandle(state, candle, V5_DEFAULTS);
         processed++;
         totalCandlesProcessed++;
 
@@ -242,13 +165,6 @@ async function main() {
 
       const lastCandle = newCandles[newCandles.length - 1];
 
-      const newStatus = tradingPaused ? "paused_kill_switch" : "active";
-      const newKsJson = ks.paused
-        ? (ks.state as unknown as Record<string, unknown>)
-        : ks.resumeNow
-          ? null
-          : (currentKs as unknown as Record<string, unknown> | null);
-
       const { error: updateErr } = await db
         .from("live_portfolios")
         .update({
@@ -259,9 +175,7 @@ async function main() {
           last_candle_ts: lastCandle.timestamp,
           bar_index: state.barIndex,
           warmup_complete: state.warmupComplete,
-          status: newStatus,
-          kill_switch_state: newKsJson,
-          allocation_weight: symbolWeight,
+          allocation_weight: 0.20,
           updated_at: new Date().toISOString(),
         })
         .eq("symbol", symbol);
