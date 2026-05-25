@@ -11,12 +11,12 @@ import {
   YAxis,
 } from "recharts";
 
+// Realism-patched V5 baseline only. Earlier versions were never re-baselined
+// after the 2026-05-08 engine realism patches (TP wick-fill, ATR slippage,
+// spread, hard stop tightening), so their pre-patch numbers would be
+// misleading to display alongside the patched V5 figure.
 const DATA = [
-  { version: "V1", return: 49.7, sharpe: 1.81, dd: 10.3 },
-  { version: "V2", return: 95.5, sharpe: 3.36, dd: 5.9 },
-  { version: "V3", return: 173.2, sharpe: 4.66, dd: 4.1 },
-  { version: "V4", return: 250.5, sharpe: 4.29, dd: 6.6 },
-  { version: "V5", return: 949.7, sharpe: 5.4, dd: 8.55 },
+  { version: "V5", return: 87.0, sharpe: 1.44, dd: 13.3 },
 ];
 
 export function EvolutionChart() {

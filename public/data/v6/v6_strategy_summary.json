@@ -1,0 +1,108 @@
+{
+  "generated_at": "2026-05-25T14:20:39.559478+00:00",
+  "label": "V6_PARAMS",
+  "changes_count": 22,
+  "changes": {
+    "tp1_close_pct": {
+      "v5": 0.05,
+      "v6": 0.1
+    },
+    "tp2_close_pct": {
+      "v5": 0.3,
+      "v6": 0.0
+    },
+    "tp3_close_pct": {
+      "v5": 0.65,
+      "v6": 0.0
+    },
+    "slippage_atr_frac": {
+      "v5": 0.05,
+      "v6": 0.08
+    },
+    "spread_atr_frac": {
+      "v5": 0.03,
+      "v6": 0.05
+    },
+    "hard_stop_atr_mult": {
+      "v5": 8.0,
+      "v6": 6.0
+    },
+    "trail_after_tp1": {
+      "v5": null,
+      "v6": true
+    },
+    "trail_after_tp1_atr": {
+      "v5": null,
+      "v6": 2.0
+    },
+    "tp_require_close_bars": {
+      "v5": null,
+      "v6": 2
+    },
+    "use_v6_regime_filter": {
+      "v5": null,
+      "v6": true
+    },
+    "v6_regime_rv_lookback_days": {
+      "v5": null,
+      "v6": 24
+    },
+    "v6_regime_rv_pctl_floor": {
+      "v5": null,
+      "v6": 0.3
+    },
+    "v6_regime_history_window_days": {
+      "v5": null,
+      "v6": 365
+    },
+    "use_v6_mtf_agreement": {
+      "v5": null,
+      "v6": true
+    },
+    "v6_mtf_lower_tf": {
+      "v5": null,
+      "v6": "30m"
+    },
+    "v6_mtf_min_trend_bars": {
+      "v5": null,
+      "v6": 6
+    },
+    "use_v6_adaptive_sizing": {
+      "v5": null,
+      "v6": true
+    },
+    "v6_adaptive_baseline_risk_pct": {
+      "v5": null,
+      "v6": 0.015
+    },
+    "v6_adaptive_min_risk_pct": {
+      "v5": null,
+      "v6": 0.005
+    },
+    "v6_adaptive_max_risk_pct": {
+      "v5": null,
+      "v6": 0.025
+    },
+    "v6_adaptive_sharpe_window_trades": {
+      "v5": null,
+      "v6": 20
+    },
+    "v6_adaptive_sharpe_coef": {
+      "v5": null,
+      "v6": 0.005
+    }
+  },
+  "smoke_test": {
+    "symbol": "BTCUSDT",
+    "date_range": "2024-01-01 to 2025-12-31",
+    "v5_n_trades": 118,
+    "v5_win_rate": 0.653,
+    "v5_profit_factor": 1.72,
+    "v5_total_return_pct": 55.9,
+    "v6_n_trades": 21,
+    "v6_win_rate": 0.571,
+    "v6_profit_factor": 0.77,
+    "v6_total_return_pct": -6.4,
+    "verdict": "Phase 2 mechanical gate PASS (valid trades). V6 filters appear too aggressive \u2014 Phase 3 ablation will isolate the cause."
+  }
+}

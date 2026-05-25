@@ -1,0 +1,84 @@
+{
+  "generated_at": "2026-05-25T18:10:00Z",
+  "current_phase": 3,
+  "current_phase_label": "V6 validation - SHELVED",
+  "current_phase_progress_pct": 100,
+  "outcome": "shelved",
+  "outcome_decision_date": "2026-05-25",
+  "outcome_reason": "Gate 3 failed (5/7 criteria, catastrophic loss vs V5 baseline). Owner chose option A: shelve V6, V5 continues live. Phase 0 infrastructure retained for future strategy work.",
+  "phases": [
+    {
+      "id": 0,
+      "label": "Infrastructure",
+      "status": "completed",
+      "deliverables": [
+        "scripts/oos_holdout.py",
+        "scripts/multi_symbol_concurrent_backtest.py",
+        "scripts/walk_forward_validator.py",
+        "scripts/stress_test_runner.py",
+        "public/data/v6/status.json",
+        "src/app/research/v6/page.tsx"
+      ]
+    },
+    {
+      "id": 1,
+      "label": "V5 honest baseline",
+      "status": "completed",
+      "deliverables": [
+        "reports/v5_concurrent_baseline.json",
+        "reports/v5_walk_forward.json",
+        "reports/v5_stress_tests.json"
+      ]
+    },
+    {
+      "id": 2,
+      "label": "V6 implementation",
+      "status": "completed",
+      "deliverables": [
+        "strategy_v6.py",
+        "regime_filter.py",
+        "mtf_agreement.py",
+        "adaptive_sizing.py",
+        "per_symbol_validator.py",
+        "backtester.py V6 mode hooks",
+        "scripts/v6_smoke_test.py"
+      ]
+    },
+    {
+      "id": 3,
+      "label": "V6 validation",
+      "status": "completed",
+      "verdict": "FAIL",
+      "deliverables": [
+        "reports/v6_validation_run.json",
+        "reports/v6_walk_forward.json",
+        "reports/v6_stress_tests.json",
+        "reports/v6_oos_holdout.json",
+        "docs/v6-gate3-verdict.md"
+      ]
+    },
+    {
+      "id": 4,
+      "label": "Head-to-head",
+      "status": "shelved",
+      "blocked_reason": "Gate 3 failed - V6 shelved 2026-05-25 (owner decision A)",
+      "deliverables": [
+        "reports/v5_vs_v6_head_to_head.json",
+        "docs/v6-deployment-decision.md"
+      ]
+    },
+    {
+      "id": 5,
+      "label": "Deployment",
+      "status": "shelved",
+      "blocked_reason": "V6 shelved 2026-05-25 (owner decision A) - V5 stays live",
+      "deliverables": [
+        "src/lib/engine/defaults_v6.ts",
+        "src/lib/engine/regime-filter.ts",
+        "src/lib/engine/mtf-agreement.ts",
+        "src/lib/engine/adaptive-sizing.ts",
+        "TS parity tests 4/4 PASS"
+      ]
+    }
+  ]
+}

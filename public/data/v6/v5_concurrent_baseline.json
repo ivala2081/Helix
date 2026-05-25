@@ -1,0 +1,120 @@
+{
+  "generated_at": "2026-05-25T14:01:15.453158+00:00",
+  "params_label": "V5_DEFAULTS",
+  "date_range": {
+    "start": "2023-01-01",
+    "end": "2025-12-31"
+  },
+  "holdout_policy": "OOS holdout: 2026-01-01 \u2192 2026-04-13 (102 days). Dev range ends 2025-12-31.",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "XRPUSDT"
+  ],
+  "per_symbol": [
+    {
+      "symbol": "BTCUSDT",
+      "n_trades": 162,
+      "win_rate": 0.6296296296296297,
+      "profit_factor": 1.596744940743847,
+      "total_return_pct": 68.29501131290031,
+      "max_drawdown_pct": 13.264048072761655,
+      "sharpe_ratio": 1.308429013160926,
+      "avg_r_multiple": 0.7031585169585862
+    },
+    {
+      "symbol": "ETHUSDT",
+      "n_trades": 197,
+      "win_rate": 0.6243654822335025,
+      "profit_factor": 1.5003185904684806,
+      "total_return_pct": 70.38451188000198,
+      "max_drawdown_pct": 29.56121853334443,
+      "sharpe_ratio": 1.1141321880967978,
+      "avg_r_multiple": 0.30510614037067185
+    },
+    {
+      "symbol": "SOLUSDT",
+      "n_trades": 190,
+      "win_rate": 0.6947368421052632,
+      "profit_factor": 1.842521695177181,
+      "total_return_pct": 338.90356881695146,
+      "max_drawdown_pct": 16.13730475598303,
+      "sharpe_ratio": 2.0894291871977244,
+      "avg_r_multiple": 0.7728729772693791
+    },
+    {
+      "symbol": "BNBUSDT",
+      "n_trades": 193,
+      "win_rate": 0.6113989637305699,
+      "profit_factor": 1.9664265249342756,
+      "total_return_pct": 129.8701633326616,
+      "max_drawdown_pct": 20.590033806809974,
+      "sharpe_ratio": 1.7998104532820756,
+      "avg_r_multiple": 0.6185734208193534
+    },
+    {
+      "symbol": "XRPUSDT",
+      "n_trades": 180,
+      "win_rate": 0.5944444444444444,
+      "profit_factor": 1.312356962337564,
+      "total_return_pct": 50.90035420709719,
+      "max_drawdown_pct": 35.079973356967834,
+      "sharpe_ratio": 0.733339288004517,
+      "avg_r_multiple": 0.31148080765520925
+    }
+  ],
+  "portfolio_aggregate": {
+    "n_symbols": 5,
+    "n_trades_total": 922,
+    "days_span": 1095,
+    "portfolio_initial": 50000.0,
+    "portfolio_final": 115835.36095496124,
+    "portfolio_return_pct": 131.6707219099225,
+    "portfolio_sharpe_annualized": 2.3503186019743767,
+    "portfolio_max_dd_pct": 13.558629840473222,
+    "portfolio_r_per_day": 0.4532554070114779,
+    "correlation_matrix": {
+      "BTCUSDT": {
+        "BTCUSDT": 1.0,
+        "ETHUSDT": 0.284,
+        "SOLUSDT": 0.1,
+        "BNBUSDT": 0.233,
+        "XRPUSDT": 0.075
+      },
+      "ETHUSDT": {
+        "BTCUSDT": 0.284,
+        "ETHUSDT": 1.0,
+        "SOLUSDT": 0.071,
+        "BNBUSDT": 0.192,
+        "XRPUSDT": 0.041
+      },
+      "SOLUSDT": {
+        "BTCUSDT": 0.1,
+        "ETHUSDT": 0.071,
+        "SOLUSDT": 1.0,
+        "BNBUSDT": 0.043,
+        "XRPUSDT": 0.03
+      },
+      "BNBUSDT": {
+        "BTCUSDT": 0.233,
+        "ETHUSDT": 0.192,
+        "SOLUSDT": 0.043,
+        "BNBUSDT": 1.0,
+        "XRPUSDT": 0.012
+      },
+      "XRPUSDT": {
+        "BTCUSDT": 0.075,
+        "ETHUSDT": 0.041,
+        "SOLUSDT": 0.03,
+        "BNBUSDT": 0.012,
+        "XRPUSDT": 1.0
+      }
+    },
+    "simul_dd_3plus_days": 685,
+    "simul_dd_4plus_days": 464,
+    "total_days": 1096,
+    "simul_dd_3plus_pct": 62.5
+  }
+}

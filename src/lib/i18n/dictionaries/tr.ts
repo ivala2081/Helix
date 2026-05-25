@@ -42,8 +42,8 @@ export const tr = {
   landing: {
     hero: {
       badge: "V5 stratejisi · walk-forward doğrulamalı",
-      titleTop: "Kurumsal düzeyde",
-      titleBottom: "fiyat hareketi backtesting",
+      titleTop: "Helix",
+      titleBottom: "",
       subtitle:
         "Market Structure + Fair Value Gap stratejilerini herhangi bir Binance çiftinde test edin. Walk-forward doğrulamalı algoritmalar ile desteklenmektedir — Python gerektirmez.",
       ctaPrimary: "Backtest başlat",

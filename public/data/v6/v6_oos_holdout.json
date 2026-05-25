@@ -1,0 +1,82 @@
+{
+  "generated_at": "2026-05-25T14:52:31.268372+00:00",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT"
+  ],
+  "oos_window": {
+    "start": "2026-01-01",
+    "end": "2026-04-13"
+  },
+  "holdout_policy": "OOS holdout: 2026-01-01 -> 2026-04-13 (102 days). Dev range ends 2025-12-31.",
+  "result": {
+    "label": "3g_oos_v6_full",
+    "per_symbol": [
+      {
+        "symbol": "BTCUSDT",
+        "n_trades": 2,
+        "win_rate": 1.0,
+        "profit_factor": null,
+        "total_return_pct": 8.697800897507404,
+        "max_drawdown_pct": 0.0,
+        "sharpe_ratio": 2.627775065275987,
+        "avg_r_multiple": 6.707046434782052
+      },
+      {
+        "symbol": "ETHUSDT",
+        "n_trades": 5,
+        "win_rate": 1.0,
+        "profit_factor": null,
+        "total_return_pct": 25.27107370052696,
+        "max_drawdown_pct": 0.0,
+        "sharpe_ratio": 3.0714055886444056,
+        "avg_r_multiple": 5.433190190103113
+      },
+      {
+        "symbol": "SOLUSDT",
+        "n_trades": 3,
+        "win_rate": 0.6666666666666666,
+        "profit_factor": 1.3286196190100665,
+        "total_return_pct": 0.29823706493098145,
+        "max_drawdown_pct": 0.9075449172188564,
+        "sharpe_ratio": 0.42715565376971165,
+        "avg_r_multiple": -0.03085473583914826
+      }
+    ],
+    "portfolio_aggregate": {
+      "n_symbols": 3,
+      "n_trades_total": 10,
+      "days_span": 102,
+      "portfolio_initial": 30000.0,
+      "portfolio_final": 33426.71116629653,
+      "portfolio_return_pct": 11.422370554321775,
+      "portfolio_sharpe_annualized": 3.201643892840799,
+      "portfolio_max_dd_pct": 0.29916167875726457,
+      "portfolio_r_per_day": 0.396936074632963,
+      "correlation_matrix": {
+        "BTCUSDT": {
+          "BTCUSDT": 1.0,
+          "ETHUSDT": 0.672,
+          "SOLUSDT": -0.003
+        },
+        "ETHUSDT": {
+          "BTCUSDT": 0.672,
+          "ETHUSDT": 1.0,
+          "SOLUSDT": -0.004
+        },
+        "SOLUSDT": {
+          "BTCUSDT": -0.003,
+          "ETHUSDT": -0.004,
+          "SOLUSDT": 1.0
+        }
+      },
+      "simul_dd_3plus_days": 0,
+      "simul_dd_4plus_days": 0,
+      "total_days": 103,
+      "simul_dd_3plus_pct": 0.0,
+      "portfolio_profit_factor": 38.75803380396397
+    },
+    "description": "V6 full on 2026-Q1 held-back OOS data"
+  }
+}

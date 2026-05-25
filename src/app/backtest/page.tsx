@@ -1,8 +1,10 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { History } from "lucide-react";
+import { HeroScene } from "@/components/ui/HeroScene";
 import { BacktestForm, type BacktestConfig } from "@/components/BacktestForm";
 import { EmptyStatePreview } from "@/components/EmptyStatePreview";
 import { ExportToolbar } from "@/components/ExportToolbar";
@@ -168,112 +170,150 @@ export default function BacktestPage() {
   }, [result]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-      <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Backtest
-          </h1>
-          <p className="mt-1 text-sm text-[var(--color-muted)]">
-            Run the Helix V5 engine on any Binance pair. The full backtest runs locally in your browser.
-          </p>
-        </div>
-        {history.length > 0 && (
-          <RunHistoryDropdown
-            history={history}
-            onPick={(meta) => {
-              setConfig({
-                symbol: meta.symbol,
-                interval: meta.interval,
-                startDate: meta.startDate,
-                endDate: meta.endDate,
-              });
-              toast.info("Loaded from history", `Click "Run Backtest" to re-run`);
-            }}
-          />
-        )}
+    <div className="relative min-h-screen w-full overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <HeroScene />
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg)]/60 via-[var(--color-bg)]/90 to-[var(--color-bg)]" />
       </div>
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-[320px_1fr] lg:grid-cols-[360px_1fr]">
-        {/* Left: Form */}
-        <aside className="md:sticky md:top-20 md:self-start">
-          <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-5 backdrop-blur-md">
-            <BacktestForm
-              config={config}
-              setConfig={setConfig}
-              params={params}
-              setParams={setParams}
-              onRun={onRun}
-              busy={busy}
-            />
+      <div className="relative z-20 mx-auto max-w-7xl px-6 py-12 sm:py-16">
+        {/* Hero */}
+        <div className="mb-10 text-center">
+          <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--color-muted)]/70">
+            Backtest
           </div>
-        </aside>
+          <h1 className="mt-6 text-[clamp(2rem,5vw,3.25rem)] font-light leading-tight tracking-tight text-white/95">
+            Run the engine on any pair
+          </h1>
+          <p className="mx-auto mt-3 max-w-xl text-sm text-[var(--color-muted)]">
+            V5 strategy with realism patches. Runs entirely in your browser.
+            No API keys, no servers.
+          </p>
+          {history.length > 0 && (
+            <div className="mt-5 flex justify-center">
+              <RunHistoryDropdown
+                history={history}
+                onPick={(meta) => {
+                  setConfig({
+                    symbol: meta.symbol,
+                    interval: meta.interval,
+                    startDate: meta.startDate,
+                    endDate: meta.endDate,
+                  });
+                  toast.info("Loaded from history", `Click "Run Backtest" to re-run`);
+                }}
+              />
+            </div>
+          )}
+        </div>
 
-        {/* Right: Results */}
-        <section className="min-w-0 space-y-6">
-          {phase === "idle" && !result && <EmptyStatePreview />}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-[320px_1fr] lg:grid-cols-[360px_1fr]">
+          {/* Left: Form */}
+          <aside className="md:sticky md:top-20 md:self-start">
+            <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/40 p-5 backdrop-blur-md">
+              <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-[var(--color-muted)]/70">
+                Configuration
+              </div>
+              <BacktestForm
+                config={config}
+                setConfig={setConfig}
+                params={params}
+                setParams={setParams}
+                onRun={onRun}
+                busy={busy}
+              />
+            </div>
+          </aside>
 
-          {busy && (
-            <>
-              <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/80 p-5 backdrop-blur-md">
-                <h3 className="mb-4 text-sm font-semibold">
-                  {phase === "fetching" ? "Fetching market data" : "Running backtest"}
-                </h3>
-                <StageProgress
-                  current={stage}
-                  pct={progress}
-                  message={progressMessage}
+          {/* Right: Results */}
+          <section className="min-w-0 space-y-6">
+            {phase === "idle" && !result && <EmptyStatePreview />}
+
+            {busy && (
+              <>
+                <div className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/40 p-5 backdrop-blur-md">
+                  <div className="mb-4 text-[10px] uppercase tracking-[0.3em] text-[var(--color-muted)]/70">
+                    {phase === "fetching" ? "Fetching market data" : "Running backtest"}
+                  </div>
+                  <StageProgress
+                    current={stage}
+                    pct={progress}
+                    message={progressMessage}
+                  />
+                </div>
+                <ResultsSkeleton />
+              </>
+            )}
+
+            {result && phase === "done" && (
+              <>
+                <StickyKpiBar
+                  metrics={result.metrics}
+                  symbol={result.symbol}
+                  watchRef={kpiAnchorRef}
                 />
-              </div>
-              <ResultsSkeleton />
-            </>
-          )}
 
-          {result && phase === "done" && (
-            <>
-              {/* Sticky KPI bar (only when scrolled past the main strip) */}
-              <StickyKpiBar
-                metrics={result.metrics}
-                symbol={result.symbol}
-                watchRef={kpiAnchorRef}
-              />
+                <ParityBadge compact />
 
-              {/* Engine parity badge — establishes trust */}
-              <ParityBadge compact />
+                <ExportToolbar result={result} config={config} params={params} />
 
-              {/* Export toolbar */}
-              <ExportToolbar result={result} config={config} params={params} />
+                <div ref={kpiAnchorRef}>
+                  <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--color-muted)]/70">
+                    Results · {result.symbol} {result.interval}
+                  </div>
+                  <div className="mt-4">
+                    <KPICards kpis={resultKpis(result)} columns={6} />
+                  </div>
+                </div>
 
-              {/* Main KPI strip — anchor for sticky observer */}
-              <div ref={kpiAnchorRef}>
-                <KPICards kpis={resultKpis(result)} columns={6} />
-              </div>
+                <EquityCurve
+                  equityCurve={result.equityCurve}
+                  buyHoldCurve={buyHoldCurve}
+                  initialCapital={result.params.initialCapital}
+                />
+                <CandlestickChart
+                  candles={result.candles}
+                  trades={result.trades}
+                  symbol={result.symbol}
+                  focusedTradeId={focusedTradeId ?? hoveredTradeId}
+                />
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  <ExitReasons metrics={result.metrics} />
+                  <MonthlyHeatmap trades={result.trades} />
+                </div>
+                <MetricsPanel metrics={result.metrics} />
+                <TradeTable
+                  trades={result.trades}
+                  onHover={setHoveredTradeId}
+                  onSelect={setFocusedTradeId}
+                  selectedId={focusedTradeId}
+                />
+              </>
+            )}
+          </section>
+        </div>
 
-              <EquityCurve
-                equityCurve={result.equityCurve}
-                buyHoldCurve={buyHoldCurve}
-                initialCapital={result.params.initialCapital}
-              />
-              <CandlestickChart
-                candles={result.candles}
-                trades={result.trades}
-                symbol={result.symbol}
-                focusedTradeId={focusedTradeId ?? hoveredTradeId}
-              />
-              <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-                <ExitReasons metrics={result.metrics} />
-                <MonthlyHeatmap trades={result.trades} />
-              </div>
-              <MetricsPanel metrics={result.metrics} />
-              <TradeTable
-                trades={result.trades}
-                onHover={setHoveredTradeId}
-                onSelect={setFocusedTradeId}
-                selectedId={focusedTradeId}
-              />
-            </>
-          )}
-        </section>
+        {/* Footer nav */}
+        <div className="mt-16 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm">
+          <Link
+            href="/"
+            className="font-medium text-[var(--color-muted)] transition-colors hover:text-white"
+          >
+            ← Home
+          </Link>
+          <Link
+            href="/live"
+            className="font-medium text-white underline decoration-emerald-400/60 decoration-2 underline-offset-[6px] transition-colors hover:decoration-emerald-400"
+          >
+            Watch live
+          </Link>
+          <Link
+            href="/about"
+            className="font-medium text-[var(--color-muted)] transition-colors hover:text-white"
+          >
+            Methodology
+          </Link>
+        </div>
       </div>
     </div>
   );

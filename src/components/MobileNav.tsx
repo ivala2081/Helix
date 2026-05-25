@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { Github, Menu, X } from "lucide-react";
+import { Menu, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -104,15 +104,6 @@ export function MobileNav({ nav }: { nav: Nav }) {
                 >
                   {nav.changelog}
                 </Link>
-                <a
-                  href="https://github.com/ivala2081/Helix"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 flex h-12 items-center gap-3 rounded-md border border-[var(--color-border)] px-3 text-sm text-[var(--color-muted)] hover:text-white"
-                >
-                  <Github className="h-4 w-4" />
-                  {nav.github}
-                </a>
               </div>
             </motion.nav>
           </>

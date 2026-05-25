@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import Link from "next/link";
-import { Github } from "lucide-react";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ShaderBackground } from "@/components/visuals/ShaderBackground";
 import { PageTransition } from "@/components/visuals/PageTransition";
@@ -29,23 +28,20 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Helix — Institutional-Grade Price Action Backtesting",
+    default: "Helix",
     template: "%s · Helix",
   },
-  description:
-    "Test Market Structure + Fair Value Gap strategies on any Binance-listed pair. Walk-forward validated. +949.7% return on BTCUSDT 1H.",
+  description: "Live forward test of a quantitative trading strategy.",
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://helix.local"),
   openGraph: {
-    title: "Helix — Institutional-Grade Price Action Backtesting",
-    description:
-      "Test Market Structure + Fair Value Gap strategies on any Binance-listed pair. +949.7% return, 5.40 Sharpe on BTCUSDT 1H.",
+    title: "Helix",
+    description: "Live forward test of a quantitative trading strategy.",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Helix — Institutional-Grade Price Action Backtesting",
-    description:
-      "+949.7% return, 5.40 Sharpe on BTCUSDT 1H. Walk-forward validated.",
+    title: "Helix",
+    description: "Live forward test of a quantitative trading strategy.",
   },
 };
 
@@ -128,15 +124,6 @@ export default async function RootLayout({
                   <kbd className="ml-1 hidden items-center gap-1 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-2 py-1 font-mono text-[10px] text-[var(--color-muted)] md:flex">
                     ⌘K
                   </kbd>
-                  <a
-                    href="https://github.com/ivala2081/Helix"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="ml-1 rounded-md p-2 text-[var(--color-muted)] transition-colors hover:bg-[var(--color-surface)] hover:text-white"
-                    aria-label={dict.nav.github}
-                  >
-                    <Github className="h-4 w-4" />
-                  </a>
                 </div>
 
                 {/* Mobile cluster — language switcher (already has flag-only mobile mode) + hamburger */}

@@ -1,0 +1,588 @@
+{
+  "generated_at": "2026-05-25T14:57:05.758435+00:00",
+  "params_label": "V6_PARAMS",
+  "date_range": {
+    "start": "2024-01-01",
+    "end": "2025-12-31"
+  },
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT"
+  ],
+  "result": {
+    "k_folds": 6,
+    "train_pct": 0.6,
+    "folds_positive": 3,
+    "verdict_5of6": "FAIL",
+    "verdict_4of6": "FAIL",
+    "portfolio_folds": [
+      {
+        "fold": 1,
+        "test_r_per_day": -0.4516023292215841,
+        "test_total_r": -21.676911802636038,
+        "test_days": 48,
+        "test_positive": "False",
+        "train_r_per_day": 0.07196715426566641,
+        "train_total_r": 5.253602261393648
+      },
+      {
+        "fold": 2,
+        "test_r_per_day": -0.23504394484136856,
+        "test_total_r": -11.28210935238569,
+        "test_days": 48,
+        "test_positive": "False",
+        "train_r_per_day": -0.013265724546961786,
+        "train_total_r": -0.9683978919282104
+      },
+      {
+        "fold": 3,
+        "test_r_per_day": 0.12602792582636524,
+        "test_total_r": 6.0493404396655315,
+        "test_days": 48,
+        "test_positive": "True",
+        "train_r_per_day": 0.38807920571744137,
+        "train_total_r": 28.32978201737322
+      },
+      {
+        "fold": 4,
+        "test_r_per_day": 0.06843890546026121,
+        "test_total_r": 3.285067462092538,
+        "test_days": 48,
+        "test_positive": "True",
+        "train_r_per_day": -0.08081393045522114,
+        "train_total_r": -5.8994169232311435
+      },
+      {
+        "fold": 5,
+        "test_r_per_day": 0.08272910820179885,
+        "test_total_r": 3.970997193686345,
+        "test_days": 48,
+        "test_positive": "True",
+        "train_r_per_day": 0.2801357067044644,
+        "train_total_r": 20.449906589425904
+      },
+      {
+        "fold": 6,
+        "test_r_per_day": -0.15489587911157982,
+        "test_total_r": -7.435002197355831,
+        "test_days": 48,
+        "test_positive": "False",
+        "train_r_per_day": 0.1925692612298626,
+        "train_total_r": 14.05755606977997
+      }
+    ],
+    "per_symbol_folds": {
+      "BTCUSDT": [
+        {
+          "symbol": "BTCUSDT",
+          "train": {
+            "n_trades": 4,
+            "win_rate": 0.75,
+            "profit_factor": 0.9863771828818966,
+            "r_total": 3.711727888289622,
+            "r_per_day": 0.05084558751081674,
+            "days": 73,
+            "total_return_pct": -0.07100801102065815,
+            "sharpe_ratio": 0.04206334315460936
+          },
+          "test": {
+            "n_trades": 2,
+            "win_rate": 0.5,
+            "profit_factor": 0.0012088857972860575,
+            "r_total": -6.295840001487323,
+            "r_per_day": -0.13116333336431923,
+            "days": 48,
+            "total_return_pct": -5.095655791140635,
+            "sharpe_ratio": -2.73695217182719
+          },
+          "fold": 1,
+          "window": {
+            "start": "2024-01-01 00:00:00+00:00",
+            "end": "2024-05-01 19:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "BTCUSDT",
+          "train": {
+            "n_trades": 2,
+            "win_rate": 1.0,
+            "profit_factor": null,
+            "r_total": 1.010084656904327,
+            "r_per_day": 0.013836776121977081,
+            "days": 73,
+            "total_return_pct": 0.6400139206308086,
+            "sharpe_ratio": 2.8977823065479265
+          },
+          "test": {
+            "n_trades": 3,
+            "win_rate": 0.3333333333333333,
+            "profit_factor": 0.38873645850889327,
+            "r_total": -9.678944520489434,
+            "r_per_day": -0.20164467751019655,
+            "days": 48,
+            "total_return_pct": -3.2958458167259232,
+            "sharpe_ratio": -2.0072660125058626
+          },
+          "fold": 2,
+          "window": {
+            "start": "2024-05-01 20:00:00+00:00",
+            "end": "2024-08-31 15:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "BTCUSDT",
+          "train": {
+            "n_trades": 3,
+            "win_rate": 1.0,
+            "profit_factor": null,
+            "r_total": 10.08443900095548,
+            "r_per_day": 0.13814300001308877,
+            "days": 73,
+            "total_return_pct": 9.282032031226882,
+            "sharpe_ratio": 3.2361636271797662
+          },
+          "test": {
+            "n_trades": 3,
+            "win_rate": 0.6666666666666666,
+            "profit_factor": 2.686709810185408,
+            "r_total": 2.7430287313501855,
+            "r_per_day": 0.05714643190312887,
+            "days": 48,
+            "total_return_pct": 1.8912837971752743,
+            "sharpe_ratio": 2.2258423670337724
+          },
+          "fold": 3,
+          "window": {
+            "start": "2024-08-31 16:00:00+00:00",
+            "end": "2024-12-31 11:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "BTCUSDT",
+          "train": {
+            "n_trades": 2,
+            "win_rate": 0.5,
+            "profit_factor": 0.5128163583292333,
+            "r_total": -4.7149395326485095,
+            "r_per_day": -0.06458821277600697,
+            "days": 73,
+            "total_return_pct": -1.0872440367561649,
+            "sharpe_ratio": -0.9478479897227645
+          },
+          "test": {
+            "n_trades": 2,
+            "win_rate": 0.5,
+            "profit_factor": 0.5484567974971187,
+            "r_total": -3.020664321557624,
+            "r_per_day": -0.06293050669911716,
+            "days": 48,
+            "total_return_pct": -1.4823175294782232,
+            "sharpe_ratio": -1.0287892398584928
+          },
+          "fold": 4,
+          "window": {
+            "start": "2024-12-31 12:00:00+00:00",
+            "end": "2025-05-02 07:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "BTCUSDT",
+          "train": {
+            "n_trades": 4,
+            "win_rate": 0.75,
+            "profit_factor": 7.379761158995834,
+            "r_total": 12.28240082059653,
+            "r_per_day": 0.16825206603556891,
+            "days": 73,
+            "total_return_pct": 4.202507361603584,
+            "sharpe_ratio": 3.063067626727481
+          },
+          "test": {
+            "n_trades": 1,
+            "win_rate": 0.0,
+            "profit_factor": 0.0,
+            "r_total": -0.24034158241627887,
+            "r_per_day": -0.005007116300339143,
+            "days": 48,
+            "total_return_pct": -0.10249664189394024,
+            "sharpe_ratio": -2.1244115807255404
+          },
+          "fold": 5,
+          "window": {
+            "start": "2025-05-02 08:00:00+00:00",
+            "end": "2025-09-01 03:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "BTCUSDT",
+          "train": {
+            "n_trades": 3,
+            "win_rate": 0.6666666666666666,
+            "profit_factor": 3.181126021419805,
+            "r_total": 7.288252498323839,
+            "r_per_day": 0.09983907531950464,
+            "days": 73,
+            "total_return_pct": 2.4215666304160552,
+            "sharpe_ratio": 1.9740239430678634
+          },
+          "test": {
+            "n_trades": 2,
+            "win_rate": 0.0,
+            "profit_factor": 0.0,
+            "r_total": -7.435002197355831,
+            "r_per_day": -0.15489587911157982,
+            "days": 48,
+            "total_return_pct": -6.248540948515602,
+            "sharpe_ratio": -3.408221114931803
+          },
+          "fold": 6,
+          "window": {
+            "start": "2025-09-01 04:00:00+00:00",
+            "end": "2025-12-31 23:00:00+00:00"
+          }
+        }
+      ],
+      "ETHUSDT": [
+        {
+          "symbol": "ETHUSDT",
+          "train": {
+            "n_trades": 4,
+            "win_rate": 0.75,
+            "profit_factor": 3.105232619876121,
+            "r_total": -0.5511133560933194,
+            "r_per_day": -0.007549498028675608,
+            "days": 73,
+            "total_return_pct": 3.347486043059252,
+            "sharpe_ratio": 1.5839939093002289
+          },
+          "test": {
+            "n_trades": 2,
+            "win_rate": 0.5,
+            "profit_factor": 0.27603355453876316,
+            "r_total": -4.511913734252509,
+            "r_per_day": -0.09399820279692728,
+            "days": 48,
+            "total_return_pct": -4.223494597879035,
+            "sharpe_ratio": -1.9048177217723745
+          },
+          "fold": 1,
+          "window": {
+            "start": "2024-01-01 00:00:00+00:00",
+            "end": "2024-05-01 19:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "ETHUSDT",
+          "train": {
+            "n_trades": 3,
+            "win_rate": 0.3333333333333333,
+            "profit_factor": 3.1578859903484378,
+            "r_total": 1.5510131795219353,
+            "r_per_day": 0.02124675588386213,
+            "days": 73,
+            "total_return_pct": 4.623115866163716,
+            "sharpe_ratio": 1.503661118252113
+          },
+          "test": {
+            "n_trades": 1,
+            "win_rate": 0.0,
+            "profit_factor": 0.0,
+            "r_total": -2.3699542823230324,
+            "r_per_day": -0.049374047548396506,
+            "days": 48,
+            "total_return_pct": -1.984475930444969,
+            "sharpe_ratio": -2.7407220071711893
+          },
+          "fold": 2,
+          "window": {
+            "start": "2024-05-01 20:00:00+00:00",
+            "end": "2024-08-31 15:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "ETHUSDT",
+          "train": {
+            "n_trades": 4,
+            "win_rate": 1.0,
+            "profit_factor": null,
+            "r_total": 11.207976882580475,
+            "r_per_day": 0.15353392989836268,
+            "days": 73,
+            "total_return_pct": 8.873444680989033,
+            "sharpe_ratio": 3.8142397768085003
+          },
+          "test": {
+            "n_trades": 4,
+            "win_rate": 0.75,
+            "profit_factor": 30.216776895309824,
+            "r_total": 4.550979376397418,
+            "r_per_day": 0.09481207034161288,
+            "days": 48,
+            "total_return_pct": 5.46000877297949,
+            "sharpe_ratio": 4.2491950325261065
+          },
+          "fold": 3,
+          "window": {
+            "start": "2024-08-31 16:00:00+00:00",
+            "end": "2024-12-31 11:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "ETHUSDT",
+          "train": {
+            "n_trades": 4,
+            "win_rate": 0.25,
+            "profit_factor": 0.22740286859910336,
+            "r_total": -9.881806101866827,
+            "r_per_day": -0.13536720687488804,
+            "days": 73,
+            "total_return_pct": -8.761490089147774,
+            "sharpe_ratio": -2.580755207168752
+          },
+          "test": {
+            "n_trades": 2,
+            "win_rate": 0.5,
+            "profit_factor": 1.6669563547726909,
+            "r_total": 0.47663843864958655,
+            "r_per_day": 0.009929967471866386,
+            "days": 48,
+            "total_return_pct": 0.9627052913381886,
+            "sharpe_ratio": 0.9984736642479587
+          },
+          "fold": 4,
+          "window": {
+            "start": "2024-12-31 12:00:00+00:00",
+            "end": "2025-05-02 07:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "ETHUSDT",
+          "train": {
+            "n_trades": 4,
+            "win_rate": 0.75,
+            "profit_factor": 0.6003636289896602,
+            "r_total": -1.6200086926326893,
+            "r_per_day": -0.022191899899077935,
+            "days": 73,
+            "total_return_pct": -3.2911718131553607,
+            "sharpe_ratio": -0.7765309658746894
+          },
+          "test": {
+            "n_trades": 5,
+            "win_rate": 0.4,
+            "profit_factor": 1.2660109032684395,
+            "r_total": 0.0819155146090439,
+            "r_per_day": 0.0017065732210217479,
+            "days": 48,
+            "total_return_pct": 0.38434383345640527,
+            "sharpe_ratio": 0.6641786533854893
+          },
+          "fold": 5,
+          "window": {
+            "start": "2025-05-02 08:00:00+00:00",
+            "end": "2025-09-01 03:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "ETHUSDT",
+          "train": {
+            "n_trades": 3,
+            "win_rate": 0.3333333333333333,
+            "profit_factor": 1.0537220930534437,
+            "r_total": 0.6892942941183688,
+            "r_per_day": 0.009442387590662587,
+            "days": 73,
+            "total_return_pct": 0.11524138298142134,
+            "sharpe_ratio": 0.12546372666050615
+          },
+          "test": {
+            "n_trades": 0,
+            "win_rate": 0,
+            "profit_factor": null,
+            "r_total": 0,
+            "r_per_day": 0.0,
+            "days": 48,
+            "total_return_pct": 0.0,
+            "sharpe_ratio": 0.0
+          },
+          "fold": 6,
+          "window": {
+            "start": "2025-09-01 04:00:00+00:00",
+            "end": "2025-12-31 23:00:00+00:00"
+          }
+        }
+      ],
+      "SOLUSDT": [
+        {
+          "symbol": "SOLUSDT",
+          "train": {
+            "n_trades": 5,
+            "win_rate": 0.6,
+            "profit_factor": 1.9078923187829748,
+            "r_total": 2.092987729197345,
+            "r_per_day": 0.028671064783525275,
+            "days": 73,
+            "total_return_pct": 2.763613271442064,
+            "sharpe_ratio": 1.3270111759115093
+          },
+          "test": {
+            "n_trades": 5,
+            "win_rate": 0.4,
+            "profit_factor": 0.10013128583366715,
+            "r_total": -10.869158066896205,
+            "r_per_day": -0.2264407930603376,
+            "days": 48,
+            "total_return_pct": -16.050484619298803,
+            "sharpe_ratio": -3.607760517866963
+          },
+          "fold": 1,
+          "window": {
+            "start": "2024-01-01 00:00:00+00:00",
+            "end": "2024-05-01 19:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "SOLUSDT",
+          "train": {
+            "n_trades": 2,
+            "win_rate": 0.5,
+            "profit_factor": 0.42948069588529086,
+            "r_total": -3.5294957283544726,
+            "r_per_day": -0.04834925655280099,
+            "days": 73,
+            "total_return_pct": -3.5739940004937307,
+            "sharpe_ratio": -1.150151071950251
+          },
+          "test": {
+            "n_trades": 2,
+            "win_rate": 0.5,
+            "profit_factor": 1.31885916047533,
+            "r_total": 0.7667894504267763,
+            "r_per_day": 0.015974780217224507,
+            "days": 48,
+            "total_return_pct": 0.3412033004959449,
+            "sharpe_ratio": 0.5648287351577544
+          },
+          "fold": 2,
+          "window": {
+            "start": "2024-05-01 20:00:00+00:00",
+            "end": "2024-08-31 15:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "SOLUSDT",
+          "train": {
+            "n_trades": 3,
+            "win_rate": 0.3333333333333333,
+            "profit_factor": 16.70875392774549,
+            "r_total": 7.037366133837263,
+            "r_per_day": 0.0964022758059899,
+            "days": 73,
+            "total_return_pct": 9.89547878209767,
+            "sharpe_ratio": 2.122049698096907
+          },
+          "test": {
+            "n_trades": 1,
+            "win_rate": 0.0,
+            "profit_factor": 0.0,
+            "r_total": -1.244667668082072,
+            "r_per_day": -0.0259305764183765,
+            "days": 48,
+            "total_return_pct": -1.1708737615758764,
+            "sharpe_ratio": -2.7407220071711893
+          },
+          "fold": 3,
+          "window": {
+            "start": "2024-08-31 16:00:00+00:00",
+            "end": "2024-12-31 11:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "SOLUSDT",
+          "train": {
+            "n_trades": 3,
+            "win_rate": 0.6666666666666666,
+            "profit_factor": 7.767859178179055,
+            "r_total": 8.697328711284193,
+            "r_per_day": 0.11914148919567388,
+            "days": 73,
+            "total_return_pct": 10.416948211826002,
+            "sharpe_ratio": 2.7703567385596704
+          },
+          "test": {
+            "n_trades": 2,
+            "win_rate": 1.0,
+            "profit_factor": null,
+            "r_total": 5.829093345000576,
+            "r_per_day": 0.121439444687512,
+            "days": 48,
+            "total_return_pct": 4.875246417907129,
+            "sharpe_ratio": 3.1001439413773384
+          },
+          "fold": 4,
+          "window": {
+            "start": "2024-12-31 12:00:00+00:00",
+            "end": "2025-05-02 07:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "SOLUSDT",
+          "train": {
+            "n_trades": 6,
+            "win_rate": 0.8333333333333334,
+            "profit_factor": 2.6889042719630276,
+            "r_total": 9.787514461462063,
+            "r_per_day": 0.13407554056797347,
+            "days": 73,
+            "total_return_pct": 7.849666021177764,
+            "sharpe_ratio": 2.4494496330053575
+          },
+          "test": {
+            "n_trades": 3,
+            "win_rate": 1.0,
+            "profit_factor": null,
+            "r_total": 4.12942326149358,
+            "r_per_day": 0.08602965128111624,
+            "days": 48,
+            "total_return_pct": 4.16435679958875,
+            "sharpe_ratio": 4.999285733257821
+          },
+          "fold": 5,
+          "window": {
+            "start": "2025-05-02 08:00:00+00:00",
+            "end": "2025-09-01 03:00:00+00:00"
+          }
+        },
+        {
+          "symbol": "SOLUSDT",
+          "train": {
+            "n_trades": 4,
+            "win_rate": 0.75,
+            "profit_factor": 7.688018008905322,
+            "r_total": 6.080009277337761,
+            "r_per_day": 0.08328779831969536,
+            "days": 73,
+            "total_return_pct": 7.485572688038864,
+            "sharpe_ratio": 2.8178130598254962
+          },
+          "test": {
+            "n_trades": 0,
+            "win_rate": 0,
+            "profit_factor": null,
+            "r_total": 0,
+            "r_per_day": 0.0,
+            "days": 48,
+            "total_return_pct": 0.0,
+            "sharpe_ratio": 0.0
+          },
+          "fold": 6,
+          "window": {
+            "start": "2025-09-01 04:00:00+00:00",
+            "end": "2025-12-31 23:00:00+00:00"
+          }
+        }
+      ]
+    }
+  }
+}

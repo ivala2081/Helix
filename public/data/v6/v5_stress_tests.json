@@ -1,0 +1,305 @@
+{
+  "generated_at": "2026-05-25T14:06:45.713329+00:00",
+  "params_label": "V5_DEFAULTS",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT",
+    "BNBUSDT",
+    "XRPUSDT"
+  ],
+  "windows": [
+    {
+      "label": "low_vol_apr_aug_2024",
+      "start": "2024-04-01",
+      "end": "2024-08-31",
+      "what_to_watch": "Low realized vol \u2014 does the strategy stall and bleed via TP1-then-BE?",
+      "n_trades_total": 132,
+      "win_rate_aggregate": 0.5227272727272727,
+      "r_total": 44.03329958115757,
+      "r_per_day": 0.2896927604023524,
+      "days": 152,
+      "per_symbol": [
+        {
+          "symbol": "BTCUSDT",
+          "n_trades": 30,
+          "win_rate": 0.5333333333333333,
+          "profit_factor": 1.7099488622960637,
+          "r_total": 12.566038343681516,
+          "r_per_day": 0.08267130489264156,
+          "total_return_pct": 8.240175631006204,
+          "max_drawdown_pct": 5.396268802535596,
+          "sharpe_ratio": 1.6613734243553548,
+          "days": 152
+        },
+        {
+          "symbol": "ETHUSDT",
+          "n_trades": 26,
+          "win_rate": 0.5,
+          "profit_factor": 0.9385063525312763,
+          "r_total": -7.059307698764761,
+          "r_per_day": -0.0464428138076629,
+          "total_return_pct": -2.060568757413803,
+          "max_drawdown_pct": 13.540713956559056,
+          "sharpe_ratio": -0.1086281843510672,
+          "days": 152
+        },
+        {
+          "symbol": "SOLUSDT",
+          "n_trades": 25,
+          "win_rate": 0.6,
+          "profit_factor": 1.2517522847220026,
+          "r_total": 13.238569564706145,
+          "r_per_day": 0.08709585239938253,
+          "total_return_pct": 7.758031696760535,
+          "max_drawdown_pct": 16.137304755983045,
+          "sharpe_ratio": 0.7284082658992714,
+          "days": 152
+        },
+        {
+          "symbol": "BNBUSDT",
+          "n_trades": 24,
+          "win_rate": 0.5416666666666666,
+          "profit_factor": 2.4770765116138187,
+          "r_total": 15.69160037929963,
+          "r_per_day": 0.10323421302170809,
+          "total_return_pct": 16.383230297948355,
+          "max_drawdown_pct": 5.096091742823247,
+          "sharpe_ratio": 2.544168501325896,
+          "days": 152
+        },
+        {
+          "symbol": "XRPUSDT",
+          "n_trades": 27,
+          "win_rate": 0.4444444444444444,
+          "profit_factor": 1.3740747423471207,
+          "r_total": 9.596398992235043,
+          "r_per_day": 0.06313420389628317,
+          "total_return_pct": 7.167160200201487,
+          "max_drawdown_pct": 11.51147436323723,
+          "sharpe_ratio": 1.0562009505280345,
+          "days": 152
+        }
+      ]
+    },
+    {
+      "label": "chop_sep_oct_2023",
+      "start": "2023-09-01",
+      "end": "2023-10-31",
+      "what_to_watch": "Ranging/chop \u2014 does the entry filter produce noise trades?",
+      "n_trades_total": 50,
+      "win_rate_aggregate": 0.64,
+      "r_total": 28.764881696815042,
+      "r_per_day": 0.47941469494691735,
+      "days": 60,
+      "per_symbol": [
+        {
+          "symbol": "BTCUSDT",
+          "n_trades": 8,
+          "win_rate": 0.75,
+          "profit_factor": 1.6680951214523283,
+          "r_total": 9.37541648397505,
+          "r_per_day": 0.15625694139958415,
+          "total_return_pct": 3.191519521228256,
+          "max_drawdown_pct": 4.175274480135649,
+          "sharpe_ratio": 1.5061007416941927,
+          "days": 60
+        },
+        {
+          "symbol": "ETHUSDT",
+          "n_trades": 13,
+          "win_rate": 0.5384615384615384,
+          "profit_factor": 0.8088687118668907,
+          "r_total": 4.773392489879496,
+          "r_per_day": 0.0795565414979916,
+          "total_return_pct": -1.8102844298843412,
+          "max_drawdown_pct": 7.104568017262307,
+          "sharpe_ratio": -0.5943280033684644,
+          "days": 60
+        },
+        {
+          "symbol": "SOLUSDT",
+          "n_trades": 9,
+          "win_rate": 0.6666666666666666,
+          "profit_factor": 1.8883215443077581,
+          "r_total": 2.5692486137617827,
+          "r_per_day": 0.04282081022936304,
+          "total_return_pct": 6.209275866445769,
+          "max_drawdown_pct": 6.545881772174134,
+          "sharpe_ratio": 1.9869981872357394,
+          "days": 60
+        },
+        {
+          "symbol": "BNBUSDT",
+          "n_trades": 8,
+          "win_rate": 0.625,
+          "profit_factor": 1.6792362344977145,
+          "r_total": 6.305097044705369,
+          "r_per_day": 0.10508495074508949,
+          "total_return_pct": 1.8319987539105025,
+          "max_drawdown_pct": 2.6768453100145635,
+          "sharpe_ratio": 1.3993534809918542,
+          "days": 60
+        },
+        {
+          "symbol": "XRPUSDT",
+          "n_trades": 12,
+          "win_rate": 0.6666666666666666,
+          "profit_factor": 1.3632859633312024,
+          "r_total": 5.741727064493342,
+          "r_per_day": 0.09569545107488904,
+          "total_return_pct": 1.720951697536984,
+          "max_drawdown_pct": 4.187580894700658,
+          "sharpe_ratio": 1.0357992875209976,
+          "days": 60
+        }
+      ]
+    },
+    {
+      "label": "bull_dec_2024",
+      "start": "2024-12-01",
+      "end": "2024-12-31",
+      "what_to_watch": "BTC bull spike \u2014 does the strategy capture momentum cleanly?",
+      "n_trades_total": 24,
+      "win_rate_aggregate": 0.5833333333333334,
+      "r_total": -19.11161709054764,
+      "r_per_day": -0.6370539030182546,
+      "days": 30,
+      "per_symbol": [
+        {
+          "symbol": "BTCUSDT",
+          "n_trades": 6,
+          "win_rate": 0.8333333333333334,
+          "profit_factor": 0.5298908492055537,
+          "r_total": 0.4288971381036377,
+          "r_per_day": 0.014296571270121258,
+          "total_return_pct": -4.248968406223412,
+          "max_drawdown_pct": 9.0382593043403,
+          "sharpe_ratio": -1.4207712090043503,
+          "days": 30
+        },
+        {
+          "symbol": "ETHUSDT",
+          "n_trades": 5,
+          "win_rate": 0.8,
+          "profit_factor": 3.290282708712948,
+          "r_total": 5.320130693559796,
+          "r_per_day": 0.17733768978532655,
+          "total_return_pct": 5.211995647202184,
+          "max_drawdown_pct": 2.1171722787121245,
+          "sharpe_ratio": 3.4715857022259575,
+          "days": 30
+        },
+        {
+          "symbol": "SOLUSDT",
+          "n_trades": 2,
+          "win_rate": 0.5,
+          "profit_factor": 0.4353157942630095,
+          "r_total": -0.958703336724572,
+          "r_per_day": -0.03195677789081906,
+          "total_return_pct": -0.6441717219688872,
+          "max_drawdown_pct": 1.1351275845333368,
+          "sharpe_ratio": -1.8156602959138617,
+          "days": 30
+        },
+        {
+          "symbol": "BNBUSDT",
+          "n_trades": 6,
+          "win_rate": 0.5,
+          "profit_factor": 0.5438144291426182,
+          "r_total": -5.60209239217432,
+          "r_per_day": -0.18673641307247735,
+          "total_return_pct": -3.1305272805268576,
+          "max_drawdown_pct": 6.352499814368108,
+          "sharpe_ratio": -1.827456001379344,
+          "days": 30
+        },
+        {
+          "symbol": "XRPUSDT",
+          "n_trades": 5,
+          "win_rate": 0.2,
+          "profit_factor": 0.031649301959694134,
+          "r_total": -18.29984919331218,
+          "r_per_day": -0.6099949731104061,
+          "total_return_pct": -25.84752533273948,
+          "max_drawdown_pct": 26.46871268524251,
+          "sharpe_ratio": -5.482458125419908,
+          "days": 30
+        }
+      ]
+    },
+    {
+      "label": "crash_aug_2023",
+      "start": "2023-08-15",
+      "end": "2023-09-15",
+      "what_to_watch": "Mid-2023 BTC pullback \u2014 does the SL/hard-stop discipline hold?",
+      "n_trades_total": 25,
+      "win_rate_aggregate": 0.48,
+      "r_total": 10.768093273798277,
+      "r_per_day": 0.34735784754187987,
+      "days": 31,
+      "per_symbol": [
+        {
+          "symbol": "BTCUSDT",
+          "n_trades": 3,
+          "win_rate": 0.3333333333333333,
+          "profit_factor": 0.3694829605229055,
+          "r_total": -4.822279749457956,
+          "r_per_day": -0.1555574112728373,
+          "total_return_pct": -3.33398595572462,
+          "max_drawdown_pct": 5.186374584248029,
+          "sharpe_ratio": -2.4273424102857204,
+          "days": 31
+        },
+        {
+          "symbol": "ETHUSDT",
+          "n_trades": 6,
+          "win_rate": 0.3333333333333333,
+          "profit_factor": 0.8676050952556572,
+          "r_total": 3.8917723348175173,
+          "r_per_day": 0.1255410430586296,
+          "total_return_pct": -0.4117333130244515,
+          "max_drawdown_pct": 2.1545863761723743,
+          "sharpe_ratio": -0.5555897851216862,
+          "days": 31
+        },
+        {
+          "symbol": "SOLUSDT",
+          "n_trades": 4,
+          "win_rate": 0.75,
+          "profit_factor": 1.345509704449001,
+          "r_total": 0.5778142933740704,
+          "r_per_day": 0.01863917075400227,
+          "total_return_pct": 0.4693953733383205,
+          "max_drawdown_pct": 1.3558895842319343,
+          "sharpe_ratio": 0.9202306435113918,
+          "days": 31
+        },
+        {
+          "symbol": "BNBUSDT",
+          "n_trades": 4,
+          "win_rate": 0.75,
+          "profit_factor": 134.27205130753313,
+          "r_total": 9.345023160511683,
+          "r_per_day": 0.30145236001650594,
+          "total_return_pct": 3.5978087877580402,
+          "max_drawdown_pct": 0.07925013064177129,
+          "sharpe_ratio": 4.541042810252944,
+          "days": 31
+        },
+        {
+          "symbol": "XRPUSDT",
+          "n_trades": 8,
+          "win_rate": 0.375,
+          "profit_factor": 0.35630931390124015,
+          "r_total": 1.7757632345529613,
+          "r_per_day": 0.057282684985579396,
+          "total_return_pct": -3.788661866730035,
+          "max_drawdown_pct": 4.6904029685358,
+          "sharpe_ratio": -3.3404779967346356,
+          "days": 31
+        }
+      ]
+    }
+  ]
+}

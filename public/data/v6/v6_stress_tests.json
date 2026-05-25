@@ -1,0 +1,207 @@
+{
+  "generated_at": "2026-05-25T14:53:55.760207+00:00",
+  "params_label": "V6_PARAMS",
+  "symbols": [
+    "BTCUSDT",
+    "ETHUSDT",
+    "SOLUSDT"
+  ],
+  "windows": [
+    {
+      "label": "low_vol_apr_aug_2024",
+      "start": "2024-04-01",
+      "end": "2024-08-31",
+      "what_to_watch": "Low realized vol \u2014 regime filter must keep us out / minimize damage",
+      "n_trades_total": 15,
+      "win_rate_aggregate": 0.4,
+      "r_total": -28.21158515377706,
+      "r_per_day": -0.18560253390642803,
+      "days": 152,
+      "per_symbol": [
+        {
+          "symbol": "BTCUSDT",
+          "n_trades": 7,
+          "win_rate": 0.5714285714285714,
+          "profit_factor": 0.7113729733099591,
+          "r_total": -4.9209551954941535,
+          "r_per_day": -0.03237470523351417,
+          "total_return_pct": -3.0329899218403806,
+          "max_drawdown_pct": 5.391857346319197,
+          "sharpe_ratio": -0.4968973845229689,
+          "days": 152
+        },
+        {
+          "symbol": "ETHUSDT",
+          "n_trades": 3,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "r_total": -14.330785761477081,
+          "r_per_day": -0.09428148527287554,
+          "total_return_pct": -9.048330787683625,
+          "max_drawdown_pct": 9.048330787683625,
+          "sharpe_ratio": -2.289335811290059,
+          "days": 152
+        },
+        {
+          "symbol": "SOLUSDT",
+          "n_trades": 5,
+          "win_rate": 0.4,
+          "profit_factor": 0.23091383476549734,
+          "r_total": -8.959844196805829,
+          "r_per_day": -0.05894634340003835,
+          "total_return_pct": -12.239047843420794,
+          "max_drawdown_pct": 12.537472872676389,
+          "sharpe_ratio": -1.6529874852553645,
+          "days": 152
+        }
+      ]
+    },
+    {
+      "label": "bull_dec_2024",
+      "start": "2024-12-01",
+      "end": "2024-12-31",
+      "what_to_watch": "BTC bull spike \u2014 V6 must capture, not be filtered out",
+      "n_trades_total": 5,
+      "win_rate_aggregate": 0.8,
+      "r_total": 6.839226969419161,
+      "r_per_day": 0.22797423231397204,
+      "days": 30,
+      "per_symbol": [
+        {
+          "symbol": "BTCUSDT",
+          "n_trades": 2,
+          "win_rate": 1.0,
+          "profit_factor": null,
+          "r_total": 3.9507227054762604,
+          "r_per_day": 0.13169075684920867,
+          "total_return_pct": 3.0467321960484877,
+          "max_drawdown_pct": 0.0,
+          "sharpe_ratio": 5.064367400801285,
+          "days": 30
+        },
+        {
+          "symbol": "ETHUSDT",
+          "n_trades": 2,
+          "win_rate": 1.0,
+          "profit_factor": null,
+          "r_total": 4.133171932024973,
+          "r_per_day": 0.13777239773416575,
+          "total_return_pct": 4.959748379218236,
+          "max_drawdown_pct": 0.0,
+          "sharpe_ratio": 4.94387233586491,
+          "days": 30
+        },
+        {
+          "symbol": "SOLUSDT",
+          "n_trades": 1,
+          "win_rate": 0.0,
+          "profit_factor": 0.0,
+          "r_total": -1.244667668082072,
+          "r_per_day": -0.0414889222694024,
+          "total_return_pct": -1.1708737615758764,
+          "max_drawdown_pct": 1.1708737615758764,
+          "sharpe_ratio": -3.439464580140598,
+          "days": 30
+        }
+      ]
+    },
+    {
+      "label": "chop_jan_feb_2025",
+      "start": "2025-01-15",
+      "end": "2025-02-28",
+      "what_to_watch": "Post-bull chop \u2014 V6 should produce few trades, low losses",
+      "n_trades_total": 8,
+      "win_rate_aggregate": 0.5,
+      "r_total": -4.272537291132863,
+      "r_per_day": -0.09710312025301962,
+      "days": 44,
+      "per_symbol": [
+        {
+          "symbol": "BTCUSDT",
+          "n_trades": 2,
+          "win_rate": 0.5,
+          "profit_factor": 0.8816540102719361,
+          "r_total": -4.217712773026309,
+          "r_per_day": -0.09585710847787067,
+          "total_return_pct": -0.26411184736123683,
+          "max_drawdown_pct": 2.2547672527004448,
+          "sharpe_ratio": -0.21287760336682157,
+          "days": 44
+        },
+        {
+          "symbol": "ETHUSDT",
+          "n_trades": 3,
+          "win_rate": 0.3333333333333333,
+          "profit_factor": 0.26401649292116247,
+          "r_total": -8.752153229390748,
+          "r_per_day": -0.19891257339524426,
+          "total_return_pct": -7.188823914199674,
+          "max_drawdown_pct": 7.188823914199674,
+          "sharpe_ratio": -2.7284815247787355,
+          "days": 44
+        },
+        {
+          "symbol": "SOLUSDT",
+          "n_trades": 3,
+          "win_rate": 0.6666666666666666,
+          "profit_factor": 7.767859178179055,
+          "r_total": 8.697328711284193,
+          "r_per_day": 0.1976665616200953,
+          "total_return_pct": 10.416948211826002,
+          "max_drawdown_pct": 1.449249739683768,
+          "sharpe_ratio": 3.5327424267424976,
+          "days": 44
+        }
+      ]
+    },
+    {
+      "label": "summer_drift_2025",
+      "start": "2025-06-01",
+      "end": "2025-08-31",
+      "what_to_watch": "Mid-2025 drift \u2014 V6 vs V5 trade-count delta indicator",
+      "n_trades_total": 18,
+      "win_rate_aggregate": 0.6111111111111112,
+      "r_total": 12.876499389718601,
+      "r_per_day": 0.14149999329361101,
+      "days": 91,
+      "per_symbol": [
+        {
+          "symbol": "BTCUSDT",
+          "n_trades": 3,
+          "win_rate": 0.3333333333333333,
+          "profit_factor": 0.8713574486800392,
+          "r_total": -3.246870302712412,
+          "r_per_day": -0.03567989343640013,
+          "total_return_pct": -0.21562841124852639,
+          "max_drawdown_pct": 1.0316584797094748,
+          "sharpe_ratio": -0.20845485582551887,
+          "days": 91
+        },
+        {
+          "symbol": "ETHUSDT",
+          "n_trades": 9,
+          "win_rate": 0.5555555555555556,
+          "profit_factor": 1.5455078092472718,
+          "r_total": 11.945759444463922,
+          "r_per_day": 0.13127208180729585,
+          "total_return_pct": 5.315180482320393,
+          "max_drawdown_pct": 7.847420482331797,
+          "sharpe_ratio": 0.9681365133870677,
+          "days": 91
+        },
+        {
+          "symbol": "SOLUSDT",
+          "n_trades": 6,
+          "win_rate": 0.8333333333333334,
+          "profit_factor": 2.1077360454207934,
+          "r_total": 4.17761024796709,
+          "r_per_day": 0.045907804922715276,
+          "total_return_pct": 4.803065135370361,
+          "max_drawdown_pct": 4.13145910260145,
+          "sharpe_ratio": 1.6666827112880604,
+          "days": 91
+        }
+      ]
+    }
+  ]
+}

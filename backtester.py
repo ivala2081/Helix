@@ -122,6 +122,26 @@ class Backtester:
         tp_require_close: bool = False,      # P1: TP fills only when bar's close confirms the level
         slippage_atr_frac: float = 0.0,      # P2: ATR-scaled slippage component (added to slippage_pct)
         spread_atr_frac: float = 0.0,        # P3: bid/ask spread as fraction of ATR (half applied per fill)
+        # ── V6 Phase 2 additions (2026-05-25) ──
+        # Prefixed with `v6_` to avoid name collisions with legacy V5 params
+        # (V5 has its own `use_regime_filter` for Efficiency Ratio gating).
+        tp_require_close_bars: int = 1,      # require this many consecutive closing bars beyond TP
+        trail_after_tp1: bool = False,       # V6 mode: TP1 lock-in then trailing stop (no TP2/TP3)
+        trail_after_tp1_atr: float = 2.0,    # trailing distance in ATR multiples after TP1
+        use_v6_regime_filter: bool = False,  # block entries when realized vol in bottom percentile
+        v6_regime_rv_lookback_days: int = 24,
+        v6_regime_rv_pctl_floor: float = 0.30,
+        v6_regime_history_window_days: int = 365,
+        use_v6_mtf_agreement: bool = False,  # require 30M trend bias to agree with 1H signal
+        v6_mtf_lower_tf: str = "30m",
+        v6_mtf_min_trend_bars: int = 6,
+        use_v6_adaptive_sizing: bool = False,
+        v6_adaptive_baseline_risk_pct: float = 0.015,
+        v6_adaptive_min_risk_pct: float = 0.005,
+        v6_adaptive_max_risk_pct: float = 0.025,
+        v6_adaptive_sharpe_window_trades: int = 20,
+        v6_adaptive_sharpe_coef: float = 0.005,
+        df_30m: "pd.DataFrame | None" = None,  # required when use_v6_mtf_agreement=True
     ):
         self.initial_capital = initial_capital
         self.risk_pct = risk_pct
@@ -175,6 +195,30 @@ class Backtester:
         self.tp_require_close = tp_require_close
         self.slippage_atr_frac = slippage_atr_frac
         self.spread_atr_frac = spread_atr_frac
+        # V6 additions (prefixed to avoid V5 namespace collisions)
+        self.tp_require_close_bars = max(1, int(tp_require_close_bars))
+        self.trail_after_tp1 = trail_after_tp1
+        self.trail_after_tp1_atr = trail_after_tp1_atr
+        self.use_v6_regime_filter = use_v6_regime_filter
+        self.v6_regime_rv_lookback_days = v6_regime_rv_lookback_days
+        self.v6_regime_rv_pctl_floor = v6_regime_rv_pctl_floor
+        self.v6_regime_history_window_days = v6_regime_history_window_days
+        self.use_v6_mtf_agreement = use_v6_mtf_agreement
+        self.v6_mtf_lower_tf = v6_mtf_lower_tf
+        self.v6_mtf_min_trend_bars = v6_mtf_min_trend_bars
+        self.use_v6_adaptive_sizing = use_v6_adaptive_sizing
+        self.v6_adaptive_baseline_risk_pct = v6_adaptive_baseline_risk_pct
+        self.v6_adaptive_min_risk_pct = v6_adaptive_min_risk_pct
+        self.v6_adaptive_max_risk_pct = v6_adaptive_max_risk_pct
+        self.v6_adaptive_sharpe_window_trades = v6_adaptive_sharpe_window_trades
+        self.v6_adaptive_sharpe_coef = v6_adaptive_sharpe_coef
+        self._v6_df_30m = df_30m
+
+        # V6 helper state (initialized at start of run() if active)
+        self._v6_regime = None
+        self._v6_mtf = None
+        self._v6_adaptive = None
+        self._v6_30m_iter = None
 
         # Indicator instances
         self.ms = MarketStructure(swing_lookback=5) if use_market_structure else None
@@ -192,6 +236,68 @@ class Backtester:
             smc_weight=smc_w, pa_weight=pa_w,
             min_confluence=min_confluence,
         )
+
+    # ── V6 helpers ──────────────────────────────────────────────────
+
+    def _v6_init_30m_iter(self, df_1h: pd.DataFrame) -> None:
+        """
+        Build an index mapping each 1H bar timestamp to the count of 30M bars
+        whose close is <= that 1H bar's close. Stores a 30M closes list and
+        a pointer array. At runtime the MTF state is updated by feeding any
+        new 30M bars that closed since the previous tick.
+        """
+        if self._v6_df_30m is None or len(self._v6_df_30m) == 0:
+            raise RuntimeError(
+                "use_v6_mtf_agreement=True requires df_30m to be supplied to Backtester"
+            )
+        df30 = self._v6_df_30m.copy()
+        df30["date"] = pd.to_datetime(df30["date"], utc=True)
+        df30 = df30.sort_values("date").reset_index(drop=True)
+        # For each 1h timestamp, how many 30m bars have already closed?
+        bar_30m_times = df30["date"].values
+        h_times = pd.to_datetime(df_1h["date"], utc=True).values
+        counts = []
+        j = 0
+        for h_t in h_times:
+            while j < len(bar_30m_times) and bar_30m_times[j] <= h_t:
+                j += 1
+            counts.append(j)
+        self._v6_30m_closes = df30["close"].tolist()
+        self._v6_30m_count_at_1h = counts
+        self._v6_30m_consumed = 0
+
+    def _v6_advance_mtf_to(self, hour_index: int) -> None:
+        """Feed MtfAgreement any 30M closes that fall on/before this 1H bar."""
+        if self._v6_mtf is None:
+            return
+        target = self._v6_30m_count_at_1h[hour_index]
+        while self._v6_30m_consumed < target:
+            self._v6_mtf.update_30m(self._v6_30m_closes[self._v6_30m_consumed])
+            self._v6_30m_consumed += 1
+
+    def _v6_block_entry(self, direction: str) -> "tuple[bool, str]":
+        """
+        Return (blocked, reason). True means skip this entry.
+        Direction is "LONG" or "SHORT".
+        """
+        if self._v6_regime and self._v6_regime.is_low_regime(self.v6_regime_rv_pctl_floor):
+            return True, "regime_low_vol"
+        if self._v6_mtf and not self._v6_mtf.allows(direction):
+            return True, "mtf_disagree"
+        return False, ""
+
+    def _v6_current_risk_pct(self) -> float:
+        """If adaptive sizing is on, override risk_pct for this entry."""
+        if self._v6_adaptive is None:
+            return self.risk_pct
+        return self._v6_adaptive.current_risk_pct()
+
+    def _v6_record_trade(self, trade: Trade) -> None:
+        """Feed adaptive sizing after a trade closes."""
+        if self._v6_adaptive is None or trade.pnl is None or not trade.risk_amount:
+            return
+        if trade.risk_amount > 0:
+            self._v6_adaptive.record_trade(float(trade.pnl) / float(trade.risk_amount))
 
     def prepare_data(self, df: pd.DataFrame) -> pd.DataFrame:
         """Run all indicator calculations on the data."""
@@ -264,6 +370,28 @@ class Backtester:
         edge_skip_active = False
         edge_reduced_active = False
 
+        # ── V6 helpers: initialize if any V6 flag is set ──
+        if self.use_v6_regime_filter:
+            from regime_filter import RegimeState
+            self._v6_regime = RegimeState(
+                history_window_bars=self.v6_regime_history_window_days * 24,
+                lookback_bars=self.v6_regime_rv_lookback_days * 24,
+            )
+        if self.use_v6_mtf_agreement:
+            from mtf_agreement import MtfAgreement
+            self._v6_mtf = MtfAgreement(min_trend_bars=self.v6_mtf_min_trend_bars)
+            # Precompute 30M iterator aligned with 1H bars
+            self._v6_init_30m_iter(df)
+        if self.use_v6_adaptive_sizing:
+            from adaptive_sizing import AdaptiveSizing
+            self._v6_adaptive = AdaptiveSizing(
+                baseline=self.v6_adaptive_baseline_risk_pct,
+                coef=self.v6_adaptive_sharpe_coef,
+                window=self.v6_adaptive_sharpe_window_trades,
+                lo=self.v6_adaptive_min_risk_pct,
+                hi=self.v6_adaptive_max_risk_pct,
+            )
+
         for i in range(n):
             equity = sm.get_equity()
             equity_curve.append(equity)
@@ -274,6 +402,12 @@ class Backtester:
             atr = df["atr_14"].iloc[i] if not pd.isna(df.get("atr_14", pd.Series([np.nan])).iloc[min(i, len(df)-1)]) else None
             if atr is None or pd.isna(atr) or atr <= 0:
                 continue
+
+            # ── V6: update regime + MTF state every bar ──────────────
+            if self._v6_regime is not None:
+                self._v6_regime.update(float(df["close"].iloc[i]))
+            if self._v6_mtf is not None:
+                self._v6_advance_mtf_to(i)
 
             # ── MANAGE OPEN POSITION ──
             if open_trade is not None:
@@ -334,6 +468,7 @@ class Backtester:
                 if stopped_out:
                     self._close_trade(open_trade, i, exit_price, reason, remaining_size, df, sm, position_id)
                     closed_trades.append(open_trade)
+                    self._v6_record_trade(open_trade)
                     # V3E: Edge monitor update
                     if edge_pnl_buffer is not None and open_trade.pnl is not None:
                         edge_pnl_buffer.append(open_trade.pnl)
@@ -369,9 +504,13 @@ class Backtester:
                         if self.be_after_tp1:
                             be_price = open_trade.entry_price + self.be_buffer_atr * atr
                             open_trade.stop_loss = be_price
+                        # V6: activate trailing immediately after TP1
+                        if self.trail_after_tp1:
+                            trailing_active = True
+                            trailing_stop = high - atr * self.trail_after_tp1_atr
 
-                    # TP2
-                    if tp1_hit and not tp2_hit and _long_tp_hit(open_trade.take_profit_2):
+                    # TP2 (V6 mode skips TP2 entirely — tp2_close_pct=0 + trail_after_tp1 takes over)
+                    if not self.trail_after_tp1 and tp1_hit and not tp2_hit and _long_tp_hit(open_trade.take_profit_2):
                         close_size = open_trade.size * self.tp2_close_pct
                         self._partial_close(sm, position_id, open_trade, close_size, open_trade.take_profit_2, atr=atr)
                         remaining_size -= close_size
@@ -381,10 +520,16 @@ class Backtester:
                             trailing_active = True
                             trailing_stop = high - atr * self.trail_after_tp2_atr
 
-                    # TP3 — full close (skip if trail_after_tp2 — let trailing ride)
-                    if tp2_hit and not self.trail_after_tp2 and _long_tp_hit(open_trade.take_profit_3):
+                    # TP3 — full close (skip if trailing modes are on; trailing will fire)
+                    if (
+                        tp2_hit
+                        and not self.trail_after_tp2
+                        and not self.trail_after_tp1
+                        and _long_tp_hit(open_trade.take_profit_3)
+                    ):
                         self._close_trade(open_trade, i, open_trade.take_profit_3, "TP3", remaining_size, df, sm, position_id)
                         closed_trades.append(open_trade)
+                        self._v6_record_trade(open_trade)
                         # V3E: Edge monitor update
                         if edge_pnl_buffer is not None and open_trade.pnl is not None:
                             edge_pnl_buffer.append(open_trade.pnl)
@@ -400,9 +545,18 @@ class Backtester:
                         trailing_active = False
                         continue
 
-                    # Trailing stop update
-                    if (self.use_trailing and tp1_hit) or (self.trail_after_tp2 and tp2_hit):
-                        trail_mult = self.trail_after_tp2_atr if (self.trail_after_tp2 and tp2_hit) else self.trailing_atr_mult
+                    # Trailing stop update (V5 use_trailing / V3B trail_after_tp2 / V6 trail_after_tp1)
+                    if (
+                        (self.use_trailing and tp1_hit)
+                        or (self.trail_after_tp2 and tp2_hit)
+                        or (self.trail_after_tp1 and tp1_hit)
+                    ):
+                        if self.trail_after_tp1 and tp1_hit:
+                            trail_mult = self.trail_after_tp1_atr
+                        elif self.trail_after_tp2 and tp2_hit:
+                            trail_mult = self.trail_after_tp2_atr
+                        else:
+                            trail_mult = self.trailing_atr_mult
                         trail_dist = atr * trail_mult
                         if not trailing_active:
                             if high - open_trade.entry_price >= atr * self.trailing_activation_atr:
@@ -422,8 +576,12 @@ class Backtester:
                         if self.be_after_tp1:
                             be_price = open_trade.entry_price - self.be_buffer_atr * atr
                             open_trade.stop_loss = be_price
+                        # V6: activate trailing immediately after TP1
+                        if self.trail_after_tp1:
+                            trailing_active = True
+                            trailing_stop = low + atr * self.trail_after_tp1_atr
 
-                    if tp1_hit and not tp2_hit and _short_tp_hit(open_trade.take_profit_2):
+                    if not self.trail_after_tp1 and tp1_hit and not tp2_hit and _short_tp_hit(open_trade.take_profit_2):
                         close_size = open_trade.size * self.tp2_close_pct
                         self._partial_close(sm, position_id, open_trade, close_size, open_trade.take_profit_2, atr=atr)
                         remaining_size -= close_size
@@ -433,10 +591,16 @@ class Backtester:
                             trailing_active = True
                             trailing_stop = low + atr * self.trail_after_tp2_atr
 
-                    # TP3 — full close (skip if trail_after_tp2)
-                    if tp2_hit and not self.trail_after_tp2 and _short_tp_hit(open_trade.take_profit_3):
+                    # TP3 — full close (skip if either trailing mode is on)
+                    if (
+                        tp2_hit
+                        and not self.trail_after_tp2
+                        and not self.trail_after_tp1
+                        and _short_tp_hit(open_trade.take_profit_3)
+                    ):
                         self._close_trade(open_trade, i, open_trade.take_profit_3, "TP3", remaining_size, df, sm, position_id)
                         closed_trades.append(open_trade)
+                        self._v6_record_trade(open_trade)
                         # V3E: Edge monitor update
                         if edge_pnl_buffer is not None and open_trade.pnl is not None:
                             edge_pnl_buffer.append(open_trade.pnl)
@@ -452,8 +616,17 @@ class Backtester:
                         trailing_active = False
                         continue
 
-                    if (self.use_trailing and tp1_hit) or (self.trail_after_tp2 and tp2_hit):
-                        trail_mult = self.trail_after_tp2_atr if (self.trail_after_tp2 and tp2_hit) else self.trailing_atr_mult
+                    if (
+                        (self.use_trailing and tp1_hit)
+                        or (self.trail_after_tp2 and tp2_hit)
+                        or (self.trail_after_tp1 and tp1_hit)
+                    ):
+                        if self.trail_after_tp1 and tp1_hit:
+                            trail_mult = self.trail_after_tp1_atr
+                        elif self.trail_after_tp2 and tp2_hit:
+                            trail_mult = self.trail_after_tp2_atr
+                        else:
+                            trail_mult = self.trailing_atr_mult
                         trail_dist = atr * trail_mult
                         if not trailing_active:
                             if open_trade.entry_price - low >= atr * self.trailing_activation_atr:
@@ -504,6 +677,12 @@ class Backtester:
             if self.use_edge_monitor and edge_skip_active:
                 continue
 
+            # ── V6 entry-side filters ──
+            direction_str = "LONG" if decision["action"] == SignalType.LONG else "SHORT"
+            blocked, _reason = self._v6_block_entry(direction_str)
+            if blocked:
+                continue
+
             # ── OPEN NEW TRADE ──
             # Signal at bar i close → fill at bar i+1 open (no look-ahead)
             if i + 1 >= n:
@@ -534,7 +713,7 @@ class Backtester:
                 tp2 = entry_price - self.tp2_atr_mult * atr
                 tp3 = entry_price - self.tp3_atr_mult * atr
 
-            # Position sizing (V3D: tiered, V3E: edge-adjusted)
+            # Position sizing (V3D: tiered, V3E: edge-adjusted, V6: adaptive)
             risk_override = None
             if self.use_tiered_sizing or (self.use_edge_monitor and edge_reduced_active):
                 effective_risk = self.risk_pct
@@ -547,6 +726,9 @@ class Backtester:
                 if self.use_edge_monitor and edge_reduced_active and not edge_skip_active:
                     effective_risk = self.edge_reduced_risk
                 risk_override = effective_risk
+            # V6 adaptive sizing overrides all V3 overrides when active.
+            if self._v6_adaptive is not None:
+                risk_override = self._v6_current_risk_pct()
             sizing = sm.calculate_position_size(entry_price, stop_loss, direction, risk_pct_override=risk_override)
             if sizing["size"] <= 0:
                 continue
@@ -590,6 +772,7 @@ class Backtester:
             last_close = df["close"].iloc[-1]
             self._close_trade(open_trade, n - 1, last_close, "End of data", remaining_size, df, sm, position_id)
             closed_trades.append(open_trade)
+            self._v6_record_trade(open_trade)
             if edge_pnl_buffer is not None and open_trade.pnl is not None:
                 edge_pnl_buffer.append(open_trade.pnl)
 

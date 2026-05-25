@@ -7,7 +7,6 @@ import {
   Activity,
   ArrowRight,
   BarChart3,
-  Github,
   Home,
   LineChart,
   Search,
@@ -63,12 +62,6 @@ const ITEMS: {
     icon: <LineChart className="h-4 w-4" />,
     href: "/backtest?symbol=SOLUSDT&interval=1h&start=2023-01-01",
     hint: "V5",
-  },
-  {
-    group: "External",
-    label: "GitHub repository",
-    icon: <Github className="h-4 w-4" />,
-    href: "https://github.com/ivala2081/Helix",
   },
 ];
 

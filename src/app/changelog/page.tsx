@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { ArrowRight, CircleDot, Sparkles } from "lucide-react";
+import { HeroScene } from "@/components/ui/HeroScene";
 
 export const metadata = {
   title: "Changelog & Roadmap",
-  description:
-    "Helix release notes from V1 to V5, plus what's coming in V6 and the live trading research.",
+  description: "Helix release notes and research roadmap.",
 };
 
 interface Release {
@@ -24,17 +23,17 @@ const RELEASES: Release[] = [
     headline: "Return maximization — tighter stops, unlocked sizing",
     changes: [
       "Stop loss tightened from 2× ATR → 1× ATR",
-      "TP1 lowered from 2× ATR → 1× ATR (locks profits sooner; pushed win rate from 75.8% → 84.3%)",
+      "TP1 lowered from 2× ATR → 1× ATR (locks profits sooner)",
       "Risk increased from 2% → 3% per trade",
       "Position cap raised from 50% → 80% of equity",
-      "Walk-forward: 5/5 folds profitable, average OOS return +48.72%",
+      "Engine realism patches (2026-05-08): TP wick-fill correction, ATR-scaled slippage, bid/ask spread, hard stop tightened 15× → 8× ATR",
     ],
     metrics: [
-      { label: "Total return", value: "+949.7%" },
-      { label: "Sharpe", value: "5.40" },
-      { label: "Max DD", value: "8.55%" },
-      { label: "Win rate", value: "84.3%" },
-      { label: "Profit factor", value: "12.46" },
+      { label: "Total return", value: "+87.0%" },
+      { label: "Sharpe", value: "1.44" },
+      { label: "Max DD", value: "13.3%" },
+      { label: "Win rate", value: "64.6%" },
+      { label: "Profit factor", value: "1.71" },
     ],
   },
   {
@@ -48,12 +47,7 @@ const RELEASES: Release[] = [
       "TP1 close % rebalanced: 20% → 5% (let TP3 capture more of the move)",
       "TP3 close % raised from 50% → 65%",
     ],
-    metrics: [
-      { label: "Total return", value: "+250.5%" },
-      { label: "Sharpe", value: "4.29" },
-      { label: "Max DD", value: "6.6%" },
-      { label: "Win rate", value: "75.8%" },
-    ],
+    metrics: [],
   },
   {
     version: "V3",
@@ -64,12 +58,7 @@ const RELEASES: Release[] = [
       "TP rebalance: tp1_close 40% → 20%, tp3_atr 8x → 6x",
       "Extended SL suppression: 19 → 30 bars",
     ],
-    metrics: [
-      { label: "Total return", value: "+173.2%" },
-      { label: "Sharpe", value: "4.66" },
-      { label: "Max DD", value: "4.1%" },
-      { label: "Win rate", value: "75.9%" },
-    ],
+    metrics: [],
   },
   {
     version: "V2",
@@ -81,12 +70,7 @@ const RELEASES: Release[] = [
       "Move stop to breakeven + 0.3 ATR after TP1",
       "Filter weak signals: minimum aggregated score 0.60",
     ],
-    metrics: [
-      { label: "Total return", value: "+95.5%" },
-      { label: "Sharpe", value: "3.36" },
-      { label: "Max DD", value: "5.9%" },
-      { label: "Win rate", value: "71.1%" },
-    ],
+    metrics: [],
   },
   {
     version: "V1",
@@ -98,20 +82,20 @@ const RELEASES: Release[] = [
       "ATR-based stops and progressive TPs",
       "Trailing stops disabled (counterintuitive but the right call)",
     ],
-    metrics: [
-      { label: "Total return", value: "+49.7%" },
-      { label: "Sharpe", value: "1.81" },
-      { label: "Max DD", value: "10.3%" },
-    ],
+    metrics: [],
   },
 ];
 
-const ROADMAP: { title: string; status: "in-progress" | "planned" | "research"; description: string }[] = [
+const ROADMAP: {
+  title: string;
+  status: "in-progress" | "planned" | "research";
+  description: string;
+}[] = [
   {
     title: "Walk-forward visualization in browser",
     status: "in-progress",
     description:
-      "Show 5 train/test fold windows on the candlestick chart with per-fold metrics. The Python code already has it; bringing it to the web app is the next major credibility builder.",
+      "Show k-fold train/test fold windows on the candlestick chart with per-fold metrics. The Python code already has it; bringing it to the web app is the next major credibility builder.",
   },
   {
     title: "Parameter heatmap",
@@ -141,60 +125,85 @@ const ROADMAP: { title: string; status: "in-progress" | "planned" | "research"; 
 
 export default function ChangelogPage() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-12 sm:px-6">
-      <div>
-        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-400 backdrop-blur-md">
-          <Sparkles className="h-3 w-3" />
-          Research progress · open source
-        </div>
-        <h1 className="mt-4 text-3xl font-semibold tracking-tight sm:text-4xl">
-          Changelog &amp; Roadmap
-        </h1>
-        <p className="mt-3 text-lg text-[var(--color-muted)]">
-          Every version of Helix is a single, validated improvement over the
-          previous one. No curve-fitting — every change ran through walk-forward
-          validation before being committed.
-        </p>
+    <div className="relative min-h-screen w-full overflow-hidden">
+      <div className="pointer-events-none fixed inset-0 z-0">
+        <HeroScene />
+        <div className="absolute inset-0 bg-gradient-to-b from-[var(--color-bg)]/60 via-[var(--color-bg)]/90 to-[var(--color-bg)]" />
       </div>
 
-      {/* Releases timeline */}
-      <section className="mt-12">
-        <h2 className="text-xs font-medium uppercase tracking-widest text-[var(--color-muted)]">
-          Releases
-        </h2>
-        <div className="mt-6 space-y-4">
-          {RELEASES.map((r) => (
-            <ReleaseCard key={r.version} release={r} />
-          ))}
+      <div className="relative z-20 mx-auto max-w-4xl px-6 py-14 sm:py-20">
+        {/* Hero */}
+        <div className="text-center">
+          <SectionLabel>Changelog</SectionLabel>
+          <h1 className="mt-6 text-[clamp(2rem,6vw,3.75rem)] font-light leading-tight tracking-tight text-white/95">
+            Releases &amp; roadmap
+          </h1>
+          <p className="mx-auto mt-4 max-w-xl text-sm text-[var(--color-muted)]">
+            Every version is a single, focused change against the previous one.
+            Engine realism patches re-baselined the metrics on 2026-05-08.
+          </p>
         </div>
-      </section>
 
-      {/* Roadmap */}
-      <section className="mt-16">
-        <h2 className="text-xs font-medium uppercase tracking-widest text-[var(--color-muted)]">
-          Roadmap
-        </h2>
-        <p className="mt-2 text-sm text-[var(--color-muted)]">
-          What we&apos;re working on next. None of this is committed — these
-          are research directions, ranked roughly by likelihood.
-        </p>
-        <div className="mt-6 space-y-3">
-          {ROADMAP.map((item) => (
-            <RoadmapRow key={item.title} item={item} />
-          ))}
+        {/* Releases */}
+        <section className="mt-14">
+          <SectionLabel>Releases</SectionLabel>
+          <div className="mt-4 space-y-3">
+            {RELEASES.map((r) => (
+              <ReleaseCard key={r.version} release={r} />
+            ))}
+          </div>
+        </section>
+
+        {/* Roadmap */}
+        <section className="mt-14">
+          <SectionLabel>Roadmap</SectionLabel>
+          <p className="mt-3 text-sm text-[var(--color-muted)]">
+            What we&apos;re working on next. None of this is committed — these
+            are research directions, ranked roughly by likelihood.
+          </p>
+          <div className="mt-6 space-y-2">
+            {ROADMAP.map((item) => (
+              <RoadmapRow key={item.title} item={item} />
+            ))}
+          </div>
+        </section>
+
+        {/* Footer nav */}
+        <div className="mt-14 flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm">
+          <Link
+            href="/"
+            className="font-medium text-[var(--color-muted)] transition-colors hover:text-white"
+          >
+            ← Home
+          </Link>
+          <Link
+            href="/live"
+            className="font-medium text-white underline decoration-emerald-400/60 decoration-2 underline-offset-[6px] transition-colors hover:decoration-emerald-400"
+          >
+            Watch live
+          </Link>
+          <Link
+            href="/backtest"
+            className="font-medium text-[var(--color-muted)] transition-colors hover:text-white"
+          >
+            Run backtest
+          </Link>
+          <Link
+            href="/about"
+            className="font-medium text-[var(--color-muted)] transition-colors hover:text-white"
+          >
+            Methodology
+          </Link>
         </div>
-      </section>
-
-      {/* CTA */}
-      <div className="mt-16 text-center">
-        <Link
-          href="/backtest"
-          className="inline-flex h-12 items-center gap-2 rounded-md bg-emerald-500 px-6 text-base font-semibold text-black shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400 hover:shadow-emerald-500/40"
-        >
-          Try V5 on any pair
-          <ArrowRight className="h-4 w-4" />
-        </Link>
       </div>
+    </div>
+  );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="text-[10px] uppercase tracking-[0.3em] text-[var(--color-muted)]/70">
+      {children}
     </div>
   );
 }
@@ -204,41 +213,51 @@ function ReleaseCard({ release }: { release: Release }) {
   return (
     <div
       className={
-        "rounded-xl border bg-[var(--color-surface)]/70 p-5 backdrop-blur-md " +
+        "rounded-md border bg-[var(--color-surface)]/40 px-5 py-5 backdrop-blur-md transition-colors " +
         (isCurrent
-          ? "border-emerald-500/40 shadow-lg shadow-emerald-500/5"
-          : "border-[var(--color-border)]")
+          ? "border-emerald-500/30"
+          : "border-[var(--color-border)] hover:border-[var(--color-muted)]/40")
       }
     >
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div className="flex items-baseline gap-3">
-          <span className="font-mono text-xl font-bold tracking-tight">{release.version}</span>
+          <span className="font-mono text-2xl font-light tracking-tight text-white/95">
+            {release.version}
+          </span>
           {isCurrent && (
-            <span className="rounded bg-emerald-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-300">
+            <span className="rounded-sm bg-emerald-500/15 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-emerald-400">
               Current
             </span>
           )}
-          <span className="text-xs text-[var(--color-muted)]">{release.date}</span>
         </div>
+        <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-muted)]/70">
+          {release.date}
+        </span>
       </div>
-      <div className="mt-2 text-sm font-semibold">{release.headline}</div>
-      <ul className="mt-3 space-y-1 text-xs text-[var(--color-muted)]">
+      <div className="mt-2 text-sm font-medium text-white/90">
+        {release.headline}
+      </div>
+      <ul className="mt-4 space-y-1.5 text-xs leading-relaxed text-[var(--color-muted)]">
         {release.changes.map((c) => (
           <li key={c} className="flex gap-2">
-            <span className="text-emerald-400">·</span>
+            <span className="text-[var(--color-muted)]/40">·</span>
             <span>{c}</span>
           </li>
         ))}
       </ul>
-      {release.metrics && (
-        <div className="mt-4 flex flex-wrap gap-2 border-t border-[var(--color-border)]/50 pt-3">
+      {release.metrics && release.metrics.length > 0 && (
+        <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-5">
           {release.metrics.map((m) => (
             <div
               key={m.label}
-              className="rounded-md bg-[var(--color-bg)]/60 px-2 py-1 text-[10px]"
+              className="bg-[var(--color-bg)] px-3 py-2.5"
             >
-              <span className="text-[var(--color-muted)]">{m.label} </span>
-              <span className="font-mono font-semibold text-emerald-400">{m.value}</span>
+              <div className="text-[9px] uppercase tracking-wider text-[var(--color-muted)]/70">
+                {m.label}
+              </div>
+              <div className="mt-0.5 font-mono text-sm font-medium tabular-nums text-emerald-400">
+                {m.value}
+              </div>
             </div>
           ))}
         </div>
@@ -258,16 +277,20 @@ function RoadmapRow({
     research: { dot: "bg-zinc-500", label: "Researching", color: "text-zinc-400" },
   }[item.status];
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/60 p-4 backdrop-blur-md">
-      <CircleDot className={"mt-0.5 h-4 w-4 " + tone.color} />
+    <div className="flex items-start gap-4 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/40 px-5 py-4 backdrop-blur-md">
+      <span className={`mt-1.5 h-2 w-2 rounded-full ${tone.dot}`} />
       <div className="flex-1">
-        <div className="flex flex-wrap items-baseline gap-2">
-          <h3 className="text-sm font-semibold">{item.title}</h3>
-          <span className={"text-[10px] uppercase tracking-wider " + tone.color}>
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="text-sm font-medium text-white/90">{item.title}</h3>
+          <span
+            className={`text-[10px] uppercase tracking-[0.2em] ${tone.color}`}
+          >
             {tone.label}
           </span>
         </div>
-        <p className="mt-1 text-xs text-[var(--color-muted)]">{item.description}</p>
+        <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted)]">
+          {item.description}
+        </p>
       </div>
     </div>
   );

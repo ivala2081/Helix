@@ -18,7 +18,7 @@ export const en = {
 
   footer: {
     tagline:
-      "Institutional-grade price action backtesting for cryptocurrency markets. Open source, walk-forward validated.",
+      "Live forward test of a quantitative trading strategy.",
     starOnGithub: "Star on GitHub",
     columns: {
       product: "Product",
@@ -45,11 +45,11 @@ export const en = {
 
   landing: {
     hero: {
-      badge: "V5 strategy · walk-forward validated",
-      titleTop: "Institutional-grade",
-      titleBottom: "price action backtesting",
+      badge: "Live forward test",
+      titleTop: "Helix",
+      titleBottom: "",
       subtitle:
-        "Test Market Structure + Fair Value Gap strategies on any Binance-listed pair. Powered by walk-forward validated algorithms — no Python required.",
+        "Test Market Structure + Fair Value Gap strategies on any Binance-listed pair, in the browser.",
       ctaPrimary: "Run a backtest",
       ctaSecondary: "How it works",
     },
@@ -322,10 +322,10 @@ export const en = {
   about: {
     metaTitle: "About Helix · Methodology & Strategy Evolution",
     metaDescription:
-      "How Helix evolved from V1 to V5 — Market Structure, Fair Value Gap, SL suppression, progressive take-profits, and walk-forward validation.",
+      "Helix methodology: Market Structure, Fair Value Gap, SL suppression, progressive take-profits, and engine realism patches.",
     title: "About Helix",
     subtitle:
-      "A research framework for testing institutional price-action concepts on cryptocurrency markets.",
+      "A research framework for testing price-action concepts on cryptocurrency markets.",
     onThisPage: "On this page",
     sections: {
       evolution: "Strategy evolution",
@@ -339,7 +339,7 @@ export const en = {
       disclaimer: "Disclaimer",
     },
     evolutionIntro:
-      "Each version is a single, validated improvement over the previous baseline. No curve-fitting — every change was retested with walk-forward validation.",
+      "Each version is a single change against the previous baseline. Engine realism patches (2026-05-08) re-baselined the V5 figures honestly.",
     table: {
       version: "Version",
       changes: "Key changes",
@@ -366,7 +366,7 @@ export const en = {
       execution:
         "Every entry is filled at the bar close with 0.02% adverse slippage. Stop loss and end-of-data exits also pay slippage; take-profit fills do not (they are limit orders). Each partial close is charged 0.075% commission on both the entry and exit notional, mirroring Binance taker fees realistically.",
       walkForward:
-        "The Python research code runs 5-fold walk-forward validation with a 60/40 train/test split per fold. V5 produces 5/5 profitable test folds with an average out-of-sample return of +48.72%. The web app shows the in-sample backtest only — for full validation, see the research repository.",
+        "The Python research code supports k-fold walk-forward validation with configurable train/test splits. Pre-launch walk-forward results were generated against a different engine model and are not directly comparable to the realism-patched baseline — see the research repository for raw numbers.",
     },
     disclaimer: {
       heading: "Disclaimer",
@@ -382,7 +382,7 @@ export const en = {
     badge: "Research progress · open source",
     title: "Changelog & Roadmap",
     subtitle:
-      "Every version of Helix is a single, validated improvement over the previous one. No curve-fitting — every change ran through walk-forward validation before being committed.",
+      "Every version of Helix is a single, focused change against the previous one. Engine realism patches re-baselined the metrics on 2026-05-08.",
     releasesHeading: "Releases",
     roadmapHeading: "Roadmap",
     roadmapIntro:
