@@ -9,10 +9,11 @@ const COLORS: Record<ExitReason, string> = {
   TP3: "#059669",
   "Stop Loss": "#ef4444",
   "Hard Stop": "#7f1d1d",
+  "Trailing Stop": "#06b6d4",
   "End of data": "#71717a",
 };
 
-const ORDER: ExitReason[] = ["TP1", "TP2", "TP3", "Stop Loss", "Hard Stop", "End of data"];
+const ORDER: ExitReason[] = ["TP1", "TP2", "TP3", "Trailing Stop", "Stop Loss", "Hard Stop", "End of data"];
 
 export function ExitReasons({ metrics }: { metrics: Metrics }) {
   const total = metrics.totalTrades;

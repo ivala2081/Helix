@@ -1,11 +1,11 @@
 {
-  "generated_at": "2026-05-25T18:10:00Z",
+  "generated_at": "2026-05-26T14:00:00Z",
   "current_phase": 3,
-  "current_phase_label": "V6 validation - SHELVED",
+  "current_phase_label": "V6.2 candidate - paper-test decision pending",
   "current_phase_progress_pct": 100,
-  "outcome": "shelved",
-  "outcome_decision_date": "2026-05-25",
-  "outcome_reason": "Gate 3 failed (5/7 criteria, catastrophic loss vs V5 baseline). Owner chose option A: shelve V6, V5 continues live. Phase 0 infrastructure retained for future strategy work.",
+  "outcome": "v6_2_candidate",
+  "outcome_decision_date": "2026-05-26",
+  "outcome_reason": "V6→V6.1→V6.2 iteration converged on V5+trail+strict-realism. V6.2 OOS: n=51, PF 2.03, Sharpe 2.56, DD 3.97%. Gate 3: 4 PASS + 1 marginal DD fail + WF 4/6 (V5 also 4/6). Public launch cancelled 2026-05-26 (V5 live failed 4/5 launch gates).",
   "phases": [
     {
       "id": 0,
@@ -16,6 +16,8 @@
         "scripts/multi_symbol_concurrent_backtest.py",
         "scripts/walk_forward_validator.py",
         "scripts/stress_test_runner.py",
+        "scripts/v6_validation_runner.py",
+        "scripts/v6_1_calibrate_rv_floor.py",
         "public/data/v6/status.json",
         "src/app/research/v6/page.tsx"
       ]
@@ -36,49 +38,66 @@
       "status": "completed",
       "deliverables": [
         "strategy_v6.py",
-        "regime_filter.py",
+        "strategy_v6_1.py",
+        "strategy_v6_2.py",
+        "regime_filter.py (with is_low_regime_absolute)",
         "mtf_agreement.py",
         "adaptive_sizing.py",
         "per_symbol_validator.py",
-        "backtester.py V6 mode hooks",
-        "scripts/v6_smoke_test.py"
+        "backtester.py V6 mode hooks"
       ]
     },
     {
       "id": 3,
-      "label": "V6 validation",
+      "label": "V6 validation (3 iterations: V6, V6.1, V6.2)",
       "status": "completed",
-      "verdict": "FAIL",
+      "verdict": "V6.2 candidate (V6 shelved, V6.1 strong, V6.2 stronger)",
       "deliverables": [
-        "reports/v6_validation_run.json",
-        "reports/v6_walk_forward.json",
-        "reports/v6_stress_tests.json",
-        "reports/v6_oos_holdout.json",
-        "docs/v6-gate3-verdict.md"
+        "reports/v6_validation_run.json + v6_1_*.json + v6_2_*.json",
+        "reports/v6_walk_forward.json + v6_1_*.json + v6_2_*.json",
+        "reports/v6_stress_tests.json + v6_1_*.json + v6_2_*.json",
+        "reports/v6_oos_holdout.json + v6_1_*.json + v6_2_*.json",
+        "docs/v6-gate3-verdict.md (V6 fail)",
+        "docs/v6-iteration-summary.md (V6.2 candidate)"
       ]
     },
     {
       "id": 4,
       "label": "Head-to-head",
-      "status": "shelved",
-      "blocked_reason": "Gate 3 failed - V6 shelved 2026-05-25 (owner decision A)",
+      "status": "blocked",
+      "blocked_reason": "Waiting on owner decision: V6.2 paper-test in parallel with V5, or stop here.",
       "deliverables": [
-        "reports/v5_vs_v6_head_to_head.json",
-        "docs/v6-deployment-decision.md"
+        "reports/v5_vs_v6_2_head_to_head.json"
       ]
     },
     {
       "id": 5,
       "label": "Deployment",
-      "status": "shelved",
-      "blocked_reason": "V6 shelved 2026-05-25 (owner decision A) - V5 stays live",
+      "status": "blocked",
+      "blocked_reason": "Public launch CANCELLED 2026-05-26. V6.2 TS port and live deployment require Phase 4 head-to-head and owner re-authorization for any launch target.",
       "deliverables": [
-        "src/lib/engine/defaults_v6.ts",
-        "src/lib/engine/regime-filter.ts",
-        "src/lib/engine/mtf-agreement.ts",
-        "src/lib/engine/adaptive-sizing.ts",
-        "TS parity tests 4/4 PASS"
+        "src/lib/engine/defaults_v6_2.ts (not started)"
       ]
     }
-  ]
+  ],
+  "v6_2_summary": {
+    "definition": "V5_PARAMS + trail-after-TP1 + strict realism (2 overrides total)",
+    "in_sample": {
+      "n_trades": 364,
+      "return_pct": 109.12,
+      "profit_factor": 1.63,
+      "sharpe_annualized": 1.95,
+      "max_drawdown_pct": 15.83,
+      "r_per_day": 0.541
+    },
+    "oos_2026q1": {
+      "n_trades": 51,
+      "return_pct": 15.89,
+      "profit_factor": 2.03,
+      "sharpe_annualized": 2.56,
+      "max_drawdown_pct": 3.97,
+      "r_per_day": 0.277
+    },
+    "stress_4_of_4_positive": true
+  }
 }

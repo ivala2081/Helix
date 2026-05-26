@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-26T10:55:48.213773+00:00",
+  "generated_at": "2026-05-26T10:31:04.146352+00:00",
   "constraint_note": "Symbols ['BTCUSDT', 'ETHUSDT', 'SOLUSDT'] (3 with 30M data), dev range 2024-01-01 \u2192 2025-12-31. V5_fair runs same set for comparison.",
   "holdout_policy": "OOS holdout: 2026-01-01 -> 2026-04-13 (102 days). Dev range ends 2025-12-31.",
   "symbols": [
@@ -86,23 +86,23 @@
       "per_symbol": [
         {
           "symbol": "BTCUSDT",
-          "n_trades": 114,
-          "win_rate": 0.631578947368421,
-          "profit_factor": 1.5679901464033237,
-          "total_return_pct": 70.42586293730812,
-          "max_drawdown_pct": 11.338496462956444,
-          "sharpe_ratio": 1.3684921465651467,
-          "avg_r_multiple": 1.2358981651747025
+          "n_trades": 46,
+          "win_rate": 0.6521739130434783,
+          "profit_factor": 1.2040383561341634,
+          "total_return_pct": 8.939220739853482,
+          "max_drawdown_pct": 13.687289261963384,
+          "sharpe_ratio": 0.3907139774201947,
+          "avg_r_multiple": 0.6622060217108345
         },
         {
           "symbol": "ETHUSDT",
-          "n_trades": 120,
-          "win_rate": 0.5916666666666667,
-          "profit_factor": 1.9359041604481908,
-          "total_return_pct": 157.11503591085824,
-          "max_drawdown_pct": 12.33157021907483,
-          "sharpe_ratio": 1.8349707700352453,
-          "avg_r_multiple": 1.176496754197277
+          "n_trades": 108,
+          "win_rate": 0.5833333333333334,
+          "profit_factor": 1.8599338525281977,
+          "total_return_pct": 124.11332393548496,
+          "max_drawdown_pct": 12.283385065477681,
+          "sharpe_ratio": 1.6593343676038803,
+          "avg_r_multiple": 1.034906942058809
         },
         {
           "symbol": "SOLUSDT",
@@ -117,36 +117,36 @@
       ],
       "portfolio_aggregate": {
         "n_symbols": 3,
-        "n_trades_total": 364,
+        "n_trades_total": 284,
         "days_span": 730,
         "portfolio_initial": 30000.0,
-        "portfolio_final": 62737.02894568199,
-        "portfolio_return_pct": 109.12342981893997,
-        "portfolio_sharpe_annualized": 1.954635664621261,
-        "portfolio_max_dd_pct": 15.825533602939299,
-        "portfolio_r_per_day": 0.5414375515017734,
+        "portfolio_final": 53288.19352839919,
+        "portfolio_return_pct": 77.62731176133065,
+        "portfolio_sharpe_annualized": 1.6631272844249458,
+        "portfolio_max_dd_pct": 15.982388887021742,
+        "portfolio_r_per_day": 0.34987512055308917,
         "correlation_matrix": {
           "BTCUSDT": {
             "BTCUSDT": 1.0,
-            "ETHUSDT": 0.31,
-            "SOLUSDT": 0.191
+            "ETHUSDT": 0.188,
+            "SOLUSDT": 0.064
           },
           "ETHUSDT": {
-            "BTCUSDT": 0.31,
+            "BTCUSDT": 0.188,
             "ETHUSDT": 1.0,
-            "SOLUSDT": 0.169
+            "SOLUSDT": 0.173
           },
           "SOLUSDT": {
-            "BTCUSDT": 0.191,
-            "ETHUSDT": 0.169,
+            "BTCUSDT": 0.064,
+            "ETHUSDT": 0.173,
             "SOLUSDT": 1.0
           }
         },
-        "simul_dd_3plus_days": 226,
+        "simul_dd_3plus_days": 237,
         "simul_dd_4plus_days": 0,
         "total_days": 731,
-        "simul_dd_3plus_pct": 30.91655266757866,
-        "portfolio_profit_factor": 1.6319677573677256
+        "simul_dd_3plus_pct": 32.421340629274965,
+        "portfolio_profit_factor": 1.5621212251415106
       },
       "description": "V6 full \u2014 all 6 changes active",
       "overrides": {}
@@ -228,23 +228,23 @@
       "per_symbol": [
         {
           "symbol": "BTCUSDT",
-          "n_trades": 114,
-          "win_rate": 0.631578947368421,
-          "profit_factor": 1.5679901464033237,
-          "total_return_pct": 70.42586293730812,
-          "max_drawdown_pct": 11.338496462956444,
-          "sharpe_ratio": 1.3684921465651467,
-          "avg_r_multiple": 1.2358981651747025
+          "n_trades": 46,
+          "win_rate": 0.6521739130434783,
+          "profit_factor": 1.2040383561341634,
+          "total_return_pct": 8.939220739853482,
+          "max_drawdown_pct": 13.687289261963384,
+          "sharpe_ratio": 0.3907139774201947,
+          "avg_r_multiple": 0.6622060217108345
         },
         {
           "symbol": "ETHUSDT",
-          "n_trades": 120,
-          "win_rate": 0.5916666666666667,
-          "profit_factor": 1.9359041604481908,
-          "total_return_pct": 157.11503591085824,
-          "max_drawdown_pct": 12.33157021907483,
-          "sharpe_ratio": 1.8349707700352453,
-          "avg_r_multiple": 1.176496754197277
+          "n_trades": 108,
+          "win_rate": 0.5833333333333334,
+          "profit_factor": 1.8599338525281977,
+          "total_return_pct": 124.11332393548496,
+          "max_drawdown_pct": 12.283385065477681,
+          "sharpe_ratio": 1.6593343676038803,
+          "avg_r_multiple": 1.034906942058809
         },
         {
           "symbol": "SOLUSDT",
@@ -259,36 +259,36 @@
       ],
       "portfolio_aggregate": {
         "n_symbols": 3,
-        "n_trades_total": 364,
+        "n_trades_total": 284,
         "days_span": 730,
         "portfolio_initial": 30000.0,
-        "portfolio_final": 62737.02894568199,
-        "portfolio_return_pct": 109.12342981893997,
-        "portfolio_sharpe_annualized": 1.954635664621261,
-        "portfolio_max_dd_pct": 15.825533602939299,
-        "portfolio_r_per_day": 0.5414375515017734,
+        "portfolio_final": 53288.19352839919,
+        "portfolio_return_pct": 77.62731176133065,
+        "portfolio_sharpe_annualized": 1.6631272844249458,
+        "portfolio_max_dd_pct": 15.982388887021742,
+        "portfolio_r_per_day": 0.34987512055308917,
         "correlation_matrix": {
           "BTCUSDT": {
             "BTCUSDT": 1.0,
-            "ETHUSDT": 0.31,
-            "SOLUSDT": 0.191
+            "ETHUSDT": 0.188,
+            "SOLUSDT": 0.064
           },
           "ETHUSDT": {
-            "BTCUSDT": 0.31,
+            "BTCUSDT": 0.188,
             "ETHUSDT": 1.0,
-            "SOLUSDT": 0.169
+            "SOLUSDT": 0.173
           },
           "SOLUSDT": {
-            "BTCUSDT": 0.191,
-            "ETHUSDT": 0.169,
+            "BTCUSDT": 0.064,
+            "ETHUSDT": 0.173,
             "SOLUSDT": 1.0
           }
         },
-        "simul_dd_3plus_days": 226,
+        "simul_dd_3plus_days": 237,
         "simul_dd_4plus_days": 0,
         "total_days": 731,
-        "simul_dd_3plus_pct": 30.91655266757866,
-        "portfolio_profit_factor": 1.6319677573677256
+        "simul_dd_3plus_pct": 32.421340629274965,
+        "portfolio_profit_factor": 1.5621212251415106
       },
       "description": "V6 minus MTF agreement (30M trend bias)",
       "overrides": {
@@ -300,23 +300,23 @@
       "per_symbol": [
         {
           "symbol": "BTCUSDT",
-          "n_trades": 123,
-          "win_rate": 0.5772357723577236,
-          "profit_factor": 1.117036680457912,
-          "total_return_pct": 11.968744507702796,
-          "max_drawdown_pct": 14.6962162840039,
-          "sharpe_ratio": 0.43916144679906277,
-          "avg_r_multiple": 0.2692283478507347
+          "n_trades": 48,
+          "win_rate": 0.5833333333333334,
+          "profit_factor": 0.6919996133711687,
+          "total_return_pct": -12.412778265105626,
+          "max_drawdown_pct": 16.30633839802898,
+          "sharpe_ratio": -0.5561991655070359,
+          "avg_r_multiple": -0.09874233815209765
         },
         {
           "symbol": "ETHUSDT",
-          "n_trades": 130,
-          "win_rate": 0.5769230769230769,
-          "profit_factor": 1.441085781523206,
-          "total_return_pct": 53.97295723698588,
-          "max_drawdown_pct": 16.794764924482713,
-          "sharpe_ratio": 1.2449485217296197,
-          "avg_r_multiple": 0.4115203998340818
+          "n_trades": 115,
+          "win_rate": 0.5652173913043478,
+          "profit_factor": 1.3469942322426987,
+          "total_return_pct": 36.33302031453526,
+          "max_drawdown_pct": 13.773691852746522,
+          "sharpe_ratio": 0.9606125048812593,
+          "avg_r_multiple": 0.3307608300808068
         },
         {
           "symbol": "SOLUSDT",
@@ -331,36 +331,36 @@
       ],
       "portfolio_aggregate": {
         "n_symbols": 3,
-        "n_trades_total": 387,
+        "n_trades_total": 297,
         "days_span": 730,
         "portfolio_initial": 30000.0,
-        "portfolio_final": 37812.83086252527,
-        "portfolio_return_pct": 26.042769541750893,
-        "portfolio_sharpe_annualized": 0.8553135299111719,
-        "portfolio_max_dd_pct": 18.61318330038918,
-        "portfolio_r_per_day": 0.18994538405488867,
+        "portfolio_final": 33610.684892999365,
+        "portfolio_return_pct": 12.035616309997883,
+        "portfolio_sharpe_annualized": 0.4845934596197893,
+        "portfolio_max_dd_pct": 19.491037331797713,
+        "portfolio_r_per_day": 0.11691130797806829,
         "correlation_matrix": {
           "BTCUSDT": {
             "BTCUSDT": 1.0,
-            "ETHUSDT": 0.296,
-            "SOLUSDT": 0.085
+            "ETHUSDT": 0.173,
+            "SOLUSDT": 0.042
           },
           "ETHUSDT": {
-            "BTCUSDT": 0.296,
+            "BTCUSDT": 0.173,
             "ETHUSDT": 1.0,
-            "SOLUSDT": 0.02
+            "SOLUSDT": 0.019
           },
           "SOLUSDT": {
-            "BTCUSDT": 0.085,
-            "ETHUSDT": 0.02,
+            "BTCUSDT": 0.042,
+            "ETHUSDT": 0.019,
             "SOLUSDT": 1.0
           }
         },
-        "simul_dd_3plus_days": 315,
+        "simul_dd_3plus_days": 375,
         "simul_dd_4plus_days": 0,
         "total_days": 731,
-        "simul_dd_3plus_pct": 43.09165526675787,
-        "portfolio_profit_factor": 1.1953994894496422
+        "simul_dd_3plus_pct": 51.29958960328317,
+        "portfolio_profit_factor": 1.1127566896640932
       },
       "description": "V6 minus trailing TP (revert to V5 TP1/TP2/TP3 mix)",
       "overrides": {
@@ -375,23 +375,23 @@
       "per_symbol": [
         {
           "symbol": "BTCUSDT",
-          "n_trades": 114,
-          "win_rate": 0.631578947368421,
-          "profit_factor": 1.5679901464033237,
-          "total_return_pct": 70.42586293730812,
-          "max_drawdown_pct": 11.338496462956444,
-          "sharpe_ratio": 1.3684921465651467,
-          "avg_r_multiple": 1.2358981651747025
+          "n_trades": 46,
+          "win_rate": 0.6521739130434783,
+          "profit_factor": 1.2040383561341634,
+          "total_return_pct": 8.939220739853482,
+          "max_drawdown_pct": 13.687289261963384,
+          "sharpe_ratio": 0.3907139774201947,
+          "avg_r_multiple": 0.6622060217108345
         },
         {
           "symbol": "ETHUSDT",
-          "n_trades": 120,
-          "win_rate": 0.5916666666666667,
-          "profit_factor": 1.9359041604481908,
-          "total_return_pct": 157.11503591085824,
-          "max_drawdown_pct": 12.33157021907483,
-          "sharpe_ratio": 1.8349707700352453,
-          "avg_r_multiple": 1.176496754197277
+          "n_trades": 108,
+          "win_rate": 0.5833333333333334,
+          "profit_factor": 1.8599338525281977,
+          "total_return_pct": 124.11332393548496,
+          "max_drawdown_pct": 12.283385065477681,
+          "sharpe_ratio": 1.6593343676038803,
+          "avg_r_multiple": 1.034906942058809
         },
         {
           "symbol": "SOLUSDT",
@@ -406,36 +406,36 @@
       ],
       "portfolio_aggregate": {
         "n_symbols": 3,
-        "n_trades_total": 364,
+        "n_trades_total": 284,
         "days_span": 730,
         "portfolio_initial": 30000.0,
-        "portfolio_final": 62737.02894568199,
-        "portfolio_return_pct": 109.12342981893997,
-        "portfolio_sharpe_annualized": 1.954635664621261,
-        "portfolio_max_dd_pct": 15.825533602939299,
-        "portfolio_r_per_day": 0.5414375515017734,
+        "portfolio_final": 53288.19352839919,
+        "portfolio_return_pct": 77.62731176133065,
+        "portfolio_sharpe_annualized": 1.6631272844249458,
+        "portfolio_max_dd_pct": 15.982388887021742,
+        "portfolio_r_per_day": 0.34987512055308917,
         "correlation_matrix": {
           "BTCUSDT": {
             "BTCUSDT": 1.0,
-            "ETHUSDT": 0.31,
-            "SOLUSDT": 0.191
+            "ETHUSDT": 0.188,
+            "SOLUSDT": 0.064
           },
           "ETHUSDT": {
-            "BTCUSDT": 0.31,
+            "BTCUSDT": 0.188,
             "ETHUSDT": 1.0,
-            "SOLUSDT": 0.169
+            "SOLUSDT": 0.173
           },
           "SOLUSDT": {
-            "BTCUSDT": 0.191,
-            "ETHUSDT": 0.169,
+            "BTCUSDT": 0.064,
+            "ETHUSDT": 0.173,
             "SOLUSDT": 1.0
           }
         },
-        "simul_dd_3plus_days": 226,
+        "simul_dd_3plus_days": 237,
         "simul_dd_4plus_days": 0,
         "total_days": 731,
-        "simul_dd_3plus_pct": 30.91655266757866,
-        "portfolio_profit_factor": 1.6319677573677256
+        "simul_dd_3plus_pct": 32.421340629274965,
+        "portfolio_profit_factor": 1.5621212251415106
       },
       "description": "V6 minus adaptive sizing (fixed V5 risk_pct)",
       "overrides": {
@@ -447,23 +447,23 @@
       "per_symbol": [
         {
           "symbol": "BTCUSDT",
-          "n_trades": 110,
-          "win_rate": 0.6909090909090909,
-          "profit_factor": 2.556111446048959,
-          "total_return_pct": 148.01735944856046,
-          "max_drawdown_pct": 10.33221144928916,
-          "sharpe_ratio": 2.3254933773865423,
-          "avg_r_multiple": 1.931597400237285
+          "n_trades": 45,
+          "win_rate": 0.7333333333333333,
+          "profit_factor": 1.4950067448192574,
+          "total_return_pct": 18.80986399875357,
+          "max_drawdown_pct": 13.540189993069674,
+          "sharpe_ratio": 0.6787743315929494,
+          "avg_r_multiple": 1.1461091107225925
         },
         {
           "symbol": "ETHUSDT",
-          "n_trades": 119,
-          "win_rate": 0.6134453781512605,
-          "profit_factor": 2.3940266371699632,
-          "total_return_pct": 228.75593041888948,
-          "max_drawdown_pct": 13.559796900356202,
-          "sharpe_ratio": 2.2461035153599513,
-          "avg_r_multiple": 1.5385607695782253
+          "n_trades": 107,
+          "win_rate": 0.6074766355140186,
+          "profit_factor": 2.3447709915008863,
+          "total_return_pct": 187.4835318256057,
+          "max_drawdown_pct": 11.821054871542563,
+          "sharpe_ratio": 2.1110144262705446,
+          "avg_r_multiple": 1.4120070948245707
         },
         {
           "symbol": "SOLUSDT",
@@ -478,36 +478,36 @@
       ],
       "portfolio_aggregate": {
         "n_symbols": 3,
-        "n_trades_total": 357,
+        "n_trades_total": 280,
         "days_span": 730,
         "portfolio_initial": 30000.0,
-        "portfolio_final": 103691.77009624067,
-        "portfolio_return_pct": 245.63923365413552,
-        "portfolio_sharpe_annualized": 3.19084804549245,
-        "portfolio_max_dd_pct": 8.882808459848547,
-        "portfolio_r_per_day": 0.7841907905898748,
+        "portfolio_final": 86643.7806919316,
+        "portfolio_return_pct": 188.8126023064387,
+        "portfolio_sharpe_annualized": 2.7867535149599245,
+        "portfolio_max_dd_pct": 7.904652670004056,
+        "portfolio_r_per_day": 0.5199376721280059,
         "correlation_matrix": {
           "BTCUSDT": {
             "BTCUSDT": 1.0,
-            "ETHUSDT": 0.291,
-            "SOLUSDT": 0.239
+            "ETHUSDT": 0.208,
+            "SOLUSDT": 0.098
           },
           "ETHUSDT": {
-            "BTCUSDT": 0.291,
+            "BTCUSDT": 0.208,
             "ETHUSDT": 1.0,
-            "SOLUSDT": 0.194
+            "SOLUSDT": 0.201
           },
           "SOLUSDT": {
-            "BTCUSDT": 0.239,
-            "ETHUSDT": 0.194,
+            "BTCUSDT": 0.098,
+            "ETHUSDT": 0.201,
             "SOLUSDT": 1.0
           }
         },
-        "simul_dd_3plus_days": 66,
+        "simul_dd_3plus_days": 85,
         "simul_dd_4plus_days": 0,
         "total_days": 731,
-        "simul_dd_3plus_pct": 9.028727770177838,
-        "portfolio_profit_factor": 2.322019106620991
+        "simul_dd_3plus_pct": 11.627906976744185,
+        "portfolio_profit_factor": 2.1909537099248113
       },
       "description": "V6 minus stricter realism (revert slippage/spread/hard-stop/2-bar to V5)",
       "overrides": {

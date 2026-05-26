@@ -101,6 +101,17 @@ class RegimeState:
             return False
         return pct < percentile_floor
 
+    def is_low_regime_absolute(self, rv_floor_annualized: float) -> bool:
+        """
+        V6.1 — true iff current annualized RV is below an absolute floor.
+        Unlike percentile mode, this does not rebase against recent history,
+        so structurally low-vol periods are still blocked.
+        Requires at least `lookback_bars` warmup to have a current_rv.
+        """
+        if self._current_rv is None:
+            return False
+        return self._current_rv < rv_floor_annualized
+
 
 # Convenience factory for default V6 settings
 def make_default(symbol_interval: str = "1h") -> RegimeState:

@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-05-26T10:46:52.255521+00:00",
+  "generated_at": "2026-05-26T10:23:52.159934+00:00",
   "symbols": [
     "BTCUSDT",
     "ETHUSDT",
@@ -15,13 +15,13 @@
     "per_symbol": [
       {
         "symbol": "BTCUSDT",
-        "n_trades": 14,
-        "win_rate": 0.7142857142857143,
-        "profit_factor": 4.298884833459335,
-        "total_return_pct": 23.061596520597156,
-        "max_drawdown_pct": 3.0014801338557606,
-        "sharpe_ratio": 3.003147870887713,
-        "avg_r_multiple": 1.431431661396862
+        "n_trades": 11,
+        "win_rate": 0.7272727272727273,
+        "profit_factor": 2.632182894644989,
+        "total_return_pct": 6.077151319336753,
+        "max_drawdown_pct": 2.3206195807301397,
+        "sharpe_ratio": 2.6022755253416125,
+        "avg_r_multiple": 0.4365012893676402
       },
       {
         "symbol": "ETHUSDT",
@@ -46,27 +46,27 @@
     ],
     "portfolio_aggregate": {
       "n_symbols": 3,
-      "n_trades_total": 51,
+      "n_trades_total": 48,
       "days_span": 102,
       "portfolio_initial": 30000.0,
-      "portfolio_final": 34765.88989091484,
-      "portfolio_return_pct": 15.886299636382804,
-      "portfolio_sharpe_annualized": 2.557244377573664,
+      "portfolio_final": 33067.445370788795,
+      "portfolio_return_pct": 10.224817902629317,
+      "portfolio_sharpe_annualized": 2.1950671587146138,
       "portfolio_max_dd_pct": 3.973341423626728,
-      "portfolio_r_per_day": 0.276714789526384,
+      "portfolio_r_per_day": 0.12731744563901115,
       "correlation_matrix": {
         "BTCUSDT": {
           "BTCUSDT": 1.0,
-          "ETHUSDT": 0.747,
-          "SOLUSDT": 0.021
+          "ETHUSDT": 0.212,
+          "SOLUSDT": 0.304
         },
         "ETHUSDT": {
-          "BTCUSDT": 0.747,
+          "BTCUSDT": 0.212,
           "ETHUSDT": 1.0,
           "SOLUSDT": 0.102
         },
         "SOLUSDT": {
-          "BTCUSDT": 0.021,
+          "BTCUSDT": 0.304,
           "ETHUSDT": 0.102,
           "SOLUSDT": 1.0
         }
@@ -75,7 +75,7 @@
       "simul_dd_4plus_days": 0,
       "total_days": 103,
       "simul_dd_3plus_pct": 0.0,
-      "portfolio_profit_factor": 2.0346674275181362
+      "portfolio_profit_factor": 1.71678246284446
     },
     "description": "V6 full on 2026-Q1 held-back OOS data"
   }

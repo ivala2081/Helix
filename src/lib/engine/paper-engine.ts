@@ -377,13 +377,41 @@ export function stepCandle(
     // Take profits (parity rule #4 — TP1 → TP2 → TP3 in order).
     // P1 (realism patch): when params.tpRequireClose, the bar must close at or
     // beyond the TP for the fill to be honored. Wick-only pokes don't count.
-    const longTpHit = (tp: number) =>
-      candle.high >= tp && (!params.tpRequireClose || candle.close >= tp);
-    const shortTpHit = (tp: number) =>
-      candle.low <= tp && (!params.tpRequireClose || candle.close <= tp);
+    // V6.2: tpRequireCloseBars requires N consecutive bars closing beyond
+    // the TP. Counts persist on the trade; reset to 0 when a bar fails.
+    const requireBars = params.tpRequireCloseBars ?? 1;
+    if (!t.tpConfirmCounts) {
+      t.tpConfirmCounts = { tp1: 0, tp2: 0, tp3: 0 };
+    }
+    const longTpReady = (tp: number, key: "tp1" | "tp2" | "tp3") => {
+      if (candle.high < tp) {
+        t.tpConfirmCounts![key] = 0;
+        return false;
+      }
+      if (params.tpRequireClose && candle.close < tp) {
+        t.tpConfirmCounts![key] = 0;
+        return false;
+      }
+      t.tpConfirmCounts![key] += 1;
+      return t.tpConfirmCounts![key] >= requireBars;
+    };
+    const shortTpReady = (tp: number, key: "tp1" | "tp2" | "tp3") => {
+      if (candle.low > tp) {
+        t.tpConfirmCounts![key] = 0;
+        return false;
+      }
+      if (params.tpRequireClose && candle.close > tp) {
+        t.tpConfirmCounts![key] = 0;
+        return false;
+      }
+      t.tpConfirmCounts![key] += 1;
+      return t.tpConfirmCounts![key] >= requireBars;
+    };
+
+    const v62Trail = params.trailAfterTp1 === true;
 
     if (dir === "LONG") {
-      if (!t.tp1Hit && longTpHit(t.takeProfit1)) {
+      if (!t.tp1Hit && longTpReady(t.takeProfit1, "tp1")) {
         const closeSize = t.size * params.tp1ClosePct;
         state.realizedPnl += partialClose(t, t.takeProfit1, closeSize, params, atr);
         t.remainingSize -= closeSize;
@@ -391,24 +419,50 @@ export function stepCandle(
         if (params.beAfterTp1) {
           t.stopLoss = t.entryPrice + params.beBufferAtr * atr;
         }
+        if (v62Trail) {
+          t.trailingPeak = t.takeProfit1;
+          t.trailingStop =
+            t.takeProfit1 - (params.trailAfterTp1Atr ?? 2.0) * atr;
+        }
       }
-      if (t.tp1Hit && !t.tp2Hit && longTpHit(t.takeProfit2)) {
-        const closeSize = t.size * params.tp2ClosePct;
-        state.realizedPnl += partialClose(t, t.takeProfit2, closeSize, params, atr);
-        t.remainingSize -= closeSize;
-        t.tp2Hit = true;
-      }
-      if (t.tp2Hit && longTpHit(t.takeProfit3)) {
-        const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candle.date, atr);
-        state.realizedPnl += realized;
-        events.push({ type: "tradeClosed", trade: { ...t } });
-        state.openTrade = null;
-        state.barIndex++;
-        return makeResult(events, state);
+      if (v62Trail && t.tp1Hit && t.remainingSize > 0) {
+        if (candle.high > (t.trailingPeak ?? -Infinity)) {
+          t.trailingPeak = candle.high;
+          t.trailingStop =
+            candle.high - (params.trailAfterTp1Atr ?? 2.0) * atr;
+        }
+        if (
+          t.trailingStop !== null && t.trailingStop !== undefined &&
+          candle.low <= t.trailingStop
+        ) {
+          const realized = closeFull(
+            t, i, t.trailingStop, "Trailing Stop", params, candle.date, atr,
+          );
+          state.realizedPnl += realized;
+          events.push({ type: "tradeClosed", trade: { ...t } });
+          state.openTrade = null;
+          state.barIndex++;
+          return makeResult(events, state);
+        }
+      } else if (!v62Trail) {
+        if (t.tp1Hit && !t.tp2Hit && longTpReady(t.takeProfit2, "tp2")) {
+          const closeSize = t.size * params.tp2ClosePct;
+          state.realizedPnl += partialClose(t, t.takeProfit2, closeSize, params, atr);
+          t.remainingSize -= closeSize;
+          t.tp2Hit = true;
+        }
+        if (t.tp2Hit && longTpReady(t.takeProfit3, "tp3")) {
+          const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candle.date, atr);
+          state.realizedPnl += realized;
+          events.push({ type: "tradeClosed", trade: { ...t } });
+          state.openTrade = null;
+          state.barIndex++;
+          return makeResult(events, state);
+        }
       }
     } else {
       // SHORT
-      if (!t.tp1Hit && shortTpHit(t.takeProfit1)) {
+      if (!t.tp1Hit && shortTpReady(t.takeProfit1, "tp1")) {
         const closeSize = t.size * params.tp1ClosePct;
         state.realizedPnl += partialClose(t, t.takeProfit1, closeSize, params, atr);
         t.remainingSize -= closeSize;
@@ -416,20 +470,46 @@ export function stepCandle(
         if (params.beAfterTp1) {
           t.stopLoss = t.entryPrice - params.beBufferAtr * atr;
         }
+        if (v62Trail) {
+          t.trailingPeak = t.takeProfit1;
+          t.trailingStop =
+            t.takeProfit1 + (params.trailAfterTp1Atr ?? 2.0) * atr;
+        }
       }
-      if (t.tp1Hit && !t.tp2Hit && shortTpHit(t.takeProfit2)) {
-        const closeSize = t.size * params.tp2ClosePct;
-        state.realizedPnl += partialClose(t, t.takeProfit2, closeSize, params, atr);
-        t.remainingSize -= closeSize;
-        t.tp2Hit = true;
-      }
-      if (t.tp2Hit && shortTpHit(t.takeProfit3)) {
-        const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candle.date, atr);
-        state.realizedPnl += realized;
-        events.push({ type: "tradeClosed", trade: { ...t } });
-        state.openTrade = null;
-        state.barIndex++;
-        return makeResult(events, state);
+      if (v62Trail && t.tp1Hit && t.remainingSize > 0) {
+        if (candle.low < (t.trailingPeak ?? Infinity)) {
+          t.trailingPeak = candle.low;
+          t.trailingStop =
+            candle.low + (params.trailAfterTp1Atr ?? 2.0) * atr;
+        }
+        if (
+          t.trailingStop !== null && t.trailingStop !== undefined &&
+          candle.high >= t.trailingStop
+        ) {
+          const realized = closeFull(
+            t, i, t.trailingStop, "Trailing Stop", params, candle.date, atr,
+          );
+          state.realizedPnl += realized;
+          events.push({ type: "tradeClosed", trade: { ...t } });
+          state.openTrade = null;
+          state.barIndex++;
+          return makeResult(events, state);
+        }
+      } else if (!v62Trail) {
+        if (t.tp1Hit && !t.tp2Hit && shortTpReady(t.takeProfit2, "tp2")) {
+          const closeSize = t.size * params.tp2ClosePct;
+          state.realizedPnl += partialClose(t, t.takeProfit2, closeSize, params, atr);
+          t.remainingSize -= closeSize;
+          t.tp2Hit = true;
+        }
+        if (t.tp2Hit && shortTpReady(t.takeProfit3, "tp3")) {
+          const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candle.date, atr);
+          state.realizedPnl += realized;
+          events.push({ type: "tradeClosed", trade: { ...t } });
+          state.openTrade = null;
+          state.barIndex++;
+          return makeResult(events, state);
+        }
       }
     }
 

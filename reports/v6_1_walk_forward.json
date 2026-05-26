@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-05-26T10:47:34.245138+00:00",
-  "params_label": "V6_2_PARAMS",
+  "generated_at": "2026-05-26T10:24:35.460173+00:00",
+  "params_label": "V6_1_PARAMS",
   "date_range": {
     "start": "2024-01-01",
     "end": "2025-12-31"
@@ -23,8 +23,8 @@
         "test_total_r": -7.357359354985623,
         "test_days": 48,
         "test_positive": "False",
-        "train_r_per_day": 0.4361965439489553,
-        "train_total_r": 31.842347708273735
+        "train_r_per_day": 0.00920778327590288,
+        "train_total_r": 0.6721681791409102
       },
       {
         "fold": 2,
@@ -32,8 +32,8 @@
         "test_total_r": 40.65366674796462,
         "test_days": 48,
         "test_positive": "True",
-        "train_r_per_day": -0.23078078686522152,
-        "train_total_r": -16.84699744116117
+        "train_r_per_day": -0.4669839973783944,
+        "train_total_r": -34.08983180862279
       },
       {
         "fold": 3,
@@ -41,8 +41,8 @@
         "test_total_r": 14.952556559173809,
         "test_days": 48,
         "test_positive": "True",
-        "train_r_per_day": 1.1120287846938883,
-        "train_total_r": 81.17810128265384
+        "train_r_per_day": 0.5913277753812487,
+        "train_total_r": 43.16692760283116
       },
       {
         "fold": 4,
@@ -50,26 +50,26 @@
         "test_total_r": 18.148620506512557,
         "test_days": 48,
         "test_positive": "True",
-        "train_r_per_day": 0.6526436533233062,
-        "train_total_r": 47.642986692601355
+        "train_r_per_day": 0.63478445573148,
+        "train_total_r": 46.339265268398044
       },
       {
         "fold": 5,
-        "test_r_per_day": 0.6735139841022901,
-        "test_total_r": 32.328671236909926,
+        "test_r_per_day": 0.6041911031750576,
+        "test_total_r": 29.001172952402765,
         "test_days": 48,
         "test_positive": "True",
-        "train_r_per_day": 0.09775374109972036,
-        "train_total_r": 7.136023100279586
+        "train_r_per_day": 0.12206839528046601,
+        "train_total_r": 8.910992855474019
       },
       {
         "fold": 6,
-        "test_r_per_day": -0.3781000392794605,
-        "test_total_r": -18.148801885414105,
+        "test_r_per_day": -0.06594113890660479,
+        "test_total_r": -3.1651746675170296,
         "test_days": 48,
         "test_positive": "False",
-        "train_r_per_day": 1.6487288144195342,
-        "train_total_r": 120.357203452626
+        "train_r_per_day": 0.7668095187983771,
+        "train_total_r": 55.977094872281526
       }
     ],
     "per_symbol_folds": {
@@ -77,14 +77,14 @@
         {
           "symbol": "BTCUSDT",
           "train": {
-            "n_trades": 6,
-            "win_rate": 0.8333333333333334,
-            "profit_factor": 3.591743973837719,
-            "r_total": 31.64004619839611,
-            "r_per_day": 0.4334252903889878,
+            "n_trades": 4,
+            "win_rate": 0.75,
+            "profit_factor": 0.8273735111033041,
+            "r_total": 9.788082359247786,
+            "r_per_day": 0.1340833199896957,
             "days": 73,
-            "total_return_pct": 15.63218743486488,
-            "sharpe_ratio": 2.9224035299450892
+            "total_return_pct": -1.3871434029818739,
+            "sharpe_ratio": -0.2648522993734881
           },
           "test": {
             "n_trades": 7,
@@ -105,14 +105,14 @@
         {
           "symbol": "BTCUSDT",
           "train": {
-            "n_trades": 13,
-            "win_rate": 0.5384615384615384,
-            "profit_factor": 0.9859059993417157,
-            "r_total": 9.664137603744257,
-            "r_per_day": 0.13238544662663365,
+            "n_trades": 4,
+            "win_rate": 0.75,
+            "profit_factor": 7.492608174889117,
+            "r_total": 2.8715190085519526,
+            "r_per_day": 0.039335876829478804,
             "days": 73,
-            "total_return_pct": -0.1572164395029722,
-            "sharpe_ratio": 0.06805194291050273
+            "total_return_pct": 1.856363290134359,
+            "sharpe_ratio": 3.3626132505183137
           },
           "test": {
             "n_trades": 10,
@@ -133,14 +133,14 @@
         {
           "symbol": "BTCUSDT",
           "train": {
-            "n_trades": 12,
-            "win_rate": 0.75,
-            "profit_factor": 3.6229419129898135,
-            "r_total": 38.199620885471774,
-            "r_per_day": 0.523282477883175,
+            "n_trades": 3,
+            "win_rate": 0.6666666666666666,
+            "profit_factor": 1.9023416495820091,
+            "r_total": 1.3724024414092453,
+            "r_per_day": 0.018800033443962264,
             "days": 73,
-            "total_return_pct": 14.766090005036094,
-            "sharpe_ratio": 3.3416960533299855
+            "total_return_pct": 0.7938974327788493,
+            "sharpe_ratio": 1.1931359165541306
           },
           "test": {
             "n_trades": 8,
@@ -161,14 +161,14 @@
         {
           "symbol": "BTCUSDT",
           "train": {
-            "n_trades": 8,
-            "win_rate": 0.75,
-            "profit_factor": 2.673891978212125,
-            "r_total": 19.72300423030736,
-            "r_per_day": 0.27017814014119673,
+            "n_trades": 5,
+            "win_rate": 1.0,
+            "profit_factor": null,
+            "r_total": 18.41928280610405,
+            "r_per_day": 0.25231894254937054,
             "days": 73,
-            "total_return_pct": 10.080322733438624,
-            "sharpe_ratio": 2.416300050414153
+            "total_return_pct": 8.997001398364446,
+            "sharpe_ratio": 4.245867398005991
           },
           "test": {
             "n_trades": 4,
@@ -189,24 +189,24 @@
         {
           "symbol": "BTCUSDT",
           "train": {
-            "n_trades": 8,
+            "n_trades": 2,
             "win_rate": 0.5,
-            "profit_factor": 0.8673420380335821,
-            "r_total": -5.096950257444269,
-            "r_per_day": -0.06982123640334616,
+            "profit_factor": 0.39859592917715697,
+            "r_total": -3.3219805022498368,
+            "r_per_day": -0.045506582222600504,
             "days": 73,
-            "total_return_pct": -0.8236347087442117,
-            "sharpe_ratio": -0.36056383827392674
+            "total_return_pct": -1.2836146827794983,
+            "sharpe_ratio": -1.2435868022578518
           },
           "test": {
-            "n_trades": 10,
-            "win_rate": 0.7,
-            "profit_factor": 1.992879322009247,
-            "r_total": 12.563723746660454,
-            "r_per_day": 0.2617442447220928,
+            "n_trades": 5,
+            "win_rate": 0.8,
+            "profit_factor": 10.329844523437966,
+            "r_total": 9.236225462153293,
+            "r_per_day": 0.19242136379486027,
             "days": 48,
-            "total_return_pct": 3.488046800555148,
-            "sharpe_ratio": 2.1910867607628286
+            "total_return_pct": 3.379233783981144,
+            "sharpe_ratio": 3.6629373712283053
           },
           "fold": 5,
           "window": {
@@ -217,24 +217,24 @@
         {
           "symbol": "BTCUSDT",
           "train": {
-            "n_trades": 12,
-            "win_rate": 0.8333333333333334,
-            "profit_factor": 7.970036030179908,
-            "r_total": 54.947267742287764,
-            "r_per_day": 0.7527022978395584,
+            "n_trades": 4,
+            "win_rate": 0.5,
+            "profit_factor": 0.40617668835513115,
+            "r_total": -4.424818881805437,
+            "r_per_day": -0.06061395728500599,
             "days": 73,
-            "total_return_pct": 21.577352678440782,
-            "sharpe_ratio": 4.029808602267022
+            "total_return_pct": -1.838316899447964,
+            "sharpe_ratio": -1.4580978752405767
           },
           "test": {
-            "n_trades": 11,
-            "win_rate": 0.45454545454545453,
-            "profit_factor": 0.647082745427667,
-            "r_total": -12.936052223551508,
-            "r_per_day": -0.2695010879906564,
+            "n_trades": 7,
+            "win_rate": 0.7142857142857143,
+            "profit_factor": 1.2509038455317572,
+            "r_total": 2.047574994345568,
+            "r_per_day": 0.04265781238219934,
             "days": 48,
-            "total_return_pct": -4.198939060606389,
-            "sharpe_ratio": -1.5403147115260278
+            "total_return_pct": 1.5442225466403032,
+            "sharpe_ratio": 0.7438661547669292
           },
           "fold": 6,
           "window": {
@@ -247,14 +247,14 @@
         {
           "symbol": "ETHUSDT",
           "train": {
-            "n_trades": 12,
-            "win_rate": 0.5833333333333334,
-            "profit_factor": 1.1640085333225814,
-            "r_total": 2.804647319397685,
-            "r_per_day": 0.03841982629311897,
+            "n_trades": 7,
+            "win_rate": 0.42857142857142855,
+            "profit_factor": 0.3838604249500452,
+            "r_total": -6.5135683705868175,
+            "r_per_day": -0.08922696398064134,
             "days": 73,
-            "total_return_pct": 1.540140456714271,
-            "sharpe_ratio": 0.5242752889230926
+            "total_return_pct": -4.803439097041847,
+            "sharpe_ratio": -1.8651768827363484
           },
           "test": {
             "n_trades": 8,
@@ -275,14 +275,14 @@
         {
           "symbol": "ETHUSDT",
           "train": {
-            "n_trades": 11,
-            "win_rate": 0.36363636363636365,
-            "profit_factor": 0.8278948078078512,
-            "r_total": -7.463720987437586,
-            "r_per_day": -0.10224275325256968,
+            "n_trades": 8,
+            "win_rate": 0.375,
+            "profit_factor": 0.6110771220275438,
+            "r_total": -17.9139367597069,
+            "r_per_day": -0.24539639396858767,
             "days": 73,
-            "total_return_pct": -3.3947169017904706,
-            "sharpe_ratio": -0.4165969392298148
+            "total_return_pct": -5.002302175803543,
+            "sharpe_ratio": -1.2144488448257063
           },
           "test": {
             "n_trades": 8,
@@ -303,14 +303,14 @@
         {
           "symbol": "ETHUSDT",
           "train": {
-            "n_trades": 13,
-            "win_rate": 0.46153846153846156,
-            "profit_factor": 1.4899218136929844,
-            "r_total": 21.187353702841293,
-            "r_per_day": 0.29023772195673003,
+            "n_trades": 11,
+            "win_rate": 0.45454545454545453,
+            "profit_factor": 1.4740750869840222,
+            "r_total": 20.003398467081144,
+            "r_per_day": 0.2740191570833033,
             "days": 73,
-            "total_return_pct": 5.691295058113992,
-            "sharpe_ratio": 1.433257434893225
+            "total_return_pct": 5.15213121509867,
+            "sharpe_ratio": 1.3246496824270808
           },
           "test": {
             "n_trades": 8,
@@ -387,14 +387,14 @@
         {
           "symbol": "ETHUSDT",
           "train": {
-            "n_trades": 9,
-            "win_rate": 0.8888888888888888,
-            "profit_factor": 36.04614981771376,
-            "r_total": 47.0775882459288,
-            "r_per_day": 0.6448984691223123,
+            "n_trades": 8,
+            "win_rate": 0.875,
+            "profit_factor": 32.301434191191206,
+            "r_total": 42.069566289677525,
+            "r_per_day": 0.5762954286257195,
             "days": 73,
-            "total_return_pct": 37.7662133733794,
-            "sharpe_ratio": 4.725742224770479
+            "total_return_pct": 33.730856276823324,
+            "sharpe_ratio": 4.374626898878555
           },
           "test": {
             "n_trades": 10,

@@ -47,6 +47,8 @@ from backtester import Backtester  # noqa: E402
 from oos_holdout import DEV_END, describe_holdout, filter_dataset  # noqa: E402
 from strategy import STRATEGY_PARAMS as V5_PARAMS  # noqa: E402
 from strategy_v6 import V6_PARAMS  # noqa: E402
+from strategy_v6_1 import V6_1_PARAMS  # noqa: E402
+from strategy_v6_2 import V6_2_PARAMS  # noqa: E402
 
 # Reuse the portfolio aggregation logic from the concurrent BT runner so
 # ablations are reported on the same metric definitions as Phase 1.
@@ -66,6 +68,15 @@ DEV_START = "2024-01-01"  # 30M data starts here
 
 REPORTS_DIR = Path("reports")
 DASHBOARD_DIR = Path("public/data/v6")
+
+# Module-level base params for the "full" strategy under test. Defaults to V6;
+# main() rebinds this to V6_1_PARAMS when --strategy v6.1 is passed. Functions
+# read this lazily so the rebinding takes effect.
+BASE_PARAMS = V6_PARAMS
+BASE_LABEL = "V6_PARAMS"
+
+def _base():
+    return BASE_PARAMS
 
 
 # ─────────────────────────────────────────────────────────────────────
@@ -276,7 +287,7 @@ def run_config(
 # ─────────────────────────────────────────────────────────────────────
 
 def make_v6_params(overrides: dict) -> dict:
-    p = deepcopy(V6_PARAMS)
+    p = deepcopy(_base())
     p.update(overrides)
     return p
 
@@ -332,7 +343,7 @@ def run_ablations(symbols: tuple, start: str, end: str) -> dict:
 
 
 def run_oos(symbols: tuple) -> dict:
-    """3g — V6 full on 2026-Q1 held-back data."""
+    """3g — V6/V6.1 full on 2026-Q1 held-back data."""
     label, desc, overrides = OOS_CONFIG
     params = make_v6_params(overrides)
     print(f"  [{label}] {desc}")
@@ -343,7 +354,7 @@ def run_oos(symbols: tuple) -> dict:
         start="2026-01-01",
         end="2026-04-13",
         include_oos=True,
-        needs_30m=True,
+        needs_30m=bool(params.get("use_v6_mtf_agreement", False)),
     )
     result["description"] = desc
 
@@ -370,28 +381,32 @@ def run_v6_walk_forward(
     """V6 full 6-fold WF. Built here instead of reusing walk_forward_validator's
     main() because we need to pass df_30m per symbol per fold."""
     per_symbol_folds: dict[str, list[dict]] = {s: [] for s in symbols}
+    needs_30m = bool(_base().get("use_v6_mtf_agreement", False))
 
     for sym in symbols:
         df_1h = load_1h(sym, start, end, include_oos=False)
-        df_30m = load_30m(sym, start, end, include_oos=False)
+        df_30m = load_30m(sym, start, end, include_oos=False) if needs_30m else None
         folds_1h = split_folds(df_1h, k, train_pct)
 
-        # Slice 30M to match each 1H fold's time window
+        # Slice 30M to match each 1H fold's time window (only when MTF active)
         for f in folds_1h:
-            train_start = f["train"]["date"].iloc[0]
-            train_end = f["train"]["date"].iloc[-1] + pd.Timedelta(hours=1)
-            test_start = f["test"]["date"].iloc[0]
-            test_end = f["test"]["date"].iloc[-1] + pd.Timedelta(hours=1)
-
-            df_30m_train = df_30m[
-                (df_30m["date"] >= train_start) & (df_30m["date"] < train_end)
-            ].reset_index(drop=True)
-            df_30m_test = df_30m[
-                (df_30m["date"] >= test_start) & (df_30m["date"] < test_end)
-            ].reset_index(drop=True)
+            if needs_30m:
+                train_start = f["train"]["date"].iloc[0]
+                train_end = f["train"]["date"].iloc[-1] + pd.Timedelta(hours=1)
+                test_start = f["test"]["date"].iloc[0]
+                test_end = f["test"]["date"].iloc[-1] + pd.Timedelta(hours=1)
+                df_30m_train = df_30m[
+                    (df_30m["date"] >= train_start) & (df_30m["date"] < train_end)
+                ].reset_index(drop=True)
+                df_30m_test = df_30m[
+                    (df_30m["date"] >= test_start) & (df_30m["date"] < test_end)
+                ].reset_index(drop=True)
+            else:
+                df_30m_train = None
+                df_30m_test = None
 
             metric = _v6_fold_metric(
-                f["train"], f["test"], df_30m_train, df_30m_test, V6_PARAMS, sym,
+                f["train"], f["test"], df_30m_train, df_30m_test, _base(), sym,
             )
             metric["fold"] = f["fold"]
             metric["window"] = {"start": f["start"], "end": f["end"]}
@@ -427,7 +442,7 @@ def run_v6_walk_forward(
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "params_label": "V6_PARAMS",
+        "params_label": BASE_LABEL,
         "date_range": {"start": start, "end": end},
         "symbols": list(symbols),
         "result": {
@@ -445,14 +460,16 @@ def run_v6_walk_forward(
 def _v6_fold_metric(
     train: pd.DataFrame,
     test: pd.DataFrame,
-    df_30m_train: pd.DataFrame,
-    df_30m_test: pd.DataFrame,
+    df_30m_train: "pd.DataFrame | None",
+    df_30m_test: "pd.DataFrame | None",
     params: dict,
     symbol: str,
 ) -> dict:
-    """V6-aware fold metric — passes df_30m to Backtester."""
-    out_train = Backtester(**params, df_30m=df_30m_train).run(train)
-    out_test = Backtester(**params, df_30m=df_30m_test).run(test)
+    """V6-aware fold metric — passes df_30m to Backtester when MTF active."""
+    train_kwargs = {"df_30m": df_30m_train} if df_30m_train is not None else {}
+    test_kwargs = {"df_30m": df_30m_test} if df_30m_test is not None else {}
+    out_train = Backtester(**params, **train_kwargs).run(train)
+    out_test = Backtester(**params, **test_kwargs).run(test)
 
     def summarize(out, df):
         trades = out["trades"]
@@ -493,19 +510,22 @@ def _v6_fold_metric(
 
 def run_v6_stress(symbols: tuple) -> dict:
     rows = []
+    base = _base()
+    needs_30m = bool(base.get("use_v6_mtf_agreement", False))
     for label, start, end, watch in V6_STRESS_WINDOWS:
         print(f"  [stress:{label}] {start} -> {end}")
         per_sym = []
         for sym in symbols:
             df_1h = load_1h(sym, start, end, include_oos=False)
-            df_30m = load_30m(sym, start, end, include_oos=False)
+            df_30m = load_30m(sym, start, end, include_oos=False) if needs_30m else None
             if len(df_1h) < 100:
                 per_sym.append({
                     "symbol": sym, "skipped": True,
                     "reason": f"only {len(df_1h)} 1H bars",
                 })
                 continue
-            bt = Backtester(**V6_PARAMS, df_30m=df_30m)
+            bt_kwargs = {"df_30m": df_30m} if df_30m is not None else {}
+            bt = Backtester(**base, **bt_kwargs)
             out = bt.run(df_1h)
             trades = out["trades"]
             n = len(trades)
@@ -556,7 +576,7 @@ def run_v6_stress(symbols: tuple) -> dict:
 
     return {
         "generated_at": datetime.now(timezone.utc).isoformat(),
-        "params_label": "V6_PARAMS",
+        "params_label": BASE_LABEL,
         "symbols": list(symbols),
         "windows": rows,
     }
@@ -694,11 +714,32 @@ def main():
     ap.add_argument("--only-wf", action="store_true")
     ap.add_argument("--only-stress", action="store_true")
     ap.add_argument("--only-oos", action="store_true")
+    ap.add_argument(
+        "--strategy",
+        choices=["v6", "v6.1", "v6.2"],
+        default="v6",
+        help="Which strategy params set to use as 'full' baseline (default: v6)",
+    )
     args = ap.parse_args()
 
     symbols = tuple(s.strip() for s in args.symbols.split(",") if s.strip())
 
+    global BASE_PARAMS, BASE_LABEL
+    if args.strategy == "v6.2":
+        BASE_PARAMS = V6_2_PARAMS
+        BASE_LABEL = "V6_2_PARAMS"
+        report_prefix = "v6_2"
+    elif args.strategy == "v6.1":
+        BASE_PARAMS = V6_1_PARAMS
+        BASE_LABEL = "V6_1_PARAMS"
+        report_prefix = "v6_1"
+    else:
+        BASE_PARAMS = V6_PARAMS
+        BASE_LABEL = "V6_PARAMS"
+        report_prefix = "v6"
+
     print(f"[{datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC}] V6 validation runner")
+    print(f"  Strategy: {BASE_LABEL}")
     print(f"  Symbols: {list(symbols)}")
     print(f"  Range:   {args.start} -> {args.end}")
     print(f"  {describe_holdout()}")
@@ -718,33 +759,33 @@ def main():
         run_o = not args.skip_oos
 
     if run_ab:
-        print(">>> Phase 3a-3f: Ablation matrix")
+        print(f">>> Phase 3a-3f: Ablation matrix ({BASE_LABEL})")
         ab_report = run_ablations(symbols, args.start, args.end)
-        ab_path = write_report(ab_report, "v6_validation_run.json")
+        ab_path = write_report(ab_report, f"{report_prefix}_validation_run.json")
         print(f"    saved: {ab_path}")
         print_ablation_table(ab_report)
 
     if run_wf:
         print()
-        print(">>> Phase 3: V6 walk-forward")
+        print(f">>> Phase 3: walk-forward ({BASE_LABEL})")
         wf_report = run_v6_walk_forward(symbols, args.start, args.end)
-        wf_path = write_report(wf_report, "v6_walk_forward.json")
+        wf_path = write_report(wf_report, f"{report_prefix}_walk_forward.json")
         print(f"    saved: {wf_path}")
         print_wf_table(wf_report)
 
     if run_st:
         print()
-        print(">>> Phase 3: V6 stress tests")
+        print(f">>> Phase 3: stress tests ({BASE_LABEL})")
         st_report = run_v6_stress(symbols)
-        st_path = write_report(st_report, "v6_stress_tests.json")
+        st_path = write_report(st_report, f"{report_prefix}_stress_tests.json")
         print(f"    saved: {st_path}")
         print_stress_table(st_report)
 
     if run_o:
         print()
-        print(">>> Phase 3g: V6 OOS holdout (2026-Q1)")
+        print(f">>> Phase 3g: OOS holdout 2026-Q1 ({BASE_LABEL})")
         oos_report = run_oos(symbols)
-        oos_path = write_report(oos_report, "v6_oos_holdout.json")
+        oos_path = write_report(oos_report, f"{report_prefix}_oos_holdout.json")
         print(f"    saved: {oos_path}")
         print_oos_table(oos_report)
 

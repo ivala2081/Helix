@@ -140,13 +140,42 @@ export async function runBacktest(
       }
 
       // ── Take profits — P1 realism patch (require close confirmation) ──
-      const longTpHit = (tp: number) =>
-        bar.high >= tp && (!params.tpRequireClose || bar.close >= tp);
-      const shortTpHit = (tp: number) =>
-        bar.low <= tp && (!params.tpRequireClose || bar.close <= tp);
+      // V6.2: tpRequireCloseBars requires N consecutive bars closing beyond
+      // the TP. Counts persist on the trade; reset to 0 when a bar fails.
+      const requireBars = params.tpRequireCloseBars ?? 1;
+      if (!t.tpConfirmCounts) {
+        t.tpConfirmCounts = { tp1: 0, tp2: 0, tp3: 0 };
+      }
+
+      const longTpReady = (tp: number, key: "tp1" | "tp2" | "tp3") => {
+        if (bar.high < tp) {
+          t.tpConfirmCounts![key] = 0;
+          return false;
+        }
+        if (params.tpRequireClose && bar.close < tp) {
+          t.tpConfirmCounts![key] = 0;
+          return false;
+        }
+        t.tpConfirmCounts![key] += 1;
+        return t.tpConfirmCounts![key] >= requireBars;
+      };
+      const shortTpReady = (tp: number, key: "tp1" | "tp2" | "tp3") => {
+        if (bar.low > tp) {
+          t.tpConfirmCounts![key] = 0;
+          return false;
+        }
+        if (params.tpRequireClose && bar.close > tp) {
+          t.tpConfirmCounts![key] = 0;
+          return false;
+        }
+        t.tpConfirmCounts![key] += 1;
+        return t.tpConfirmCounts![key] >= requireBars;
+      };
+
+      const v62Trail = params.trailAfterTp1 === true;
 
       if (dir === "LONG") {
-        if (!t.tp1Hit && longTpHit(t.takeProfit1)) {
+        if (!t.tp1Hit && longTpReady(t.takeProfit1, "tp1")) {
           const closeSize = t.size * params.tp1ClosePct;
           const sliceRealized = partialClose(t, t.takeProfit1, closeSize, params, atr);
           realizedPnl += sliceRealized;
@@ -155,24 +184,48 @@ export async function runBacktest(
           if (params.beAfterTp1) {
             t.stopLoss = t.entryPrice + params.beBufferAtr * atr;
           }
+          if (v62Trail) {
+            // Initialize trailing-after-TP1 state at the TP1 level
+            t.trailingPeak = t.takeProfit1;
+            t.trailingStop =
+              t.takeProfit1 - (params.trailAfterTp1Atr ?? 2.0) * atr;
+          }
         }
-        if (t.tp1Hit && !t.tp2Hit && longTpHit(t.takeProfit2)) {
-          const closeSize = t.size * params.tp2ClosePct;
-          const sliceRealized = partialClose(t, t.takeProfit2, closeSize, params, atr);
-          realizedPnl += sliceRealized;
-          t.remainingSize -= closeSize;
-          t.tp2Hit = true;
-        }
-        if (t.tp2Hit && longTpHit(t.takeProfit3)) {
-          const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candles[i].date, atr);
-          realizedPnl += realized;
-          trades.push(t);
-          openTrade = null;
-          continue;
+        if (v62Trail && t.tp1Hit && t.remainingSize > 0) {
+          // Update trailing peak / stop on each bar after TP1
+          if (bar.high > (t.trailingPeak ?? -Infinity)) {
+            t.trailingPeak = bar.high;
+            t.trailingStop =
+              bar.high - (params.trailAfterTp1Atr ?? 2.0) * atr;
+          }
+          if (t.trailingStop !== null && t.trailingStop !== undefined && bar.low <= t.trailingStop) {
+            const realized = closeFull(
+              t, i, t.trailingStop, "Trailing Stop", params, candles[i].date, atr,
+            );
+            realizedPnl += realized;
+            trades.push(t);
+            openTrade = null;
+            continue;
+          }
+        } else if (!v62Trail) {
+          if (t.tp1Hit && !t.tp2Hit && longTpReady(t.takeProfit2, "tp2")) {
+            const closeSize = t.size * params.tp2ClosePct;
+            const sliceRealized = partialClose(t, t.takeProfit2, closeSize, params, atr);
+            realizedPnl += sliceRealized;
+            t.remainingSize -= closeSize;
+            t.tp2Hit = true;
+          }
+          if (t.tp2Hit && longTpReady(t.takeProfit3, "tp3")) {
+            const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candles[i].date, atr);
+            realizedPnl += realized;
+            trades.push(t);
+            openTrade = null;
+            continue;
+          }
         }
       } else {
         // SHORT
-        if (!t.tp1Hit && shortTpHit(t.takeProfit1)) {
+        if (!t.tp1Hit && shortTpReady(t.takeProfit1, "tp1")) {
           const closeSize = t.size * params.tp1ClosePct;
           const sliceRealized = partialClose(t, t.takeProfit1, closeSize, params, atr);
           realizedPnl += sliceRealized;
@@ -181,24 +234,45 @@ export async function runBacktest(
           if (params.beAfterTp1) {
             t.stopLoss = t.entryPrice - params.beBufferAtr * atr;
           }
+          if (v62Trail) {
+            t.trailingPeak = t.takeProfit1;
+            t.trailingStop =
+              t.takeProfit1 + (params.trailAfterTp1Atr ?? 2.0) * atr;
+          }
         }
-        if (t.tp1Hit && !t.tp2Hit && shortTpHit(t.takeProfit2)) {
-          const closeSize = t.size * params.tp2ClosePct;
-          const sliceRealized = partialClose(t, t.takeProfit2, closeSize, params, atr);
-          realizedPnl += sliceRealized;
-          t.remainingSize -= closeSize;
-          t.tp2Hit = true;
-        }
-        if (t.tp2Hit && shortTpHit(t.takeProfit3)) {
-          const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candles[i].date, atr);
-          realizedPnl += realized;
-          trades.push(t);
-          openTrade = null;
-          continue;
+        if (v62Trail && t.tp1Hit && t.remainingSize > 0) {
+          if (bar.low < (t.trailingPeak ?? Infinity)) {
+            t.trailingPeak = bar.low;
+            t.trailingStop =
+              bar.low + (params.trailAfterTp1Atr ?? 2.0) * atr;
+          }
+          if (t.trailingStop !== null && t.trailingStop !== undefined && bar.high >= t.trailingStop) {
+            const realized = closeFull(
+              t, i, t.trailingStop, "Trailing Stop", params, candles[i].date, atr,
+            );
+            realizedPnl += realized;
+            trades.push(t);
+            openTrade = null;
+            continue;
+          }
+        } else if (!v62Trail) {
+          if (t.tp1Hit && !t.tp2Hit && shortTpReady(t.takeProfit2, "tp2")) {
+            const closeSize = t.size * params.tp2ClosePct;
+            const sliceRealized = partialClose(t, t.takeProfit2, closeSize, params, atr);
+            realizedPnl += sliceRealized;
+            t.remainingSize -= closeSize;
+            t.tp2Hit = true;
+          }
+          if (t.tp2Hit && shortTpReady(t.takeProfit3, "tp3")) {
+            const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candles[i].date, atr);
+            realizedPnl += realized;
+            trades.push(t);
+            openTrade = null;
+            continue;
+          }
         }
       }
 
-      // Trailing stop disabled in V5 — no-op
       // Position still open: don't evaluate new signals
       continue;
     }

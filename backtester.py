@@ -132,6 +132,8 @@ class Backtester:
         v6_regime_rv_lookback_days: int = 24,
         v6_regime_rv_pctl_floor: float = 0.30,
         v6_regime_history_window_days: int = 365,
+        v6_regime_mode: str = "percentile",  # V6.1: "percentile" | "absolute"
+        v6_regime_rv_floor_absolute: float = 0.492,  # V6.1 calibrated P30 (BTC+ETH+SOL pooled, 2023-2025)
         use_v6_mtf_agreement: bool = False,  # require 30M trend bias to agree with 1H signal
         v6_mtf_lower_tf: str = "30m",
         v6_mtf_min_trend_bars: int = 6,
@@ -203,6 +205,10 @@ class Backtester:
         self.v6_regime_rv_lookback_days = v6_regime_rv_lookback_days
         self.v6_regime_rv_pctl_floor = v6_regime_rv_pctl_floor
         self.v6_regime_history_window_days = v6_regime_history_window_days
+        if v6_regime_mode not in ("percentile", "absolute"):
+            raise ValueError(f"v6_regime_mode must be 'percentile' or 'absolute', got {v6_regime_mode!r}")
+        self.v6_regime_mode = v6_regime_mode
+        self.v6_regime_rv_floor_absolute = float(v6_regime_rv_floor_absolute)
         self.use_v6_mtf_agreement = use_v6_mtf_agreement
         self.v6_mtf_lower_tf = v6_mtf_lower_tf
         self.v6_mtf_min_trend_bars = v6_mtf_min_trend_bars
@@ -280,8 +286,13 @@ class Backtester:
         Return (blocked, reason). True means skip this entry.
         Direction is "LONG" or "SHORT".
         """
-        if self._v6_regime and self._v6_regime.is_low_regime(self.v6_regime_rv_pctl_floor):
-            return True, "regime_low_vol"
+        if self._v6_regime:
+            if self.v6_regime_mode == "absolute":
+                if self._v6_regime.is_low_regime_absolute(self.v6_regime_rv_floor_absolute):
+                    return True, "regime_low_vol_absolute"
+            else:
+                if self._v6_regime.is_low_regime(self.v6_regime_rv_pctl_floor):
+                    return True, "regime_low_vol_pctl"
         if self._v6_mtf and not self._v6_mtf.allows(direction):
             return True, "mtf_disagree"
         return False, ""

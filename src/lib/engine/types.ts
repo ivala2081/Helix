@@ -21,6 +21,7 @@ export type ExitReason =
   | "TP3"
   | "Stop Loss"
   | "Hard Stop"
+  | "Trailing Stop"
   | "End of data";
 
 export interface Signal {
@@ -88,6 +89,11 @@ export interface Trade {
   pnlPct?: number;
   rMultiple?: number;
   barsHeld?: number;
+  // V6.2 — trailing-after-TP1 state
+  trailingStop?: number | null; // current trailing stop level after TP1
+  trailingPeak?: number | null; // running max-high (LONG) or min-low (SHORT)
+  // V6.2 — 2-bar TP close-confirm state
+  tpConfirmCounts?: { tp1: number; tp2: number; tp3: number };
 }
 
 export interface BacktestParams {
@@ -110,6 +116,13 @@ export interface BacktestParams {
   tp3ClosePct: number;
   // Trailing (DISABLED in V5 but kept for shape compat)
   useTrailing: boolean;
+  // V6.2 — trail-after-TP1 (replaces V5's TP1/TP2/TP3 mix).
+  // When true: TP1 locks tp1ClosePct of position at tp1AtrMult * ATR, then the
+  // remaining 90% rides a trailing stop at trailAfterTp1Atr * ATR below the
+  // running peak (for LONG) / above the running trough (for SHORT). TP2/TP3
+  // are ignored when this mode is active.
+  trailAfterTp1?: boolean;
+  trailAfterTp1Atr?: number;
   // Risk management improvements
   beAfterTp1: boolean;
   beBufferAtr: number;
@@ -126,6 +139,9 @@ export interface BacktestParams {
   // slippageAtrFrac: ATR-scaled additive slippage (in addition to slippagePct).
   // spreadAtrFrac: bid/ask spread cost as a fraction of ATR; applied to fills.
   tpRequireClose: boolean;
+  // V6.2 — require N consecutive bars to close beyond TP before the fill is
+  // accepted (1 = V5 behavior, 2 = V6.2 strict-realism behavior).
+  tpRequireCloseBars?: number;
   slippageAtrFrac: number;
   spreadAtrFrac: number;
   // Hard stop
