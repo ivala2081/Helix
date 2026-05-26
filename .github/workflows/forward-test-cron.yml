@@ -13,7 +13,12 @@ name: Forward Test Cron
 
 on:
   schedule:
-    - cron: "2 * * * *"
+    # Run 4 times per hour (every 15 min, offset by 2) to compensate for
+    # GitHub Actions scheduled-workflow latency. Candles close hourly at :00,
+    # so the :02 / :17 / :32 / :47 runs all process the same closed candle.
+    # Cron-tick is idempotent: ticks with no new candles exit in ~1.5s as a
+    # no-op. Free-tier compute use stays well under quota (public repo).
+    - cron: "2,17,32,47 * * * *"
   workflow_dispatch:
 
 jobs:
