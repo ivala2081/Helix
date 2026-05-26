@@ -33,13 +33,21 @@ import {
 const INTERVAL_MS = FORWARD_TEST_INTERVAL_MS;
 const MAX_PAGES = 10;
 
+/** Prepend a one-line tag header to a Telegram message so the recipient can
+ * tell V5 production trades from V6.2 paper-test trades at a glance. */
+function withTag(message: string, tag?: string): string {
+  if (!tag) return message;
+  return `<b>[${tag}]</b>\n${message}`;
+}
+
 interface EngineVariant {
   label: string;                 // "V5" / "V6.2" — for logs and Telegram
   portfoliosTable: string;       // live_portfolios | live_v6_2_portfolios
   tradesTable: string;           // live_trades | live_v6_2_trades
-  snapshotsTable: string;        // live_equity_snapshots | live_v6_2_equity_snapshots
+  snapshotsTable: string;        // live_v6_2_equity_snapshots | live_equity_snapshots
   params: BacktestParams;        // V5_DEFAULTS | V6_2_DEFAULTS
-  sendTelegram: boolean;         // V5 sends, V6.2 paper-test stays silent to avoid noise
+  sendTelegram: boolean;         // both variants send; V6.2 messages get an [V6.2] header
+  telegramTag?: string;          // prefix prepended to messages, e.g. "V6.2 · paper-test"
   extraUpdateFields?: Record<string, unknown>; // e.g. allocation_weight for V5
 }
 
@@ -59,7 +67,8 @@ const V6_2_VARIANT: EngineVariant = {
   tradesTable: "live_v6_2_trades",
   snapshotsTable: "live_v6_2_equity_snapshots",
   params: V6_2_DEFAULTS,
-  sendTelegram: false, // paper-test, keep Telegram quiet
+  sendTelegram: true,
+  telegramTag: "V6.2 · paper-test",
 };
 
 async function main() {
@@ -230,7 +239,7 @@ async function runEngineVariant(
 
         for (const event of result.events) {
           if (event.type === "tradeOpened" && event.trade && variant.sendTelegram) {
-            sendTelegramMessage(formatTradeOpened(symbol, event.trade));
+            sendTelegramMessage(withTag(formatTradeOpened(symbol, event.trade), variant.telegramTag));
           }
           if (event.type === "tradeClosed" && event.trade) {
             const t = event.trade;
@@ -253,13 +262,16 @@ async function runEngineVariant(
             });
             if (variant.sendTelegram) {
               sendTelegramMessage(
-                formatTradeClosed(
-                  symbol,
-                  t,
-                  state.equity,
-                  portfolio.initial_capital as number,
-                  tradesToInsert.filter((tr) => (tr.pnl as number) > 0).length,
-                  tradesToInsert.filter((tr) => (tr.pnl as number) <= 0).length,
+                withTag(
+                  formatTradeClosed(
+                    symbol,
+                    t,
+                    state.equity,
+                    portfolio.initial_capital as number,
+                    tradesToInsert.filter((tr) => (tr.pnl as number) > 0).length,
+                    tradesToInsert.filter((tr) => (tr.pnl as number) <= 0).length,
+                  ),
+                  variant.telegramTag,
                 ),
               );
             }
