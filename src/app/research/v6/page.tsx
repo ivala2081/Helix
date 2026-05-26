@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { HeroScene } from "@/components/ui/HeroScene";
+import { LiveV62EquityChart } from "@/components/live/LiveV62EquityChart";
 
 interface Phase {
   id: number;
@@ -173,6 +174,21 @@ interface V62LiveResponse {
   updatedAt?: string;
 }
 
+interface V5LiveResponse {
+  portfolios: Array<{
+    symbol: string;
+    initial_capital: number;
+    equity: number;
+    realized_pnl: number;
+  }>;
+  recentTrades: Array<{
+    symbol: string;
+    pnl: number;
+    r_multiple: number | null;
+  }>;
+  totalTradeCount: number;
+}
+
 const COIN_TINT: Record<string, string> = {
   BTCUSDT: "text-orange-400",
   ETHUSDT: "text-blue-400",
@@ -192,6 +208,7 @@ export default function V6Page() {
   const [v6Stress, setV6Stress] = useState<StressTests | null>(null);
   const [v6OOS, setV6OOS] = useState<V6OOSHoldout | null>(null);
   const [v62Live, setV62Live] = useState<V62LiveResponse | null>(null);
+  const [v5Live, setV5Live] = useState<V5LiveResponse | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -221,7 +238,8 @@ export default function V6Page() {
         r.ok ? r.json() : null,
       ),
       fetch("/api/live-v6-2").then((r) => (r.ok ? r.json() : null)),
-    ]).then(([s, b, wf, st, v6s, v6ab, v6wf, v6st, v6oos, v62live]) => {
+      fetch("/api/live").then((r) => (r.ok ? r.json() : null)),
+    ]).then(([s, b, wf, st, v6s, v6ab, v6wf, v6st, v6oos, v62live, v5live]) => {
       setStatus(s);
       setV5Baseline(b);
       setV5WF(wf);
@@ -232,6 +250,7 @@ export default function V6Page() {
       setV6Stress(v6st);
       setV6OOS(v6oos);
       setV62Live(v62live);
+      setV5Live(v5live);
     });
   }, []);
 
@@ -334,7 +353,7 @@ export default function V6Page() {
 
         {/* Phase 5 — V6.2 live paper-test */}
         {v62Live ? (
-          <V62LiveSection data={v62Live} />
+          <V62LiveSection data={v62Live} v5Live={v5Live} />
         ) : (
           <PendingSection
             label="Phase 5 · V6.2 live paper-test"
@@ -915,7 +934,13 @@ function V6OOSSection({ data }: { data: V6OOSHoldout }) {
   );
 }
 
-function V62LiveSection({ data }: { data: V62LiveResponse }) {
+function V62LiveSection({
+  data,
+  v5Live,
+}: {
+  data: V62LiveResponse;
+  v5Live: V5LiveResponse | null;
+}) {
   if (!data.initialized) {
     return (
       <section>
@@ -942,6 +967,18 @@ function V62LiveSection({ data }: { data: V62LiveResponse }) {
   const sumLoss = -trades.filter((t) => Number(t.pnl) <= 0).reduce((s, t) => s + Number(t.pnl), 0);
   const pf = sumLoss > 0 ? sumWin / sumLoss : null;
 
+  // V5 vs V6.2 head-to-head numbers (live)
+  const v5Portfolios = v5Live?.portfolios ?? [];
+  const v5TotalInitial = v5Portfolios.reduce((s, p) => s + Number(p.initial_capital ?? 0), 0);
+  const v5TotalEquity = v5Portfolios.reduce((s, p) => s + Number(p.equity ?? 0), 0);
+  const v5TotalPnl = v5Portfolios.reduce((s, p) => s + Number(p.realized_pnl ?? 0), 0);
+  const v5ReturnPct = v5TotalInitial > 0 ? (v5TotalEquity - v5TotalInitial) / v5TotalInitial * 100 : 0;
+  const v5N = v5Live?.totalTradeCount ?? 0;
+  const v5Trades = v5Live?.recentTrades ?? [];
+  const v5SumWin = v5Trades.filter((t) => Number(t.pnl) > 0).reduce((s, t) => s + Number(t.pnl), 0);
+  const v5SumLoss = -v5Trades.filter((t) => Number(t.pnl) <= 0).reduce((s, t) => s + Number(t.pnl), 0);
+  const v5Pf = v5SumLoss > 0 ? v5SumWin / v5SumLoss : null;
+
   return (
     <section>
       <SectionLabel>Phase 5 · V6.2 live paper-test · Supabase</SectionLabel>
@@ -949,7 +986,58 @@ function V62LiveSection({ data }: { data: V62LiveResponse }) {
         Real-time V6.2 portfolios running alongside V5 in the cron. Paper-test only, no capital. {n} trades closed so far.
       </p>
 
-      <div className="mt-4 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-4">
+      {/* V5 vs V6.2 head-to-head (live numbers) */}
+      {v5Live && (
+        <div className="mt-4 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/40 backdrop-blur-md">
+          <table className="w-full text-sm">
+            <thead className="border-b border-[var(--color-border)] bg-[var(--color-bg)]/40 text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
+              <tr>
+                <th className="px-3 py-2 text-left">Live head-to-head</th>
+                <th className="px-3 py-2 text-right">V5</th>
+                <th className="px-3 py-2 text-right">V6.2</th>
+                <th className="px-3 py-2 text-right">Δ</th>
+              </tr>
+            </thead>
+            <tbody className="font-mono tabular-nums">
+              <CompareRow
+                label="Aggregate return"
+                v5={`${v5ReturnPct >= 0 ? "+" : ""}${v5ReturnPct.toFixed(2)}%`}
+                v6={`${aggReturnPct >= 0 ? "+" : ""}${aggReturnPct.toFixed(2)}%`}
+                delta={aggReturnPct - v5ReturnPct}
+                deltaSuffix="pp"
+              />
+              <CompareRow
+                label="Realized PnL"
+                v5={`${v5TotalPnl >= 0 ? "+" : ""}$${v5TotalPnl.toFixed(0)}`}
+                v6={`${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(0)}`}
+                delta={totalPnl - v5TotalPnl}
+                deltaSuffix="$"
+              />
+              <CompareRow
+                label="Trades closed"
+                v5={String(v5N)}
+                v6={String(n)}
+                delta={n - v5N}
+                deltaSuffix=""
+              />
+              <CompareRow
+                label="Recent PF (last 50)"
+                v5={v5Pf == null ? "—" : v5Pf.toFixed(2)}
+                v6={pf == null ? "—" : pf.toFixed(2)}
+                delta={pf != null && v5Pf != null ? pf - v5Pf : null}
+                deltaSuffix=""
+              />
+            </tbody>
+          </table>
+          <div className="border-t border-[var(--color-border)]/40 bg-[var(--color-bg)]/20 px-3 py-2 text-[10px] text-[var(--color-muted)]/70">
+            Both engines run on the same candles in the same cron tick. V6.2 = V5 + trail-after-TP1 + strict realism.
+            Backtest claim: V6.2 OOS PF 2.03 / Sharpe 2.56. Live numbers update each cron tick.
+          </div>
+        </div>
+      )}
+
+      <SectionLabel>V6.2 aggregate</SectionLabel>
+      <div className="mt-2 grid grid-cols-2 gap-px overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-4">
         <Cell
           label="Aggregate return"
           value={`${aggReturnPct >= 0 ? "+" : ""}${aggReturnPct.toFixed(2)}%`}
@@ -968,13 +1056,19 @@ function V62LiveSection({ data }: { data: V62LiveResponse }) {
         />
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/40 backdrop-blur-md">
+      {/* V6.2 equity curve */}
+      <LiveV62EquityChart title="V6.2 per-symbol equity (1h)" />
+
+      {/* V6.2 per-symbol portfolios */}
+      <SectionLabel>V6.2 portfolios</SectionLabel>
+      <div className="mt-2 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/40 backdrop-blur-md">
         <table className="w-full text-sm">
           <thead className="border-b border-[var(--color-border)] bg-[var(--color-bg)]/40 text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
             <tr>
               <th className="px-3 py-2 text-left">Symbol</th>
               <th className="px-3 py-2 text-right">Equity</th>
               <th className="px-3 py-2 text-right">Realized PnL</th>
+              <th className="px-3 py-2 text-right">Return%</th>
               <th className="px-3 py-2 text-right">Bar #</th>
               <th className="px-3 py-2 text-right">Open?</th>
               <th className="px-3 py-2 text-right">Updated</th>
@@ -983,6 +1077,7 @@ function V62LiveSection({ data }: { data: V62LiveResponse }) {
           <tbody className="font-mono tabular-nums">
             {portfolios.map((p) => {
               const tint = COIN_TINT[p.symbol] ?? "text-[var(--color-muted)]";
+              const ret = p.initial_capital > 0 ? (p.equity - p.initial_capital) / p.initial_capital * 100 : 0;
               return (
                 <tr key={p.symbol} className="border-t border-[var(--color-border)]/50">
                   <td className={`px-3 py-2 font-semibold ${tint}`}>
@@ -991,6 +1086,9 @@ function V62LiveSection({ data }: { data: V62LiveResponse }) {
                   <td className="px-3 py-2 text-right">${Number(p.equity).toFixed(0)}</td>
                   <td className={`px-3 py-2 text-right ${Number(p.realized_pnl) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
                     {Number(p.realized_pnl) >= 0 ? "+" : ""}${Number(p.realized_pnl).toFixed(0)}
+                  </td>
+                  <td className={`px-3 py-2 text-right ${ret >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                    {ret >= 0 ? "+" : ""}{ret.toFixed(2)}%
                   </td>
                   <td className="px-3 py-2 text-right text-[var(--color-muted)]">{p.bar_index}</td>
                   <td className="px-3 py-2 text-right text-[10px] uppercase">
@@ -1006,12 +1104,102 @@ function V62LiveSection({ data }: { data: V62LiveResponse }) {
         </table>
       </div>
 
+      {/* V6.2 recent trades */}
       {trades.length > 0 && (
-        <div className="mt-3 text-[10px] text-[var(--color-muted)]/60">
-          {trades.length} most-recent trades summarized: WR {(wr * 100).toFixed(1)}%, {wins}W / {losses}L
+        <>
+          <SectionLabel>V6.2 recent trades · last {trades.length}</SectionLabel>
+          <div className="mt-2 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/40 backdrop-blur-md">
+            <table className="w-full text-sm">
+              <thead className="border-b border-[var(--color-border)] bg-[var(--color-bg)]/40 text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
+                <tr>
+                  <th className="px-3 py-2 text-left">Symbol</th>
+                  <th className="px-3 py-2 text-left">Dir</th>
+                  <th className="px-3 py-2 text-right">Entry</th>
+                  <th className="px-3 py-2 text-right">Exit</th>
+                  <th className="px-3 py-2 text-left">Reason</th>
+                  <th className="px-3 py-2 text-right">PnL</th>
+                  <th className="px-3 py-2 text-right">R</th>
+                  <th className="px-3 py-2 text-right">Closed</th>
+                </tr>
+              </thead>
+              <tbody className="font-mono tabular-nums">
+                {trades.slice(0, 20).map((t) => {
+                  const tint = COIN_TINT[t.symbol] ?? "text-[var(--color-muted)]";
+                  return (
+                    <tr key={t.id} className="border-t border-[var(--color-border)]/50">
+                      <td className={`px-3 py-2 font-semibold ${tint}`}>
+                        {t.symbol.replace("USDT", "")}
+                      </td>
+                      <td className={`px-3 py-2 text-[10px] uppercase ${t.direction === "LONG" ? "text-emerald-400" : "text-red-400"}`}>
+                        {t.direction}
+                      </td>
+                      <td className="px-3 py-2 text-right">${Number(t.entry_price).toFixed(2)}</td>
+                      <td className="px-3 py-2 text-right">${Number(t.exit_price).toFixed(2)}</td>
+                      <td className="px-3 py-2 text-[10px] text-[var(--color-muted)]">
+                        {t.exit_reason}
+                      </td>
+                      <td className={`px-3 py-2 text-right ${Number(t.pnl) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                        {Number(t.pnl) >= 0 ? "+" : ""}${Number(t.pnl).toFixed(2)}
+                      </td>
+                      <td className={`px-3 py-2 text-right ${t.r_multiple != null && Number(t.r_multiple) >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                        {t.r_multiple != null ? (Number(t.r_multiple) >= 0 ? "+" : "") + Number(t.r_multiple).toFixed(2) : "—"}
+                      </td>
+                      <td className="px-3 py-2 text-right text-[10px] text-[var(--color-muted)]/60">
+                        {new Date(Number(t.exit_ts)).toLocaleString()}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-2 text-[10px] text-[var(--color-muted)]/60">
+            Summary across last {trades.length}: WR {(wr * 100).toFixed(1)}% ({wins}W / {losses}L), PF {pf == null ? "—" : pf.toFixed(2)}
+          </div>
+        </>
+      )}
+
+      {trades.length === 0 && (
+        <div className="mt-4 rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/30 px-4 py-3 text-xs text-[var(--color-muted)]">
+          No V6.2 trades closed yet. Trade table populates after the first V6.2 trade exits via TP1, Trailing Stop, Stop Loss, or Hard Stop.
         </div>
       )}
     </section>
+  );
+}
+
+function CompareRow({
+  label,
+  v5,
+  v6,
+  delta,
+  deltaSuffix,
+}: {
+  label: string;
+  v5: string;
+  v6: string;
+  delta: number | null;
+  deltaSuffix: string;
+}) {
+  let deltaCls = "text-[var(--color-muted)]";
+  let deltaStr = "—";
+  if (delta != null) {
+    deltaCls = delta > 0 ? "text-emerald-400" : delta < 0 ? "text-red-400" : "text-[var(--color-muted)]";
+    const formatted =
+      Math.abs(delta) >= 100
+        ? delta.toFixed(0)
+        : Math.abs(delta) >= 10
+        ? delta.toFixed(1)
+        : delta.toFixed(2);
+    deltaStr = `${delta > 0 ? "+" : ""}${formatted}${deltaSuffix ? " " + deltaSuffix : ""}`;
+  }
+  return (
+    <tr className="border-t border-[var(--color-border)]/50">
+      <td className="px-3 py-2 text-xs text-white/90">{label}</td>
+      <td className="px-3 py-2 text-right text-[var(--color-muted)]">{v5}</td>
+      <td className="px-3 py-2 text-right text-white/95">{v6}</td>
+      <td className={`px-3 py-2 text-right ${deltaCls}`}>{deltaStr}</td>
+    </tr>
   );
 }
 
