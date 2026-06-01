@@ -119,11 +119,18 @@ export interface StrategyState {
 
 // ─── Step Result ────────────────────────────────────────────────────
 
-export type StepEventType = "tradeOpened" | "tradeClosed" | "equitySnapshot";
+export type StepEventType =
+  | "tradeOpened"
+  | "tradeClosed"
+  | "tpHit"
+  | "equitySnapshot";
 
 export interface StepEvent {
   type: StepEventType;
   trade?: Trade;
+  // For "tpHit" events: which partial target was reached (1 or 2). TP3 is a
+  // full close and arrives as a "tradeClosed" event with exitReason "TP3".
+  tpLevel?: 1 | 2;
 }
 
 export interface StepResult {
@@ -424,6 +431,7 @@ export function stepCandle(
           t.trailingStop =
             t.takeProfit1 - (params.trailAfterTp1Atr ?? 2.0) * atr;
         }
+        events.push({ type: "tpHit", tpLevel: 1, trade: { ...t } });
       }
       if (v62Trail && t.tp1Hit && t.remainingSize > 0) {
         if (candle.high > (t.trailingPeak ?? -Infinity)) {
@@ -450,6 +458,7 @@ export function stepCandle(
           state.realizedPnl += partialClose(t, t.takeProfit2, closeSize, params, atr);
           t.remainingSize -= closeSize;
           t.tp2Hit = true;
+          events.push({ type: "tpHit", tpLevel: 2, trade: { ...t } });
         }
         if (t.tp2Hit && longTpReady(t.takeProfit3, "tp3")) {
           const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candle.date, atr);
@@ -475,6 +484,7 @@ export function stepCandle(
           t.trailingStop =
             t.takeProfit1 + (params.trailAfterTp1Atr ?? 2.0) * atr;
         }
+        events.push({ type: "tpHit", tpLevel: 1, trade: { ...t } });
       }
       if (v62Trail && t.tp1Hit && t.remainingSize > 0) {
         if (candle.low < (t.trailingPeak ?? Infinity)) {
@@ -501,6 +511,7 @@ export function stepCandle(
           state.realizedPnl += partialClose(t, t.takeProfit2, closeSize, params, atr);
           t.remainingSize -= closeSize;
           t.tp2Hit = true;
+          events.push({ type: "tpHit", tpLevel: 2, trade: { ...t } });
         }
         if (t.tp2Hit && shortTpReady(t.takeProfit3, "tp3")) {
           const realized = closeFull(t, i, t.takeProfit3, "TP3", params, candle.date, atr);

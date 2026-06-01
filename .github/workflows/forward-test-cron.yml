@@ -9,7 +9,8 @@ name: Forward Test Cron
 #   SUPABASE_SERVICE_ROLE_KEY   — Supabase service-role key (server-side write)
 # Optional secrets:
 #   TELEGRAM_BOT_TOKEN          — for trade alerts
-#   TELEGRAM_CHAT_ID            — for trade alerts
+#   TELEGRAM_CHAT_ID            — private monitoring chat (V5 + V6.2, English)
+#   TELEGRAM_PUBLIC_CHAT_ID     — public member channel @ArikanTrade (V5 only, Turkish)
 
 on:
   schedule:
@@ -47,4 +48,5 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_PUBLIC_CHAT_ID: ${{ secrets.TELEGRAM_PUBLIC_CHAT_ID }}
         run: npm run cron-tick

@@ -6,12 +6,17 @@ import type { Trade } from "./engine/types";
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN ?? "";
 const CHAT_ID = process.env.TELEGRAM_CHAT_ID ?? "";
+// Second destination: the PUBLIC, member-facing channel (e.g. @ArikanTrade).
+// Only V5 production trades are routed here, in Turkish "trade plan" format.
+// The private CHAT_ID keeps the raw English monitoring stream (V5 + V6.2).
+const PUBLIC_CHAT_ID = process.env.TELEGRAM_PUBLIC_CHAT_ID ?? "";
 
 export const TELEGRAM_ENABLED = Boolean(BOT_TOKEN && CHAT_ID);
+export const TELEGRAM_PUBLIC_ENABLED = Boolean(BOT_TOKEN && PUBLIC_CHAT_ID);
 
-/** Send an HTML message to the configured Telegram chat. Never throws. */
-export function sendTelegramMessage(text: string): void {
-  if (!TELEGRAM_ENABLED) return;
+/** Low-level send to a specific chat. Never throws. */
+function send(text: string, chatId: string): void {
+  if (!BOT_TOKEN || !chatId) return;
 
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
   const controller = new AbortController();
@@ -21,7 +26,7 @@ export function sendTelegramMessage(text: string): void {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      chat_id: CHAT_ID,
+      chat_id: chatId,
       text,
       parse_mode: "HTML",
       disable_web_page_preview: true,
@@ -32,6 +37,16 @@ export function sendTelegramMessage(text: string): void {
       console.warn("[telegram] send failed:", (err as Error).message),
     )
     .finally(() => clearTimeout(timeout));
+}
+
+/** Send an HTML message to the private monitoring chat. Never throws. */
+export function sendTelegramMessage(text: string): void {
+  send(text, CHAT_ID);
+}
+
+/** Send an HTML message to the public member-facing channel. Never throws. */
+export function sendTelegramPublic(text: string): void {
+  send(text, PUBLIC_CHAT_ID);
 }
 
 // ── Formatting helpers ───────────────────────────────────────────────
@@ -154,6 +169,120 @@ export function formatTradeClosed(
   }
 
   lines.push(FOOTER);
+  return lines.join("\n");
+}
+
+// ── Public channel (member-facing, Turkish) ──────────────────────────
+// These power the @ArikanTrade channel. The model is "trade plan + manage it
+// yourself", NOT "mirror my exact partial sizes". We publish entry, SL and 3
+// TPs up front, then narrate TP1/TP2 milestones and the final close. Every
+// signal carries an explicit risk rule and an honest disclaimer so a follower
+// who blows up has demonstrably ignored a stated rule.
+
+/** Late-entry guard price: don't chase past 20% of the way toward TP1. */
+function chaseLimit(trade: Trade): number {
+  const frac = 0.2;
+  return trade.direction === "LONG"
+    ? trade.entryPrice + frac * (trade.takeProfit1 - trade.entryPrice)
+    : trade.entryPrice - frac * (trade.entryPrice - trade.takeProfit1);
+}
+
+/** New-trade signal for the public channel: entry plan + risk rules. */
+export function formatPublicSignal(symbol: string, trade: Trade): string {
+  const icon = trade.direction === "LONG" ? "📈" : "📉";
+  const dirTr = trade.direction === "LONG" ? "LONG (AL)" : "SHORT (SAT)";
+
+  return [
+    HEADER,
+    `${icon}  <b>${base(symbol)} · ${dirTr}</b>`,
+    HEADER,
+    ``,
+    `🎯 <b>Giriş</b>     <code>$${fmtPrice(symbol, trade.entryPrice)}</code>`,
+    `🛑 <b>Stop (SL)</b> <code>$${fmtPrice(symbol, trade.initialStopLoss)}</code>  <i>${pctDiff(trade.entryPrice, trade.initialStopLoss)}%</i>`,
+    ``,
+    `${SECTION}  Hedefler (istediğinde çıkabilirsin)  ${SECTION}`,
+    `TP1  <code>$${fmtPrice(symbol, trade.takeProfit1)}</code>  <i>${pctDiff(trade.entryPrice, trade.takeProfit1)}%</i>`,
+    `TP2  <code>$${fmtPrice(symbol, trade.takeProfit2)}</code>  <i>${pctDiff(trade.entryPrice, trade.takeProfit2)}%</i>`,
+    `TP3  <code>$${fmtPrice(symbol, trade.takeProfit3)}</code>  <i>${pctDiff(trade.entryPrice, trade.takeProfit3)}%</i>`,
+    ``,
+    `📐 <b>Risk kuralı:</b> Tek işleme sermayenin en fazla <b>%1–2</b>'si. Boyutu SL mesafesine göre ayarla — sabit lot DEĞİL, kaldıraçta abartma.`,
+    `⏳ <b>Geç kalma:</b> Fiyat <code>$${fmtPrice(symbol, chaseLimit(trade))}</code> seviyesini geçtiyse bu işleme girme, kovalama.`,
+  ].join("\n");
+}
+
+/** TP1 / TP2 milestone narration for the public channel. */
+export function formatPublicTpHit(
+  symbol: string,
+  trade: Trade,
+  level: 1 | 2,
+): string {
+  const tpPrice = level === 1 ? trade.takeProfit1 : trade.takeProfit2;
+  const gain = pctDiff(trade.entryPrice, tpPrice);
+
+  const lines = [
+    `✅  <b>${base(symbol)} · TP${level} geldi!</b>  <code>$${fmtPrice(symbol, tpPrice)}</code>  <b>${gain}%</b>`,
+  ];
+
+  if (level === 1) {
+    lines.push(
+      ``,
+      `İsteyen kârın bir kısmını (örn. yarısını) cebe atsın ve <b>stop'unu girişe çeksin</b> → artık <b>risksiz işlem</b>. Kalanı TP2/TP3'e taşı.`,
+    );
+  } else {
+    lines.push(
+      ``,
+      `Güzel gidiyor. İsteyen burada da kısmi alır; kalan pozisyon TP3'e doğru.`,
+    );
+  }
+
+  return lines.join("\n");
+}
+
+/** Final close for the public channel — TP3 celebration / honest loss. */
+export function formatPublicClose(
+  symbol: string,
+  trade: Trade,
+  winCount?: number,
+  lossCount?: number,
+): string {
+  const pnlPct = trade.pnlPct ?? 0;
+  const pnlPctSign = pnlPct >= 0 ? "+" : "";
+  const r = (trade.rMultiple ?? 0).toFixed(2);
+  const isTp3 = trade.exitReason === "TP3";
+  const win = (trade.pnl ?? 0) > 0;
+
+  const lines: string[] = [];
+
+  if (isTp3) {
+    lines.push(
+      HEADER,
+      `🏆  <b>${base(symbol)} · TP3 — TAM İSABET!</b>`,
+      HEADER,
+      ``,
+      `<code>$${fmtPrice(symbol, trade.entryPrice)}  →  $${fmtPrice(symbol, trade.exitPrice ?? trade.takeProfit3)}</code>`,
+      `Tüm hedefler vuruldu 🎯🎯🎯  <b>${pnlPctSign}${pnlPct.toFixed(2)}%</b>  (<code>${r}R</code>)`,
+      `Süre: <i>${barsToHuman(trade.barsHeld ?? 0)}</i>`,
+    );
+  } else if (win) {
+    lines.push(
+      `✅  <b>${base(symbol)} · Kârla kapandı</b>  <b>${pnlPctSign}${pnlPct.toFixed(2)}%</b>  (<code>${r}R</code>)`,
+      `<code>$${fmtPrice(symbol, trade.entryPrice)}  →  $${fmtPrice(symbol, trade.exitPrice ?? 0)}</code>`,
+    );
+  } else {
+    lines.push(
+      `❌  <b>${base(symbol)} · SL oldu</b>  <b>${pnlPctSign}${pnlPct.toFixed(2)}%</b>  (<code>${r}R</code>)`,
+      `<code>$${fmtPrice(symbol, trade.entryPrice)}  →  $${fmtPrice(symbol, trade.exitPrice ?? 0)}</code>`,
+      ``,
+      `Risk yönetimi tam da bunun için var. SL'i baştan verdik, planlı kayıp. Tek işlemde %1–2 risk → bu işlem seni yormaz.`,
+    );
+  }
+
+  if (winCount !== undefined && lossCount !== undefined) {
+    const total = winCount + lossCount;
+    const wr = total > 0 ? Math.round((winCount / total) * 100) : 0;
+    lines.push(``, `📊 Genel sicil: <b>${winCount}G · ${lossCount}K</b>  (%${wr})`);
+  }
+
   return lines.join("\n");
 }
 

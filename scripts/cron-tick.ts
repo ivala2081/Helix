@@ -17,9 +17,13 @@ import { FORWARD_TEST_INTERVAL_MS } from "../src/lib/engine/live-config";
 import type { BacktestParams, Candle } from "../src/lib/engine/types";
 import {
   sendTelegramMessage,
+  sendTelegramPublic,
   formatTradeOpened,
   formatTradeClosed,
   formatCronSummary,
+  formatPublicSignal,
+  formatPublicTpHit,
+  formatPublicClose,
 } from "../src/lib/telegram";
 
 // Live = backtest mode (2026-05-25). The strategy runs with V5_DEFAULTS,
@@ -48,6 +52,7 @@ interface EngineVariant {
   params: BacktestParams;        // V5_DEFAULTS | V6_2_DEFAULTS
   sendTelegram: boolean;         // both variants send; V6.2 messages get an [V6.2] header
   telegramTag?: string;          // prefix prepended to messages, e.g. "V6.2 · paper-test"
+  publicChannel?: boolean;       // also broadcast to the public @ArikanTrade channel (V5 only)
   extraUpdateFields?: Record<string, unknown>; // e.g. allocation_weight for V5
 }
 
@@ -58,6 +63,7 @@ const V5_VARIANT: EngineVariant = {
   snapshotsTable: "live_equity_snapshots",
   params: V5_DEFAULTS,
   sendTelegram: true,
+  publicChannel: true,
   extraUpdateFields: { allocation_weight: 0.20 },
 };
 
@@ -206,6 +212,17 @@ async function runEngineVariant(
   let candlesProcessed = 0;
   let tradesClosed = 0;
 
+  // Cumulative win/loss across the whole strategy history — only needed for the
+  // public channel's honest "genel sicil" line. Fetched once, then incremented
+  // as trades close during this run so the current trade is counted.
+  let pubWins = 0;
+  let pubLosses = 0;
+  if (variant.publicChannel) {
+    const rec = await fetchRecord(db, variant.tradesTable);
+    pubWins = rec.wins;
+    pubLosses = rec.losses;
+  }
+
   for (const portfolio of portfolios) {
     const symbol = portfolio.symbol as string;
     if (fetchErrors.has(symbol)) {
@@ -238,8 +255,16 @@ async function runEngineVariant(
         candlesProcessed++;
 
         for (const event of result.events) {
-          if (event.type === "tradeOpened" && event.trade && variant.sendTelegram) {
-            sendTelegramMessage(withTag(formatTradeOpened(symbol, event.trade), variant.telegramTag));
+          if (event.type === "tradeOpened" && event.trade) {
+            if (variant.sendTelegram) {
+              sendTelegramMessage(withTag(formatTradeOpened(symbol, event.trade), variant.telegramTag));
+            }
+            if (variant.publicChannel) {
+              sendTelegramPublic(formatPublicSignal(symbol, event.trade));
+            }
+          }
+          if (event.type === "tpHit" && event.trade && event.tpLevel && variant.publicChannel) {
+            sendTelegramPublic(formatPublicTpHit(symbol, event.trade, event.tpLevel));
           }
           if (event.type === "tradeClosed" && event.trade) {
             const t = event.trade;
@@ -274,6 +299,11 @@ async function runEngineVariant(
                   variant.telegramTag,
                 ),
               );
+            }
+            if (variant.publicChannel) {
+              if ((t.pnl ?? 0) > 0) pubWins++;
+              else pubLosses++;
+              sendTelegramPublic(formatPublicClose(symbol, t, pubWins, pubLosses));
             }
           }
         }
@@ -333,6 +363,27 @@ async function runEngineVariant(
   }
 
   return { candlesProcessed, tradesClosed, results };
+}
+
+/** Cumulative win/loss counts for a variant's trades table (head-count only,
+ * no row transfer). Used for the public channel's "genel sicil" line. */
+async function fetchRecord(
+  db: SupabaseClient,
+  tradesTable: string,
+): Promise<{ wins: number; losses: number }> {
+  try {
+    const winsQ = await db
+      .from(tradesTable)
+      .select("*", { count: "exact", head: true })
+      .gt("pnl", 0);
+    const lossesQ = await db
+      .from(tradesTable)
+      .select("*", { count: "exact", head: true })
+      .lte("pnl", 0);
+    return { wins: winsQ.count ?? 0, losses: lossesQ.count ?? 0 };
+  } catch {
+    return { wins: 0, losses: 0 };
+  }
 }
 
 async function fetchClosedCandles(
