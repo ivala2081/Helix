@@ -44,12 +44,6 @@ export default async function MarketingLayout({
               {dict.nav.home}
             </Link>
             <Link
-              href="/backtest"
-              className="rounded-md px-3 py-1.5 text-sm text-[var(--color-muted)] transition-colors hover:bg-[var(--color-surface)] hover:text-white"
-            >
-              {dict.nav.backtest}
-            </Link>
-            <Link
               href="/live"
               className="rounded-md px-3 py-1.5 text-sm text-[var(--color-muted)] transition-colors hover:bg-[var(--color-surface)] hover:text-white"
             >

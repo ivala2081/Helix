@@ -23,7 +23,7 @@ export default function StrategyLab() {
           <h1 className="text-2xl font-semibold text-white">Strateji Laboratuvarı</h1>
         </div>
         <Link
-          href="/backtest"
+          href="/admin/backtest"
           className="inline-flex items-center gap-2 rounded-md border border-[var(--color-border)] px-3 py-2 text-sm text-white transition-colors hover:bg-[var(--color-surface)]"
         >
           <Play size={15} /> Backtest çalıştır

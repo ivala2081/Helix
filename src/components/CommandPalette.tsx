@@ -3,14 +3,7 @@
 import { Command } from "cmdk";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import {
-  Activity,
-  ArrowRight,
-  BarChart3,
-  Home,
-  LineChart,
-  Search,
-} from "lucide-react";
+import { Activity, ArrowRight, Home, Search } from "lucide-react";
 
 // Cmd-K / Ctrl-K command palette. Listens for the keyboard shortcut globally.
 // Each item navigates to a route, optionally with a query string to pre-fill
@@ -26,12 +19,6 @@ const ITEMS: {
   { group: "Navigate", label: "Home", icon: <Home className="h-4 w-4" />, href: "/" },
   {
     group: "Navigate",
-    label: "Backtest",
-    icon: <BarChart3 className="h-4 w-4" />,
-    href: "/backtest",
-  },
-  {
-    group: "Navigate",
     label: "Forward Test",
     icon: <Activity className="h-4 w-4" />,
     href: "/live",
@@ -41,27 +28,6 @@ const ITEMS: {
     label: "About",
     icon: <Activity className="h-4 w-4" />,
     href: "/about",
-  },
-  {
-    group: "Quick run",
-    label: "Run BTCUSDT 1H · 2023→today",
-    icon: <LineChart className="h-4 w-4" />,
-    href: "/backtest?symbol=BTCUSDT&interval=1h&start=2023-01-01",
-    hint: "V5",
-  },
-  {
-    group: "Quick run",
-    label: "Run ETHUSDT 1H · 2023→today",
-    icon: <LineChart className="h-4 w-4" />,
-    href: "/backtest?symbol=ETHUSDT&interval=1h&start=2023-01-01",
-    hint: "V5",
-  },
-  {
-    group: "Quick run",
-    label: "Run SOLUSDT 1H · 2023→today",
-    icon: <LineChart className="h-4 w-4" />,
-    href: "/backtest?symbol=SOLUSDT&interval=1h&start=2023-01-01",
-    hint: "V5",
   },
 ];
 

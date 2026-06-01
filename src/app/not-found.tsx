@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BarChart3, Home } from "lucide-react";
+import { ArrowRight, Home } from "lucide-react";
 import { getCurrentDictionary } from "@/lib/i18n/getDictionary";
 import { Logo } from "@/components/brand/Logo";
 
@@ -30,11 +30,10 @@ export default async function NotFound() {
           {t.goHome}
         </Link>
         <Link
-          href="/backtest"
+          href="/live"
           className="inline-flex h-11 items-center gap-2 rounded-md bg-emerald-500 px-5 text-sm font-semibold text-black shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-400 hover:shadow-emerald-500/40"
         >
-          <BarChart3 className="h-4 w-4" />
-          {t.runBacktest}
+          {dict.nav.live}
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       </div>

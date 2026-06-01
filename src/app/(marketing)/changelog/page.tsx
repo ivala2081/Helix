@@ -183,12 +183,6 @@ export default function ChangelogPage() {
             Watch live
           </Link>
           <Link
-            href="/backtest"
-            className="font-medium text-[var(--color-muted)] transition-colors hover:text-white"
-          >
-            Run backtest
-          </Link>
-          <Link
             href="/about"
             className="font-medium text-[var(--color-muted)] transition-colors hover:text-white"
           >

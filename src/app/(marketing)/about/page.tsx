@@ -269,12 +269,6 @@ export default function AboutPage() {
               >
                 Watch live
               </Link>
-              <Link
-                href="/backtest"
-                className="font-medium text-[var(--color-muted)] transition-colors hover:text-white"
-              >
-                Run backtest
-              </Link>
             </div>
           </div>
         </div>

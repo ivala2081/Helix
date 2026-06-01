@@ -28,12 +28,6 @@ export async function Footer() {
               {t.links.live}
             </Link>
             <Link
-              href="/backtest"
-              className="transition-colors hover:text-white"
-            >
-              {t.links.backtest}
-            </Link>
-            <Link
               href="/about"
               className="transition-colors hover:text-white"
             >

@@ -81,12 +81,6 @@ export function MobileNav({ nav }: { nav: Nav }) {
                   {nav.home}
                 </Link>
                 <Link
-                  href="/backtest"
-                  className="flex h-12 items-center rounded-md px-3 text-base text-white hover:bg-[var(--color-surface)]"
-                >
-                  {nav.backtest}
-                </Link>
-                <Link
                   href="/live"
                   className="flex h-12 items-center rounded-md px-3 text-base text-white hover:bg-[var(--color-surface)]"
                 >
