@@ -11,14 +11,6 @@ const USDT_WALLET =
 type Subscription = { id: string; status: string };
 type Portfolio = { initial_capital: number; equity: number; started_at: string };
 type Trade = { pnl: number };
-type RecentTrade = {
-  symbol: string;
-  direction: string;
-  pnl: number;
-  pnl_pct: number;
-  exit_reason: string;
-  exit_ts: number;
-};
 
 export default async function AppDashboard() {
   const supabase = await createServerSupabase();
@@ -26,7 +18,7 @@ export default async function AppDashboard() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [subRes, portRes, tradesRes, recentRes] = await Promise.all([
+  const [subRes, portRes, tradesRes] = await Promise.all([
     supabase
       .from("subscriptions")
       .select("id, status")
@@ -37,18 +29,12 @@ export default async function AppDashboard() {
       .select("initial_capital, equity, started_at")
       .eq("status", "active"),
     supabase.from("live_trades").select("pnl"),
-    supabase
-      .from("live_trades")
-      .select("symbol, direction, pnl, pnl_pct, exit_reason, exit_ts")
-      .order("exit_ts", { ascending: false })
-      .limit(8),
   ]);
 
   const sub = (subRes.data?.[0] ?? null) as Subscription | null;
   const active = sub?.status === "active";
   const portfolios = (portRes.data ?? []) as Portfolio[];
   const trades = (tradesRes.data ?? []) as Trade[];
-  const recent = (recentRes.data ?? []) as RecentTrade[];
 
   // ── Real forward-test metrics ──
   const totalEquity = portfolios.reduce((s, p) => s + p.equity, 0);
@@ -126,61 +112,6 @@ export default async function AppDashboard() {
           </div>
           <SubscriptionRequest wallet={USDT_WALLET} />
         </div>
-      )}
-
-      {/* ── Recent trades ── */}
-      {recent.length > 0 && (
-        <section>
-          <SectionLabel>Son işlemler</SectionLabel>
-          <div className="mt-3 overflow-hidden rounded-xl border border-[var(--color-border)]">
-            <table className="w-full text-sm">
-              <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface)]/30 text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
-                <tr>
-                  <th className="px-3 py-2 text-left">Parite</th>
-                  <th className="px-3 py-2 text-left">Yön</th>
-                  <th className="px-3 py-2 text-left">Sonuç</th>
-                  <th className="px-3 py-2 text-right">Getiri</th>
-                  <th className="hidden px-3 py-2 text-right sm:table-cell">Tarih</th>
-                </tr>
-              </thead>
-              <tbody className="font-mono tabular-nums">
-                {recent.map((t, i) => {
-                  const win = t.pnl > 0;
-                  return (
-                    <tr key={i} className="border-t border-[var(--color-border)]/50">
-                      <td className="px-3 py-2 font-semibold text-white">
-                        {t.symbol.replace("USDT", "")}
-                      </td>
-                      <td className="px-3 py-2">
-                        <span
-                          className={`rounded-sm px-1.5 py-0.5 text-[10px] font-semibold ${
-                            t.direction === "LONG"
-                              ? "bg-emerald-500/15 text-emerald-400"
-                              : "bg-red-500/15 text-red-400"
-                          }`}
-                        >
-                          {t.direction}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 text-xs text-[var(--color-muted)]">
-                        {t.exit_reason}
-                      </td>
-                      <td
-                        className={`px-3 py-2 text-right ${win ? "text-emerald-400" : "text-red-400"}`}
-                      >
-                        {t.pnl_pct >= 0 ? "+" : ""}
-                        {t.pnl_pct.toFixed(2)}%
-                      </td>
-                      <td className="hidden px-3 py-2 text-right text-[10px] text-[var(--color-muted)]/60 sm:table-cell">
-                        {new Date(t.exit_ts).toLocaleDateString("tr-TR")}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </section>
       )}
 
       <p className="text-center text-[10px] leading-relaxed text-[var(--color-muted)]/50">
