@@ -159,11 +159,21 @@ export default async function AppDashboard() {
 
       {/* ── Bot status / subscription (contextual) ── */}
       {active ? (
-        <StatusCard
-          tone="emerald"
-          title="Aboneliğin aktif ✓"
-          body="Borsa hesabını bağla ve botu çalıştır. (Bağlama ekranı yakında.)"
-        />
+        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-5">
+          <h2 className="text-lg font-semibold text-emerald-300">
+            Aboneliğin aktif ✓
+          </h2>
+          <p className="mt-1 text-sm text-[var(--color-muted)]">
+            Borsa hesabını bağla ve botu çalıştır.
+          </p>
+          <Link
+            href="/app/baglanti"
+            className="mt-4 inline-flex items-center gap-2 rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-black hover:bg-emerald-400"
+          >
+            Borsa Bağla
+            <ArrowRight size={16} />
+          </Link>
+        </div>
       ) : sub?.status === "pending" ? (
         <StatusCard
           tone="amber"
