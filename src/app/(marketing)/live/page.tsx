@@ -4,9 +4,6 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { HeroScene } from "@/components/ui/HeroScene";
 import { LiveEquityChart } from "@/components/live/LiveEquityChart";
-import { LiveTradeAnalytics } from "@/components/live/LiveTradeAnalytics";
-import { PortfolioAggregate } from "@/components/live/PortfolioAggregate";
-import { QuantMonitor } from "@/components/live/QuantMonitor";
 
 interface OpenTrade {
   direction: "LONG" | "SHORT";
@@ -217,14 +214,6 @@ export default function LivePage() {
               </div>
             </section>
 
-            {/* ── Portfolio Aggregate ───────────────────────────── */}
-            <section>
-              <SectionLabel>Aggregate analytics</SectionLabel>
-              <div className="mt-4">
-                <PortfolioAggregate />
-              </div>
-            </section>
-
             {/* ── Open positions ────────────────────────────────── */}
             {openPositions.length > 0 && (
               <section>
@@ -302,22 +291,6 @@ export default function LivePage() {
               </section>
             )}
 
-            {/* ── Quant Monitor ─────────────────────────────────── */}
-            <section>
-              <SectionLabel>Quant monitor · live vs backtest</SectionLabel>
-              <div className="mt-4">
-                <QuantMonitor />
-              </div>
-            </section>
-
-            {/* ── Trade Analytics (full table) ──────────────────── */}
-            <section>
-              <SectionLabel>Trade history</SectionLabel>
-              <div className="mt-4">
-                <LiveTradeAnalytics />
-              </div>
-            </section>
-
             {/* ── Cron health ───────────────────────────────────── */}
             {data.lastCronRun && (
               <div className="text-center font-mono text-[10px] uppercase tracking-wider text-[var(--color-muted)]/60">
@@ -327,6 +300,23 @@ export default function LivePage() {
             )}
           </>
         )}
+
+        {/* CTA */}
+        <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent p-8 text-center">
+          <h2 className="text-xl font-semibold text-white">
+            Bu stratejiyi kendi hesabında çalıştır
+          </h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-[var(--color-muted)]">
+            Helix Bot aynı stratejiyi senin Binance hesabında 7/24 otomatik
+            işletir. Paran sende kalır.
+          </p>
+          <Link
+            href="/signup"
+            className="mt-5 inline-flex items-center gap-2 rounded-md bg-emerald-500 px-6 py-3 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
+          >
+            Hesap oluştur →
+          </Link>
+        </div>
 
         {/* Disclaimer */}
         <p className="mx-auto max-w-2xl text-center text-[10px] leading-relaxed text-[var(--color-muted)]/60">
