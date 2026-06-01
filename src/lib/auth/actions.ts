@@ -28,13 +28,28 @@ export async function signUpAction(
 ): Promise<AuthState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
+  const phone = String(formData.get("phone") ?? "").trim();
+  const telegramId = String(formData.get("telegram_id") ?? "").trim();
+  const referredByCode = String(formData.get("referred_by_code") ?? "").trim();
   const next = String(formData.get("next") ?? "/app") || "/app";
 
   if (!email || !password) return { error: "E-posta ve şifre gerekli." };
   if (password.length < 8) return { error: "Şifre en az 8 karakter olmalı." };
+  if (!phone) return { error: "Telefon numarası gerekli." };
 
   const supabase = await createServerSupabase();
-  const { data, error } = await supabase.auth.signUp({ email, password });
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      // Read by the handle_new_user() trigger to populate the profile row.
+      data: {
+        phone,
+        telegram_id: telegramId || null,
+        referred_by_code: referredByCode || null,
+      },
+    },
+  });
   if (error) return { error: "Kayıt başarısız: " + error.message };
 
   // If email confirmation is disabled, a session is returned → straight in.
