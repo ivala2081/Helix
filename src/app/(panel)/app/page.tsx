@@ -1,12 +1,9 @@
 import type { Metadata } from "next";
-import { Activity } from "lucide-react";
+import Link from "next/link";
+import { Activity, ArrowRight } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
-import { SubscriptionRequest } from "@/components/panel/SubscriptionRequest";
 
 export const metadata: Metadata = { title: "Panel" };
-
-const USDT_WALLET =
-  process.env.NEXT_PUBLIC_USDT_WALLET ?? "TXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 
 type Subscription = { id: string; status: string };
 type UserTrade = {
@@ -174,18 +171,27 @@ export default async function AppDashboard() {
           body="USDT işlemini aldık. Onaylandığında bot otomatik aktifleşir, genelde birkaç saat içinde."
         />
       ) : (
-        <div className="space-y-3">
-          <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent p-5">
-            <h2 className="text-lg font-semibold text-white">
-              Botu kendi hesabında çalıştır
-            </h2>
-            <p className="mt-1 text-sm text-[var(--color-muted)]">
-              Helix Bot, Binance/Bybit hesabında otomatik işlem açar. Paranı biz
-              tutmayız — anahtarın yalnızca işlem izniyle, çekim yetkisi olmadan
-              bağlanır.
-            </p>
-          </div>
-          <SubscriptionRequest wallet={USDT_WALLET} />
+        <div className="overflow-hidden rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/15 via-emerald-500/5 to-transparent p-6">
+          <h2 className="text-xl font-semibold text-white">
+            Botu kendi hesabında çalıştır
+          </h2>
+          <p className="mt-2 max-w-md text-sm text-[var(--color-muted)]">
+            Helix Bot, Binance/Bybit hesabında 7/24 otomatik işlem açar. Paranı
+            biz tutmayız — anahtar yalnızca işlem izniyle, çekim yetkisi olmadan
+            bağlanır.
+          </p>
+          <ul className="mt-4 space-y-1.5 text-sm text-[var(--color-muted)]">
+            <li>✓ Tam otomatik · 7/24 · V5 stratejisi</li>
+            <li>✓ Paran kendi borsanda kalır (non-custodial)</li>
+            <li>✓ Giriş, SL ve TP&apos;ler bot tarafından yönetilir</li>
+          </ul>
+          <Link
+            href="/app/paket"
+            className="mt-5 inline-flex items-center gap-2 rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
+          >
+            Satın Al · 499 USDT
+            <ArrowRight size={16} />
+          </Link>
         </div>
       )}
 
