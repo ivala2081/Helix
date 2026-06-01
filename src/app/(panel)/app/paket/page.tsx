@@ -8,7 +8,6 @@ import {
   ShieldCheck,
   Lock,
   Wallet,
-  Check,
   Zap,
 } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
@@ -35,15 +34,6 @@ const STEPS = [
     title: "3 · Sen izle",
     body: "Her işlem panelinde anlık görünür. Bakiye, K/Z, açık pozisyonlar — hepsi tek ekranda.",
   },
-];
-
-const FEATURES = [
-  "Tam otomatik işlem · 7/24, sen uyurken bile",
-  "Helix V5 stratejisi — aynı motor, canlı forward-test'te çalışıyor",
-  "Giriş, Stop-Loss ve 3 kademeli Take-Profit otomatik yönetilir",
-  "Borsa-native SL/TP — koruma borsada, bağlantı kopsa da çalışır",
-  "Risk ayarı senin elinde (işlem başına %)",
-  "Canlı panel: işlemler, bakiye, performans",
 ];
 
 const TRUST = [
@@ -119,12 +109,6 @@ export default async function PaketPage() {
           <span className="text-lg font-medium text-emerald-300">USDT</span>
           <span className="text-sm text-[var(--color-muted)]">/ tek seferlik</span>
         </div>
-        <a
-          href="#odeme"
-          className="mt-6 inline-flex items-center gap-2 rounded-md bg-emerald-500 px-6 py-3 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
-        >
-          Satın Al
-        </a>
       </div>
 
       {/* ── How it works ── */}
@@ -143,24 +127,6 @@ export default async function PaketPage() {
               </div>
               <h3 className="mt-3 font-semibold text-white">{s.title}</h3>
               <p className="mt-1 text-sm text-[var(--color-muted)]">{s.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ── What you get ── */}
-      <section>
-        <h2 className="text-[10px] uppercase tracking-[0.3em] text-[var(--color-muted)]/70">
-          Pakete dahil
-        </h2>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          {FEATURES.map((f) => (
-            <div
-              key={f}
-              className="flex items-start gap-2.5 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface)]/30 px-4 py-3"
-            >
-              <Check size={16} className="mt-0.5 shrink-0 text-emerald-400" />
-              <span className="text-sm text-white/90">{f}</span>
             </div>
           ))}
         </div>
