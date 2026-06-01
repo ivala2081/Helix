@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import { Activity } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import { SubscriptionRequest } from "@/components/panel/SubscriptionRequest";
-import { LiveEquityChart } from "@/components/live/LiveEquityChart";
 
 export const metadata: Metadata = { title: "Panel" };
 
@@ -9,8 +9,16 @@ const USDT_WALLET =
   process.env.NEXT_PUBLIC_USDT_WALLET ?? "TXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 
 type Subscription = { id: string; status: string };
-type Portfolio = { initial_capital: number; equity: number; started_at: string };
-type Trade = { pnl: number };
+type UserTrade = {
+  symbol: string;
+  direction: string;
+  status: string;
+  pnl: number | null;
+  pnl_pct: number | null;
+  exit_reason: string | null;
+  opened_at: string;
+  closed_at: string | null;
+};
 
 export default async function AppDashboard() {
   const supabase = await createServerSupabase();
@@ -18,79 +26,146 @@ export default async function AppDashboard() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [subRes, portRes, tradesRes] = await Promise.all([
+  const [subRes, tradesRes] = await Promise.all([
     supabase
       .from("subscriptions")
       .select("id, status")
       .order("created_at", { ascending: false })
       .limit(1),
     supabase
-      .from("live_portfolios")
-      .select("initial_capital, equity, started_at")
-      .eq("status", "active"),
-    supabase.from("live_trades").select("pnl"),
+      .from("user_trades")
+      .select("symbol, direction, status, pnl, pnl_pct, exit_reason, opened_at, closed_at")
+      .order("opened_at", { ascending: false })
+      .limit(20),
   ]);
 
   const sub = (subRes.data?.[0] ?? null) as Subscription | null;
   const active = sub?.status === "active";
-  const portfolios = (portRes.data ?? []) as Portfolio[];
-  const trades = (tradesRes.data ?? []) as Trade[];
+  const trades = (tradesRes.data ?? []) as UserTrade[];
 
-  // ── Real forward-test metrics ──
-  const totalEquity = portfolios.reduce((s, p) => s + p.equity, 0);
-  const totalInitial = portfolios.reduce((s, p) => s + p.initial_capital, 0);
-  const totalReturn =
-    totalInitial > 0 ? ((totalEquity - totalInitial) / totalInitial) * 100 : 0;
-  const wins = trades.filter((t) => t.pnl > 0).length;
-  const winRate = trades.length > 0 ? (wins / trades.length) * 100 : 0;
-  const earliest = portfolios.map((p) => p.started_at).sort()[0];
-  const daysLive = earliest
-    ? Math.max(0, Math.floor((Date.now() - new Date(earliest).getTime()) / 86_400_000))
-    : 0;
+  // ── Customer's own stats (empty until the bot trades their account) ──
+  const closed = trades.filter((t) => t.status === "closed");
+  const open = trades.filter((t) => t.status === "open");
+  const totalPnl = closed.reduce((s, t) => s + (t.pnl ?? 0), 0);
+  const wins = closed.filter((t) => (t.pnl ?? 0) > 0).length;
+  const winRate = closed.length > 0 ? (wins / closed.length) * 100 : null;
+  const hasActivity = trades.length > 0;
 
   return (
     <div className="space-y-8">
       {/* ── Hero ── */}
       <div>
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-[var(--color-muted)]/70">
-          <span className="relative flex h-2 w-2">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-          </span>
-          Canlı performans · Gün {daysLive}
+          {active ? (
+            <>
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              </span>
+              Bot aktif
+            </>
+          ) : (
+            <>
+              <span className="h-2 w-2 rounded-full bg-[var(--color-muted)]/50" />
+              Bot pasif
+            </>
+          )}
         </div>
-        <h1 className="mt-3 text-2xl font-semibold text-white">Helix Bot</h1>
-        <p className="mt-1 text-sm text-[var(--color-muted)]">
-          {user?.email} · V5 stratejisi · 5 parite · 1S · tam otomatik
-        </p>
+        <h1 className="mt-3 text-2xl font-semibold text-white">Hesabım</h1>
+        <p className="mt-1 text-sm text-[var(--color-muted)]">{user?.email}</p>
       </div>
 
-      {/* ── KPI strip (real data) ── */}
+      {/* ── Customer KPI strip ── */}
       <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-4">
         <Kpi
-          label="Toplam Getiri"
-          value={`${totalReturn >= 0 ? "+" : ""}${totalReturn.toFixed(2)}%`}
-          tone={totalReturn >= 0 ? "emerald" : "red"}
+          label="Toplam K/Z"
+          value={hasActivity ? `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}` : "—"}
+          tone={hasActivity ? (totalPnl >= 0 ? "emerald" : "red") : undefined}
         />
-        <Kpi label="Kazanma Oranı" value={`%${winRate.toFixed(0)}`} />
-        <Kpi label="İşlem Sayısı" value={String(trades.length)} />
-        <Kpi label="Aktif Gün" value={String(daysLive)} />
+        <Kpi label="Kapalı İşlem" value={String(closed.length)} />
+        <Kpi label="Kazanma Oranı" value={winRate === null ? "—" : `%${winRate.toFixed(0)}`} />
+        <Kpi label="Açık Pozisyon" value={String(open.length)} />
       </div>
 
-      {/* ── Equity chart ── */}
-      <section>
-        <SectionLabel>Equity eğrisi</SectionLabel>
-        <div className="mt-3">
-          <LiveEquityChart title="" />
+      {/* ── Activity area: empty state until trades arrive ── */}
+      {!hasActivity ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)]/20 px-6 py-14 text-center">
+          <Activity size={28} className="text-[var(--color-muted)]/50" />
+          <h2 className="mt-4 text-base font-medium text-white">Henüz işlem yok</h2>
+          <p className="mt-1 max-w-sm text-sm text-[var(--color-muted)]">
+            {active
+              ? "Borsa hesabını bağla; bot işlem açtıkça hepsi burada görünecek — bakiye, K/Z, açık pozisyonlar."
+              : "Aboneliğini başlatıp borsanı bağladığında bot senin hesabında işlem açmaya başlar ve burada anlık olarak görürsün."}
+          </p>
         </div>
-      </section>
+      ) : (
+        <section>
+          <SectionLabel>İşlemlerim</SectionLabel>
+          <div className="mt-3 overflow-hidden rounded-xl border border-[var(--color-border)]">
+            <table className="w-full text-sm">
+              <thead className="border-b border-[var(--color-border)] bg-[var(--color-surface)]/30 text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
+                <tr>
+                  <th className="px-3 py-2 text-left">Parite</th>
+                  <th className="px-3 py-2 text-left">Yön</th>
+                  <th className="px-3 py-2 text-left">Durum</th>
+                  <th className="px-3 py-2 text-right">K/Z</th>
+                  <th className="hidden px-3 py-2 text-right sm:table-cell">Tarih</th>
+                </tr>
+              </thead>
+              <tbody className="font-mono tabular-nums">
+                {trades.map((t, i) => {
+                  const pnlPct = t.pnl_pct ?? 0;
+                  const win = (t.pnl ?? 0) > 0;
+                  return (
+                    <tr key={i} className="border-t border-[var(--color-border)]/50">
+                      <td className="px-3 py-2 font-semibold text-white">
+                        {t.symbol.replace("USDT", "")}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span
+                          className={`rounded-sm px-1.5 py-0.5 text-[10px] font-semibold ${
+                            t.direction === "LONG"
+                              ? "bg-emerald-500/15 text-emerald-400"
+                              : "bg-red-500/15 text-red-400"
+                          }`}
+                        >
+                          {t.direction}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-xs text-[var(--color-muted)]">
+                        {t.status === "open" ? "Açık" : t.exit_reason}
+                      </td>
+                      <td
+                        className={`px-3 py-2 text-right ${
+                          t.status === "open"
+                            ? "text-[var(--color-muted)]"
+                            : win
+                              ? "text-emerald-400"
+                              : "text-red-400"
+                        }`}
+                      >
+                        {t.status === "open"
+                          ? "—"
+                          : `${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%`}
+                      </td>
+                      <td className="hidden px-3 py-2 text-right text-[10px] text-[var(--color-muted)]/60 sm:table-cell">
+                        {new Date(t.opened_at).toLocaleDateString("tr-TR")}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
 
       {/* ── Bot status / subscription (contextual) ── */}
       {active ? (
         <StatusCard
           tone="emerald"
           title="Aboneliğin aktif ✓"
-          body="Borsa hesabını bağla ve botu çalıştır — aşağıdan."
+          body="Borsa hesabını bağla ve botu çalıştır. (Bağlama ekranı yakında.)"
         />
       ) : sub?.status === "pending" ? (
         <StatusCard
@@ -102,12 +177,12 @@ export default async function AppDashboard() {
         <div className="space-y-3">
           <div className="rounded-xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent p-5">
             <h2 className="text-lg font-semibold text-white">
-              Bu performansı kendi hesabında çalıştır
+              Botu kendi hesabında çalıştır
             </h2>
             <p className="mt-1 text-sm text-[var(--color-muted)]">
-              Helix Bot, yukarıdaki stratejiyi senin Binance/Bybit hesabında
-              otomatik işletir. Paranı biz tutmayız — anahtarın yalnızca işlem
-              izniyle, çekim yetkisi olmadan bağlanır.
+              Helix Bot, Binance/Bybit hesabında otomatik işlem açar. Paranı biz
+              tutmayız — anahtarın yalnızca işlem izniyle, çekim yetkisi olmadan
+              bağlanır.
             </p>
           </div>
           <SubscriptionRequest wallet={USDT_WALLET} />
@@ -115,8 +190,7 @@ export default async function AppDashboard() {
       )}
 
       <p className="text-center text-[10px] leading-relaxed text-[var(--color-muted)]/50">
-        Geçmiş performans gelecek getiriyi garanti etmez. İşlem yüksek kayıp
-        riski taşır. Yatırım tavsiyesi değildir.
+        İşlem yüksek kayıp riski taşır. Yatırım tavsiyesi değildir.
       </p>
     </div>
   );
