@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import {
   approveSubscriptionAction,
@@ -165,8 +166,13 @@ export default async function AdminDashboard() {
                 const botOn = botByUser.get(p.id);
                 return (
                   <tr key={p.id} className="border-b border-[var(--color-border)]/50">
-                    <td className="px-3 py-2 text-white">
-                      {p.email ?? "—"}
+                    <td className="px-3 py-2">
+                      <Link
+                        href={`/admin/${p.id}`}
+                        className="text-white hover:text-emerald-400 hover:underline"
+                      >
+                        {p.email ?? "—"}
+                      </Link>
                       {p.role === "admin" && (
                         <span className="ml-1.5 rounded-sm bg-amber-500/15 px-1 py-0.5 text-[9px] font-semibold text-amber-300">
                           ADMIN
