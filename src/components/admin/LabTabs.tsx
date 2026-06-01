@@ -90,7 +90,7 @@ export function LabTabs() {
           <div>
             <Label>Equity eğrileri · V6.2</Label>
             <div className="mt-3">
-              <LiveV62EquityChart />
+              <LiveV62EquityChart title="" />
             </div>
           </div>
         </Section>
