@@ -25,4 +25,9 @@ export const env = {
   get CRON_SECRET(): string {
     return required("CRON_SECRET", process.env.CRON_SECRET);
   },
+  // 32-byte key as 64 hex chars. Encrypts customer exchange API secrets at rest.
+  // Generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+  get APP_ENCRYPTION_KEY(): string {
+    return required("APP_ENCRYPTION_KEY", process.env.APP_ENCRYPTION_KEY);
+  },
 };
