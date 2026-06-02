@@ -11,6 +11,7 @@ import {
   Zap,
 } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
+import { isSubscriptionActive } from "@/lib/subscription/status";
 import { SubscriptionRequest } from "@/components/panel/SubscriptionRequest";
 
 export const metadata: Metadata = { title: "Helix Bot Paketi" };
@@ -46,10 +47,12 @@ export default async function PaketPage() {
   const supabase = await createServerSupabase();
   const { data: subs } = await supabase
     .from("subscriptions")
-    .select("status")
+    .select("status, expires_at")
     .order("created_at", { ascending: false })
     .limit(1);
-  const status = (subs?.[0]?.status as string | undefined) ?? null;
+  const sub = subs?.[0] ?? null;
+  const status = (sub?.status as string | undefined) ?? null;
+  const active = isSubscriptionActive(sub);
 
   const back = (
     <Link
@@ -60,7 +63,7 @@ export default async function PaketPage() {
     </Link>
   );
 
-  if (status === "active") {
+  if (active) {
     return (
       <div className="space-y-6">
         {back}

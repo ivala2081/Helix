@@ -4,18 +4,22 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import { encryptSecret } from "@/lib/crypto/apiKeys";
 import { validateBinanceKey } from "@/lib/exchange/binance";
+import { isSubscriptionActive } from "@/lib/subscription/status";
 
 export type ConnState = { error?: string; message?: string };
 
+/** Newest-subscription, user-scoped, expiry-aware active check (shared logic). */
 async function hasActiveSub(
   supabase: Awaited<ReturnType<typeof createServerSupabase>>,
+  userId: string,
 ): Promise<boolean> {
   const { data } = await supabase
     .from("subscriptions")
-    .select("id")
-    .eq("status", "active")
+    .select("status, expires_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
     .limit(1);
-  return Boolean(data && data.length > 0);
+  return isSubscriptionActive(data?.[0] ?? null);
 }
 
 export async function connectExchangeAction(
@@ -36,7 +40,7 @@ export async function connectExchangeAction(
   } = await supabase.auth.getUser();
   if (!user) return { error: "Oturum bulunamadı." };
 
-  if (!(await hasActiveSub(supabase)))
+  if (!(await hasActiveSub(supabase, user.id)))
     return { error: "Önce paketi satın al (aktif abonelik gerekli)." };
 
   // ── Validate against the real exchange (fail-closed, spot-only) ──
@@ -98,7 +102,7 @@ export async function updateBotSettingsAction(formData: FormData): Promise<void>
   // connected exchange. Otherwise force it off (never trade without both).
   if (enabled) {
     const [subOk, connRes] = await Promise.all([
-      hasActiveSub(supabase),
+      hasActiveSub(supabase, user.id),
       supabase
         .from("exchange_connections")
         .select("id")

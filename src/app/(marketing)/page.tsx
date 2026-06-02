@@ -89,21 +89,48 @@ export default function LandingPage() {
         {/* ── HOW IT WORKS ── */}
         <section>
           <SectionLabel>Nasıl çalışır</SectionLabel>
-          <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            {STEPS.map((s) => (
-              <div
-                key={s.title}
-                className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/40 p-6 backdrop-blur-md"
-              >
-                <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
-                  <s.icon size={22} />
+
+          <div className="relative mt-14">
+            {/* yatay bağlantı çizgisi (desktop) — düğümlerin merkezinden geçer */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-x-0 top-8 hidden sm:block"
+            >
+              <div className="mx-auto h-px w-2/3 bg-gradient-to-r from-transparent via-emerald-500/35 to-transparent" />
+            </div>
+            {/* dikey bağlantı çizgisi (mobil) */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute bottom-8 left-8 top-8 w-px bg-gradient-to-b from-emerald-500/35 via-emerald-500/20 to-transparent sm:hidden"
+            />
+
+            <div className="grid gap-10 sm:grid-cols-3 sm:gap-4">
+              {STEPS.map((s, i) => (
+                <div
+                  key={s.title}
+                  className="group relative flex items-start gap-4 sm:flex-col sm:items-center sm:gap-0 sm:px-4 sm:text-center"
+                >
+                  {/* düğüm: çizgi üzerinde oturan ikon */}
+                  <div className="relative shrink-0">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-full border border-emerald-500/25 bg-[var(--color-bg)] text-emerald-400 shadow-[0_0_0_8px_var(--color-bg)] transition-all duration-300 group-hover:border-emerald-400/60 group-hover:text-emerald-300 group-hover:shadow-[0_0_24px_-4px_rgba(16,185,129,0.45),0_0_0_8px_var(--color-bg)]">
+                      <s.icon size={26} strokeWidth={1.5} />
+                    </div>
+                    <span className="absolute -right-1 -top-1 flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 font-mono text-[11px] font-bold text-black">
+                      {i + 1}
+                    </span>
+                  </div>
+
+                  <div className="pt-1 sm:pt-0">
+                    <h3 className="text-lg font-medium tracking-tight text-white sm:mt-5">
+                      {s.title}
+                    </h3>
+                    <p className="mt-2 max-w-xs text-sm leading-relaxed text-[var(--color-muted)]">
+                      {s.body}
+                    </p>
+                  </div>
                 </div>
-                <h3 className="mt-4 text-lg font-semibold text-white">{s.title}</h3>
-                <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
-                  {s.body}
-                </p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
 

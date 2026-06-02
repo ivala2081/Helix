@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Lock } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
+import { isSubscriptionActive } from "@/lib/subscription/status";
 import { decryptSecret, maskKey } from "@/lib/crypto/apiKeys";
 import { ConnectExchangeForm } from "@/components/panel/ConnectExchangeForm";
 import {
@@ -18,7 +19,11 @@ export default async function BaglantiPage() {
   const supabase = await createServerSupabase();
 
   const [subRes, connRes, botRes] = await Promise.all([
-    supabase.from("subscriptions").select("status").eq("status", "active").limit(1),
+    supabase
+      .from("subscriptions")
+      .select("status, expires_at")
+      .order("created_at", { ascending: false })
+      .limit(1),
     supabase
       .from("exchange_connections")
       .select("exchange, api_key_enc, status, created_at")
@@ -26,7 +31,7 @@ export default async function BaglantiPage() {
     supabase.from("bot_settings").select("enabled, risk_pct").limit(1),
   ]);
 
-  const active = Boolean(subRes.data && subRes.data.length > 0);
+  const active = isSubscriptionActive(subRes.data?.[0] ?? null);
   const conn = (connRes.data?.[0] ?? null) as Conn | null;
   const bot = (botRes.data?.[0] ?? { enabled: false, risk_pct: 1 }) as BotSettings;
 

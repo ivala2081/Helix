@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Activity, ArrowRight } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
+import { isSubscriptionActive } from "@/lib/subscription/status";
 
 export const metadata: Metadata = { title: "Panel" };
 
-type Subscription = { id: string; status: string };
+type Subscription = { id: string; status: string; expires_at: string | null };
 type UserTrade = {
   symbol: string;
   direction: string;
@@ -26,7 +27,7 @@ export default async function AppDashboard() {
   const [subRes, tradesRes] = await Promise.all([
     supabase
       .from("subscriptions")
-      .select("id, status")
+      .select("id, status, expires_at")
       .order("created_at", { ascending: false })
       .limit(1),
     supabase
@@ -37,7 +38,7 @@ export default async function AppDashboard() {
   ]);
 
   const sub = (subRes.data?.[0] ?? null) as Subscription | null;
-  const active = sub?.status === "active";
+  const active = isSubscriptionActive(sub);
   const trades = (tradesRes.data ?? []) as UserTrade[];
 
   // ── Customer's own stats (empty until the bot trades their account) ──
