@@ -4,29 +4,29 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import { createServiceClient } from "@/lib/supabase/server";
 
-/** Throws unless the current session belongs to an admin. */
-async function assertAdmin(
+/** Throws unless the current session belongs to an admin. Throwing (not a silent
+ *  `return`) means an unauthorized invocation fails loudly instead of looking
+ *  like a successful no-op. Mandatory before any admin mutation / service-role write. */
+async function assertAdminOrThrow(
   supabase: Awaited<ReturnType<typeof createServerSupabase>>,
-): Promise<boolean> {
+): Promise<void> {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  if (!user) return false;
+  if (!user) throw new Error("Unauthorized");
   const { data } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single();
-  return data?.role === "admin";
+  if (data?.role !== "admin") throw new Error("Forbidden: admin only");
 }
-
-// Admin-only. RLS policy subscriptions_update_admin (is_admin()) is the real
-// gate — these run with the admin's own session, not the service role.
 
 export async function approveSubscriptionAction(formData: FormData): Promise<void> {
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const supabase = await createServerSupabase();
+  await assertAdminOrThrow(supabase);
   await supabase
     .from("subscriptions")
     .update({ status: "active", activated_at: new Date().toISOString() })
@@ -38,19 +38,39 @@ export async function rejectSubscriptionAction(formData: FormData): Promise<void
   const id = String(formData.get("id") ?? "");
   if (!id) return;
   const supabase = await createServerSupabase();
+  await assertAdminOrThrow(supabase);
+
+  // Look up the owner so we can tear down their access (Phase 4).
+  const { data: sub } = await supabase
+    .from("subscriptions")
+    .select("user_id")
+    .eq("id", id)
+    .single();
+
   await supabase.from("subscriptions").update({ status: "rejected" }).eq("id", id);
+
+  // Revoke access: pause the bot for that user (service role — bot_settings is
+  // owner-only under RLS). Connection rows are left for the user to manage.
+  if (sub?.user_id) {
+    const svc = createServiceClient();
+    await svc
+      .from("bot_settings")
+      .upsert({ user_id: sub.user_id, enabled: false }, { onConflict: "user_id" });
+  }
   revalidatePath("/admin");
 }
 
-/** Change a customer's role. RLS (is_admin) + the role guard permit this only
- *  when the caller is an admin. */
+/** Change a customer's role. Uses the service role because UPDATE on
+ *  profiles.role is revoked from `authenticated` (privilege-level escalation
+ *  block); gated by an explicit admin check that throws. */
 export async function setUserRoleAction(formData: FormData): Promise<void> {
   const userId = String(formData.get("user_id") ?? "");
   const role = String(formData.get("role") ?? "");
   if (!userId || (role !== "customer" && role !== "admin")) return;
   const supabase = await createServerSupabase();
-  if (!(await assertAdmin(supabase))) return;
-  await supabase.from("profiles").update({ role }).eq("id", userId);
+  await assertAdminOrThrow(supabase);
+  const svc = createServiceClient();
+  await svc.from("profiles").update({ role }).eq("id", userId);
   revalidatePath(`/admin/${userId}`);
 }
 
@@ -61,7 +81,7 @@ export async function setUserBotAction(formData: FormData): Promise<void> {
   const enabled = formData.get("enabled") === "true";
   if (!userId) return;
   const supabase = await createServerSupabase();
-  if (!(await assertAdmin(supabase))) return;
+  await assertAdminOrThrow(supabase);
   const svc = createServiceClient();
   await svc
     .from("bot_settings")

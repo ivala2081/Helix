@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
+import { sanitizeNext } from "@/lib/auth/redirect";
 
 export type AuthState = { error?: string; message?: string };
 
@@ -11,7 +12,7 @@ export async function signInAction(
 ): Promise<AuthState> {
   const email = String(formData.get("email") ?? "").trim();
   const password = String(formData.get("password") ?? "");
-  const next = String(formData.get("next") ?? "/app") || "/app";
+  const next = sanitizeNext(String(formData.get("next") ?? "/app"));
 
   if (!email || !password) return { error: "E-posta ve şifre gerekli." };
 
@@ -31,7 +32,7 @@ export async function signUpAction(
   const phone = String(formData.get("phone") ?? "").trim();
   const telegramId = String(formData.get("telegram_id") ?? "").trim();
   const referredByCode = String(formData.get("referred_by_code") ?? "").trim();
-  const next = String(formData.get("next") ?? "/app") || "/app";
+  const next = sanitizeNext(String(formData.get("next") ?? "/app"));
 
   if (!email || !password) return { error: "E-posta ve şifre gerekli." };
   if (password.length < 8) return { error: "Şifre en az 8 karakter olmalı." };
