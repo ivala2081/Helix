@@ -36,11 +36,13 @@ export default async function BaglantiPage() {
   const bot = (botRes.data?.[0] ?? { enabled: false, risk_pct: 1 }) as BotSettings;
 
   let maskedKey = "••••";
+  let keyReadable = true;
   if (conn) {
     try {
       maskedKey = maskKey(decryptSecret(conn.api_key_enc));
     } catch {
       maskedKey = "••••";
+      keyReadable = false;
     }
   }
 
@@ -98,6 +100,12 @@ export default async function BaglantiPage() {
             <div className="mt-3 flex items-center gap-2 text-sm text-[var(--color-muted)]">
               <Lock size={14} /> API Key: <code className="text-white/80">{maskedKey}</code>
             </div>
+            {!keyReadable && (
+              <div className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-300">
+                ⚠️ Kayıtlı anahtar okunamıyor (şifreleme anahtarı değişmiş
+                olabilir). Lütfen borsanı yeniden bağla.
+              </div>
+            )}
           </div>
 
           {/* Bot settings */}

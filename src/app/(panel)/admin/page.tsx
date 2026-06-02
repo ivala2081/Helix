@@ -58,9 +58,12 @@ export default async function AdminDashboard() {
   const bots = (botRes.data ?? []) as Bot[];
   const conns = (connRes.data ?? []) as Conn[];
 
-  // Latest subscription per user
+  // Latest subscription per user — compared explicitly, not relying on query order.
   const latestSub = new Map<string, Sub>();
-  for (const s of subs) if (!latestSub.has(s.user_id)) latestSub.set(s.user_id, s);
+  for (const s of subs) {
+    const ex = latestSub.get(s.user_id);
+    if (!ex || s.created_at > ex.created_at) latestSub.set(s.user_id, s);
+  }
   const botByUser = new Map(bots.map((b) => [b.user_id, b.enabled]));
   const connByUser = new Map(conns.map((c) => [c.user_id, c.status]));
 

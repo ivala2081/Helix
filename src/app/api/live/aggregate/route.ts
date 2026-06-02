@@ -176,12 +176,14 @@ export async function GET() {
       sharpeRatio = (mean / std) * annFactor;
     }
 
+    const negatives = returns.filter((r) => r < 0);
     const downsideVariance =
-      returns.filter((r) => r < 0).reduce((s, r) => s + r ** 2, 0) /
-      returns.length;
+      negatives.reduce((s, r) => s + r ** 2, 0) / returns.length;
     const downsideStd = Math.sqrt(downsideVariance);
 
-    if (downsideStd > 0) {
+    // With very few downside observations Sortino is meaningless (blows up to an
+    // unrealistic value); require a minimum sample before reporting it.
+    if (downsideStd > 0 && negatives.length >= 5) {
       sortinoRatio = (mean / downsideStd) * annFactor;
     }
 
