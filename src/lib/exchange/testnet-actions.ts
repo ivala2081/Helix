@@ -41,6 +41,14 @@ export async function runFuturesTestTrade(
     const usdt = await c.availableUsdt();
     log.push(`Bakiye: ${usdt} USDT`);
 
+    // Cleanup-first: clear any leftover position/orders from a prior run.
+    await c.cancelAll(symbol).catch(() => {});
+    const leftover = await c.positionAmt(symbol);
+    if (Math.abs(leftover) > 0) {
+      await c.reduceMarket(symbol, leftover > 0 ? "SELL" : "BUY", Math.abs(leftover));
+      log.push(`Kalan pozisyon (${leftover}) kapatıldı`);
+    }
+
     await c.setIsolated(symbol);
     await c.setLeverage(symbol, 1);
     log.push("Kaldıraç 1x · isolated ayarlandı");
@@ -58,16 +66,13 @@ export async function runFuturesTestTrade(
     const pos = await c.positionAmt(symbol);
     log.push(`Pozisyon: ${pos} ${symbol.replace("USDT", "")}`);
 
-    const sl = roundStep(price * 0.97, f.tickSize);
-    const tp = roundStep(price * 1.03, f.tickSize);
-    await c.stopLoss(symbol, "SELL", sl);
-    await c.takeProfit(symbol, "SELL", tp);
-    const oo = await c.openOrders(symbol);
-    log.push(`Native SL @ ${sl} + TP @ ${tp} kondu (açık koruma emri: ${oo.length})`);
-
-    await c.cancelAll(symbol);
-    if (Math.abs(pos) > 0) await c.marketClose(symbol, pos > 0 ? "SELL" : "BUY");
-    log.push("Temizlendi (pozisyon kapatıldı + emirler iptal) ✓");
+    // Exits are bot-managed (reduce-market each tick), not exchange conditionals
+    // — V5's partial TP ladder + SL→breakeven needs active management anyway.
+    if (Math.abs(pos) > 0) {
+      const close = await c.reduceMarket(symbol, pos > 0 ? "SELL" : "BUY", Math.abs(pos));
+      log.push(`Pozisyon kapatıldı — order ${close.orderId} (${close.status})`);
+    }
+    log.push("✓ Execution OK — 1x pozisyon açıldı ve kapatıldı");
 
     return { log };
   } catch (e) {

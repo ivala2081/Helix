@@ -126,36 +126,39 @@ export class BinanceFuturesClient {
     });
   }
 
-  /** Close the whole position at market (reduce-only). */
-  marketClose(symbol: string, side: Side) {
+  /** Reduce/close a position at market (reduce-only, won't flip to opposite). */
+  reduceMarket(symbol: string, side: Side, quantity: number) {
     return this.signed("POST", "/fapi/v1/order", {
       symbol,
       side,
       type: "MARKET",
-      closePosition: "true",
+      quantity,
+      reduceOnly: "true",
     });
   }
 
-  /** Exchange-native stop-loss: STOP_MARKET that closes the position when hit. */
-  stopLoss(symbol: string, side: Side, stopPrice: number) {
+  /** Exchange-native stop-loss: STOP_MARKET reduce-only on the given quantity. */
+  stopLoss(symbol: string, side: Side, stopPrice: number, quantity: number) {
     return this.signed("POST", "/fapi/v1/order", {
       symbol,
       side,
       type: "STOP_MARKET",
       stopPrice,
-      closePosition: "true",
+      quantity,
+      reduceOnly: "true",
       workingType: "MARK_PRICE",
     });
   }
 
-  /** Exchange-native take-profit: TAKE_PROFIT_MARKET that closes when hit. */
-  takeProfit(symbol: string, side: Side, stopPrice: number) {
+  /** Exchange-native take-profit: TAKE_PROFIT_MARKET reduce-only on the quantity. */
+  takeProfit(symbol: string, side: Side, stopPrice: number, quantity: number) {
     return this.signed("POST", "/fapi/v1/order", {
       symbol,
       side,
       type: "TAKE_PROFIT_MARKET",
       stopPrice,
-      closePosition: "true",
+      quantity,
+      reduceOnly: "true",
       workingType: "MARK_PRICE",
     });
   }

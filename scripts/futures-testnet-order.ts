@@ -27,6 +27,14 @@ async function main() {
   const usdt = await c.availableUsdt();
   console.log(`   Available USDT: ${usdt}`);
 
+  // Cleanup-first: clear any leftover orders/position from a prior failed run.
+  await c.cancelAll(SYMBOL).catch(() => {});
+  const leftover = await c.positionAmt(SYMBOL);
+  if (Math.abs(leftover) > 0) {
+    console.log(`→ Closing leftover position ${leftover}…`);
+    await c.reduceMarket(SYMBOL, leftover > 0 ? "SELL" : "BUY", Math.abs(leftover));
+  }
+
   console.log("→ Setup: leverage 1x, isolated…");
   await c.setIsolated(SYMBOL);
   await c.setLeverage(SYMBOL, 1);
@@ -47,22 +55,17 @@ async function main() {
   const pos = await c.positionAmt(SYMBOL);
   console.log(`   Position amt: ${pos}`);
 
-  // Exchange-native SL (-3%) and TP (+3%) — close-position reduce orders.
-  const tick = filters.tickSize;
-  const slPrice = roundStep(price * 0.97, tick);
-  const tpPrice = roundStep(price * 1.03, tick);
-  console.log(`→ Native SL @ ${slPrice} + TP @ ${tpPrice}…`);
-  await c.stopLoss(SYMBOL, "SELL", slPrice);
-  await c.takeProfit(SYMBOL, "SELL", tpPrice);
-  const oo = await c.openOrders(SYMBOL);
-  console.log(`   Open protective orders: ${oo.length}`);
+  // V5 needs ACTIVE exit management (partial TP1/2/3 + SL→breakeven) which a
+  // single exchange conditional order can't do — and the futures testnet rejects
+  // STOP_MARKET on /fapi/v1/order (-4120) anyway. So exits are bot-managed
+  // (reduce-market each tick). Here we close the position to prove the cycle.
+  console.log("→ Closing position (reduce-market)…");
+  if (Math.abs(pos) > 0) {
+    const close = await c.reduceMarket(SYMBOL, pos > 0 ? "SELL" : "BUY", Math.abs(pos));
+    console.log("   CLOSED:", { orderId: close.orderId, status: close.status });
+  }
 
-  // Cleanup
-  console.log("→ Cleanup: cancel orders + close position…");
-  await c.cancelAll(SYMBOL);
-  if (Math.abs(pos) > 0) await c.marketClose(SYMBOL, pos > 0 ? "SELL" : "BUY");
-
-  console.log("✓ Futures testnet execution OK — long opened, SL/TP attached, closed.");
+  console.log("✓ Futures testnet execution OK — 1x position opened & closed.");
 }
 
 main().catch((e) => {
