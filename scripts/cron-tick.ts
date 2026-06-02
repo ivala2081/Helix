@@ -14,7 +14,7 @@ import { stepCandle, type StrategyState } from "../src/lib/engine/paper-engine";
 import { V5_DEFAULTS } from "../src/lib/engine/defaults";
 import { V6_2_DEFAULTS } from "../src/lib/engine/defaults_v6_2";
 import { FORWARD_TEST_INTERVAL_MS } from "../src/lib/engine/live-config";
-import type { BacktestParams, Candle } from "../src/lib/engine/types";
+import type { BacktestParams, Candle, Trade } from "../src/lib/engine/types";
 import {
   sendTelegramMessage,
   sendTelegramPublic,
@@ -248,6 +248,13 @@ async function runEngineVariant(
 
       const tradesToInsert: Record<string, unknown>[] = [];
       const snapshotsToInsert: Record<string, unknown>[] = [];
+      // Public-channel messages buffered IN ORDER; flushed after the DB insert
+      // so the cumulative record only counts persisted trades (monotonic) and
+      // TP1/TP2/close never arrive out of order.
+      const publicEvents: (
+        | { kind: "text"; text: string }
+        | { kind: "close"; trade: Trade }
+      )[] = [];
 
       for (const candle of newCandles) {
         const result = stepCandle(state, candle, variant.params);
@@ -260,11 +267,17 @@ async function runEngineVariant(
               sendTelegramMessage(withTag(formatTradeOpened(symbol, event.trade), variant.telegramTag));
             }
             if (variant.publicChannel) {
-              sendTelegramPublic(formatPublicSignal(symbol, event.trade));
+              publicEvents.push({
+                kind: "text",
+                text: formatPublicSignal(symbol, event.trade),
+              });
             }
           }
           if (event.type === "tpHit" && event.trade && event.tpLevel && variant.publicChannel) {
-            sendTelegramPublic(formatPublicTpHit(symbol, event.trade, event.tpLevel));
+            publicEvents.push({
+              kind: "text",
+              text: formatPublicTpHit(symbol, event.trade, event.tpLevel),
+            });
           }
           if (event.type === "tradeClosed" && event.trade) {
             const t = event.trade;
@@ -301,9 +314,7 @@ async function runEngineVariant(
               );
             }
             if (variant.publicChannel) {
-              if ((t.pnl ?? 0) > 0) pubWins++;
-              else pubLosses++;
-              sendTelegramPublic(formatPublicClose(symbol, t, pubWins, pubLosses));
+              publicEvents.push({ kind: "close", trade: t });
             }
           }
         }
@@ -341,11 +352,33 @@ async function runEngineVariant(
         continue;
       }
 
+      let tradeInsertOk = true;
       if (tradesToInsert.length > 0) {
         const { error: tradeErr } = await db
           .from(variant.tradesTable)
           .insert(tradesToInsert);
-        if (tradeErr) console.error(`${variant.label} trade insert error for ${symbol}:`, tradeErr);
+        if (tradeErr) {
+          console.error(`${variant.label} trade insert error for ${symbol}:`, tradeErr);
+          tradeInsertOk = false;
+        }
+      }
+
+      // Flush public messages in order (await → no out-of-order delivery). A
+      // close is only announced (and counted) once its trade is persisted, so
+      // the cumulative record never regresses. Trail-mode (V6.2) stays private.
+      if (variant.publicChannel && !variant.params.trailAfterTp1) {
+        for (const ev of publicEvents) {
+          if (ev.kind === "text") {
+            await sendTelegramPublic(ev.text);
+          } else if (tradeInsertOk) {
+            const pnl = ev.trade.pnl ?? 0;
+            if (pnl > 0) pubWins++;
+            else if (pnl < 0) pubLosses++; // breakeven / null → neutral
+            await sendTelegramPublic(
+              formatPublicClose(symbol, ev.trade, pubWins, pubLosses),
+            );
+          }
+        }
       }
 
       if (snapshotsToInsert.length > 0) {
@@ -379,7 +412,7 @@ async function fetchRecord(
     const lossesQ = await db
       .from(tradesTable)
       .select("*", { count: "exact", head: true })
-      .lte("pnl", 0);
+      .lt("pnl", 0);
     return { wins: winsQ.count ?? 0, losses: lossesQ.count ?? 0 };
   } catch {
     return { wins: 0, losses: 0 };

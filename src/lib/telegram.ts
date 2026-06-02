@@ -14,15 +14,16 @@ const PUBLIC_CHAT_ID = process.env.TELEGRAM_PUBLIC_CHAT_ID ?? "";
 export const TELEGRAM_ENABLED = Boolean(BOT_TOKEN && CHAT_ID);
 export const TELEGRAM_PUBLIC_ENABLED = Boolean(BOT_TOKEN && PUBLIC_CHAT_ID);
 
-/** Low-level send to a specific chat. Never throws. */
-function send(text: string, chatId: string): void {
-  if (!BOT_TOKEN || !chatId) return;
+/** Low-level send to a specific chat. Never throws. Returns a promise so callers
+ *  that need ordering (the public channel) can await it. */
+function send(text: string, chatId: string): Promise<void> {
+  if (!BOT_TOKEN || !chatId) return Promise.resolve();
 
   const url = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 5000);
 
-  fetch(url, {
+  return fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -33,20 +34,22 @@ function send(text: string, chatId: string): void {
     }),
     signal: controller.signal,
   })
+    .then(() => undefined)
     .catch((err) =>
       console.warn("[telegram] send failed:", (err as Error).message),
     )
     .finally(() => clearTimeout(timeout));
 }
 
-/** Send an HTML message to the private monitoring chat. Never throws. */
+/** Send to the private monitoring chat — fire-and-forget (never blocks cron). */
 export function sendTelegramMessage(text: string): void {
-  send(text, CHAT_ID);
+  void send(text, CHAT_ID);
 }
 
-/** Send an HTML message to the public member-facing channel. Never throws. */
-export function sendTelegramPublic(text: string): void {
-  send(text, PUBLIC_CHAT_ID);
+/** Send to the public member-facing channel. Awaitable so the caller can keep
+ *  messages in order (otherwise TP2 can arrive before TP1). */
+export function sendTelegramPublic(text: string): Promise<void> {
+  return send(text, PUBLIC_CHAT_ID);
 }
 
 // ── Formatting helpers ───────────────────────────────────────────────
@@ -226,7 +229,7 @@ export function formatPublicTpHit(
   if (level === 1) {
     lines.push(
       ``,
-      `İsteyen kârın bir kısmını (örn. yarısını) cebe atsın ve <b>stop'unu girişe çeksin</b> → artık <b>risksiz işlem</b>. Kalanı TP2/TP3'e taşı.`,
+      `İsteyen kârın bir kısmını cebe atabilir. Riskini azaltmak istersen stop'unu girişe çekebilirsin — bu senin tercihin. Bot kalan pozisyonu plana göre yönetir.`,
     );
   } else {
     lines.push(
@@ -249,7 +252,9 @@ export function formatPublicClose(
   const pnlPctSign = pnlPct >= 0 ? "+" : "";
   const r = (trade.rMultiple ?? 0).toFixed(2);
   const isTp3 = trade.exitReason === "TP3";
-  const win = (trade.pnl ?? 0) > 0;
+  const pnl = trade.pnl ?? 0;
+  const win = pnl > 0;
+  const breakeven = pnl === 0;
 
   const lines: string[] = [];
 
@@ -267,6 +272,13 @@ export function formatPublicClose(
     lines.push(
       `✅  <b>${base(symbol)} · Kârla kapandı</b>  <b>${pnlPctSign}${pnlPct.toFixed(2)}%</b>  (<code>${r}R</code>)`,
       `<code>$${fmtPrice(symbol, trade.entryPrice)}  →  $${fmtPrice(symbol, trade.exitPrice ?? 0)}</code>`,
+    );
+  } else if (breakeven) {
+    lines.push(
+      `⚖️  <b>${base(symbol)} · Başabaş kapandı</b>  (<code>${r}R</code>)`,
+      `<code>$${fmtPrice(symbol, trade.entryPrice)}  →  $${fmtPrice(symbol, trade.exitPrice ?? 0)}</code>`,
+      ``,
+      `Ne kazanç ne kayıp — risksiz çıkış.`,
     );
   } else {
     lines.push(
