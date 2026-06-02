@@ -41,6 +41,44 @@ export type BinanceValidation = {
   error?: string;
 };
 
+/**
+ * Decide whether an apiRestrictions response describes a SAFE, usable key.
+ * FAIL-CLOSED: every security-critical permission must be an explicit boolean —
+ * a missing/renamed/non-boolean field (or a proxied 200 body that parsed to {})
+ * is treated as a validation failure, never as "withdrawals off". The bot trades
+ * SPOT, so a futures-only key is rejected. Pure → unit-testable without network.
+ */
+export function evaluateBinancePermissions(body: unknown): BinanceValidation {
+  const b = (body ?? {}) as Record<string, unknown>;
+
+  if (typeof b.enableWithdrawals !== "boolean") {
+    return {
+      ok: false,
+      error: "İzinler doğrulanamadı (beklenmeyen yanıt). Lütfen tekrar dene.",
+    };
+  }
+  if (b.enableWithdrawals === true) {
+    return {
+      ok: false,
+      error:
+        "Bu anahtarda ÇEKİM izni AÇIK. Güvenlik için reddedildi — Binance'de çekim iznini kapatıp tekrar dene.",
+    };
+  }
+  if (b.enableSpotAndMarginTrading !== true) {
+    return {
+      ok: false,
+      error:
+        "Bu anahtarda Spot işlem izni yok. 'Enable Spot & Margin Trading'i açıp tekrar dene.",
+    };
+  }
+  return {
+    ok: true,
+    enableWithdrawals: false,
+    canTrade: true,
+    ipRestricted: b.ipRestrict === true,
+  };
+}
+
 /** Validate a Binance API key: confirms it works and inspects permissions. */
 export async function validateBinanceKey(
   apiKey: string,
@@ -58,14 +96,7 @@ export async function validateBinanceKey(
       else if (code === -1022) error = "Secret hatalı görünüyor.";
       return { ok: false, error };
     }
-    return {
-      ok: true,
-      enableWithdrawals: r.body.enableWithdrawals === true,
-      canTrade:
-        r.body.enableSpotAndMarginTrading === true ||
-        r.body.enableFutures === true,
-      ipRestricted: r.body.ipRestrict === true,
-    };
+    return evaluateBinancePermissions(r.body);
   } catch (e) {
     return {
       ok: false,
