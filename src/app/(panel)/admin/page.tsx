@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { FlaskConical } from "lucide-react";
+import { FlaskConical, Cpu } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import { isSubscriptionActive } from "@/lib/subscription/status";
 import {
@@ -80,12 +80,20 @@ export default async function AdminDashboard() {
     <div className="space-y-8">
       <div className="flex items-center justify-between gap-4">
         <h1 className="text-2xl font-semibold text-white">Admin</h1>
-        <Link
-          href="/admin/lab"
-          className="inline-flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20"
-        >
-          <FlaskConical size={15} /> Strateji Lab
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/admin/execution"
+            className="inline-flex items-center gap-2 rounded-md border border-white/10 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-white/5"
+          >
+            <Cpu size={15} /> Execution Testi
+          </Link>
+          <Link
+            href="/admin/lab"
+            className="inline-flex items-center gap-2 rounded-md border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20"
+          >
+            <FlaskConical size={15} /> Strateji Lab
+          </Link>
+        </div>
       </div>
 
       {/* ── KPI strip ── */}
