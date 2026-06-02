@@ -1,13 +1,21 @@
 "use client";
 
 import { useActionState } from "react";
-import { Play } from "lucide-react";
-import { runFuturesTestTrade, type TestResult } from "@/lib/exchange/testnet-actions";
+import { Play, Users } from "lucide-react";
+import {
+  runFuturesTestTrade,
+  runExecutorTestTick,
+  type TestResult,
+} from "@/lib/exchange/testnet-actions";
 import { primaryBtn } from "@/lib/ui";
 
 export function ExecutionTester({ configured }: { configured: boolean }) {
   const [state, action, pending] = useActionState<TestResult, FormData>(
     runFuturesTestTrade,
+    {},
+  );
+  const [execState, execAction, execPending] = useActionState<TestResult, FormData>(
+    runExecutorTestTick,
     {},
   );
 
@@ -43,6 +51,32 @@ export function ExecutionTester({ configured }: { configured: boolean }) {
           {state.error}
         </div>
       )}
+
+      {/* Phase B — full customer executor tick (reconciliation) on testnet. */}
+      <div className="border-t border-white/5 pt-4">
+        <p className="mb-3 max-w-2xl text-sm text-[var(--color-muted)]">
+          Müşteri executor&apos;ı: canlı V5 sinyalini (live_portfolios) tüm uygun
+          testnet müşterilerinin hesabına aynalar — pozisyon açar, TP merdiveninde
+          küçültür, kapanışta <code>user_trades</code>&apos;e yazar.
+        </p>
+        <form action={execAction}>
+          <button type="submit" disabled={execPending} className={primaryBtn}>
+            <Users size={15} />
+            {execPending ? "Çalışıyor…" : "Executor tick çalıştır (testnet · tüm müşteriler)"}
+          </button>
+        </form>
+
+        {execState.log && execState.log.length > 0 && (
+          <pre className="mt-4 overflow-x-auto rounded-xl border border-white/5 bg-black/40 p-4 font-mono text-xs leading-relaxed text-sky-300">
+            {execState.log.join("\n")}
+          </pre>
+        )}
+        {execState.error && (
+          <div className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            {execState.error}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -6,7 +6,7 @@
 // - authTag: 16 bytes (integrity — decryption throws if tampered)
 
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
-import { env } from "@/lib/env";
+import { env } from "../env";
 
 const ALGO = "aes-256-gcm";
 

@@ -1,7 +1,15 @@
 "use server";
 
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
+import { createServiceClient } from "@/lib/supabase/server";
 import { BinanceFuturesClient, roundStep } from "@/lib/exchange/binance-futures";
+import type { FuturesFilters } from "@/lib/exchange/binance-futures";
+import {
+  loadEligibleCustomers,
+  loadV5Signals,
+  computeOpenGates,
+  runCustomerCycle,
+} from "@/lib/exchange/customers";
 
 export type TestResult = { log?: string[]; error?: string };
 
@@ -74,6 +82,66 @@ export async function runFuturesTestTrade(
     }
     log.push("✓ Execution OK — 1x pozisyon açıldı ve kapatıldı");
 
+    return { log };
+  } catch (e) {
+    return { log, error: (e as Error).message };
+  }
+}
+
+/** Runs ONE full executor reconciliation tick on the FUTURES TESTNET over all
+ *  eligible (subscribed + bot-enabled + connected) customers, mirroring the live
+ *  V5 signal onto their testnet accounts. Admin-only, hard-wired to testnet.
+ *  This is the Phase-B end-to-end proof of the customer execution path. */
+export async function runExecutorTestTick(
+  _prev: TestResult,
+  _formData: FormData,
+): Promise<TestResult> {
+  if (!(await isAdmin())) return { error: "Yetkisiz." };
+
+  const log: string[] = [];
+  try {
+    const db = createServiceClient();
+    const now = Date.now();
+    const [customers, signals] = await Promise.all([
+      loadEligibleCustomers(db),
+      loadV5Signals(db),
+    ]);
+    const gates = await computeOpenGates(db, signals, now);
+
+    const liveSymbols = [...signals.entries()]
+      .filter(([, s]) => s.target !== null)
+      .map(([s]) => s);
+    const blocked = [...gates.entries()].filter(([, g]) => !g.allowOpen);
+    log.push(
+      `Uygun müşteri: ${customers.length} · V5 açık sinyal: ${liveSymbols.length ? liveSymbols.join(", ") : "yok"}`,
+    );
+    log.push(
+      `Open-gate bloklu: ${blocked.length ? blocked.map(([s, g]) => `${s} (${g.reason})`).join(", ") : "yok"}`,
+    );
+    if (customers.length === 0) {
+      log.push(
+        "Uygun müşteri yok. Önce `npm run seed-test-customer` ile simüle müşteriyi kur.",
+      );
+      return { log };
+    }
+
+    const filtersCache = new Map<string, FuturesFilters>();
+    for (const customer of customers) {
+      const records = await runCustomerCycle(db, customer, signals, "testnet", filtersCache, {
+        gates,
+      });
+      const id = customer.userId.slice(0, 8);
+      for (const r of records) {
+        if (r.action === "noop") {
+          log.push(`· ${id} ${r.symbol}: noop (${r.detail})`);
+        } else if (r.error) {
+          log.push(`✗ ${id} ${r.symbol}: HATA — ${r.error}`);
+        } else {
+          log.push(`✓ ${id} ${r.symbol}: ${r.action} — ${r.detail}`);
+        }
+      }
+    }
+    log.push("Tick tamam.");
     return { log };
   } catch (e) {
     return { log, error: (e as Error).message };

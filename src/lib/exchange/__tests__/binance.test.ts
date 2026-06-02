@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { evaluateBinancePermissions } from "../binance";
+import {
+  evaluateBinancePermissions,
+  evaluateBinanceFuturesPermissions,
+} from "../binance";
 
 describe("evaluateBinancePermissions — fail-closed, spot-only", () => {
   const safeKey = {
@@ -60,5 +63,41 @@ describe("evaluateBinancePermissions — fail-closed, spot-only", () => {
     });
     expect(v.ok).toBe(true);
     expect(v.ipRestricted).toBe(false);
+  });
+});
+
+describe("evaluateBinanceFuturesPermissions — fail-closed, futures-enabled", () => {
+  const safeKey = { enableWithdrawals: false, enableFutures: true, ipRestrict: true };
+
+  it("accepts a futures-trading, withdrawal-disabled key", () => {
+    const v = evaluateBinanceFuturesPermissions(safeKey);
+    expect(v.ok).toBe(true);
+    expect(v.canTrade).toBe(true);
+    expect(v.ipRestricted).toBe(true);
+  });
+
+  it("REJECTS a key with withdrawals enabled", () => {
+    const v = evaluateBinanceFuturesPermissions({ ...safeKey, enableWithdrawals: true });
+    expect(v.ok).toBe(false);
+    expect(v.error).toMatch(/ÇEKİM/);
+  });
+
+  it("REJECTS a spot-only key (bot trades futures)", () => {
+    const v = evaluateBinanceFuturesPermissions({
+      enableWithdrawals: false,
+      enableSpotAndMarginTrading: true,
+      enableFutures: false,
+    });
+    expect(v.ok).toBe(false);
+    expect(v.error).toMatch(/Futures/);
+  });
+
+  it("FAILS CLOSED when enableWithdrawals is missing", () => {
+    expect(evaluateBinanceFuturesPermissions({ enableFutures: true }).ok).toBe(false);
+  });
+
+  it("FAILS CLOSED on empty / non-object body", () => {
+    expect(evaluateBinanceFuturesPermissions({}).ok).toBe(false);
+    expect(evaluateBinanceFuturesPermissions(null).ok).toBe(false);
   });
 });

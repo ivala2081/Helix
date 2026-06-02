@@ -79,10 +79,63 @@ export function evaluateBinancePermissions(body: unknown): BinanceValidation {
   };
 }
 
+/**
+ * FUTURES variant. The bot trades USDT-M FUTURES (1x long+short), NOT spot, so a
+ * connected key must have FUTURES enabled — checking spot permission would let a
+ * key through that then fails at order time. Same fail-closed withdrawal guard.
+ * `enableFutures` is part of the apiRestrictions response. Pure → unit-testable.
+ */
+export function evaluateBinanceFuturesPermissions(body: unknown): BinanceValidation {
+  const b = (body ?? {}) as Record<string, unknown>;
+
+  if (typeof b.enableWithdrawals !== "boolean") {
+    return {
+      ok: false,
+      error: "İzinler doğrulanamadı (beklenmeyen yanıt). Lütfen tekrar dene.",
+    };
+  }
+  if (b.enableWithdrawals === true) {
+    return {
+      ok: false,
+      error:
+        "Bu anahtarda ÇEKİM izni AÇIK. Güvenlik için reddedildi — Binance'de çekim iznini kapatıp tekrar dene.",
+    };
+  }
+  if (b.enableFutures !== true) {
+    return {
+      ok: false,
+      error:
+        "Bu anahtarda Futures işlem izni yok. Binance'de 'Enable Futures'ı açıp tekrar dene.",
+    };
+  }
+  return {
+    ok: true,
+    enableWithdrawals: false,
+    canTrade: true,
+    ipRestricted: b.ipRestrict === true,
+  };
+}
+
 /** Validate a Binance API key: confirms it works and inspects permissions. */
 export async function validateBinanceKey(
   apiKey: string,
   secret: string,
+): Promise<BinanceValidation> {
+  return validateWith(apiKey, secret, evaluateBinancePermissions);
+}
+
+/** Validate a key for the FUTURES bot (futures-enabled, withdrawal-off). */
+export async function validateBinanceFuturesKey(
+  apiKey: string,
+  secret: string,
+): Promise<BinanceValidation> {
+  return validateWith(apiKey, secret, evaluateBinanceFuturesPermissions);
+}
+
+async function validateWith(
+  apiKey: string,
+  secret: string,
+  evaluate: (body: unknown) => BinanceValidation,
 ): Promise<BinanceValidation> {
   try {
     const r = await signedGet("/sapi/v1/account/apiRestrictions", apiKey, secret);
@@ -96,7 +149,7 @@ export async function validateBinanceKey(
       else if (code === -1022) error = "Secret hatalı görünüyor.";
       return { ok: false, error };
     }
-    return evaluateBinancePermissions(r.body);
+    return evaluate(r.body);
   } catch (e) {
     return {
       ok: false,

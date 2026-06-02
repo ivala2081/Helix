@@ -9,6 +9,9 @@
     "lint": "next lint",
     "warmup": "npx tsx scripts/warmup.ts",
     "cron-tick": "npx tsx scripts/cron-tick.ts",
+    "executor-tick": "npx tsx --env-file=.env.local scripts/executor-tick.ts",
+    "executor-ip": "npx tsx scripts/executor-ip.ts",
+    "seed-test-customer": "npx tsx --env-file=.env.local scripts/seed-test-customer.ts",
     "test": "vitest run"
   },
   "dependencies": {

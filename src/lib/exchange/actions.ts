@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import { encryptSecret } from "@/lib/crypto/apiKeys";
-import { validateBinanceKey } from "@/lib/exchange/binance";
+import { validateBinanceFuturesKey } from "@/lib/exchange/binance";
 import { isSubscriptionActive } from "@/lib/subscription/status";
 
 export type ConnState = { error?: string; message?: string };
@@ -43,8 +43,9 @@ export async function connectExchangeAction(
   if (!(await hasActiveSub(supabase, user.id)))
     return { error: "Önce paketi satın al (aktif abonelik gerekli)." };
 
-  // ── Validate against the real exchange (fail-closed, spot-only) ──
-  const v = await validateBinanceKey(apiKey, apiSecret);
+  // ── Validate against the real exchange (fail-closed, FUTURES-enabled,
+  //    withdrawal-off — the bot trades USDT-M futures, not spot) ──
+  const v = await validateBinanceFuturesKey(apiKey, apiSecret);
   if (!v.ok) return { error: v.error };
 
   // ── Encrypt + store atomically (unique user_id → upsert, never leaves the
