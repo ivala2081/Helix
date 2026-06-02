@@ -75,7 +75,7 @@ export default async function AppDashboard() {
       </div>
 
       {/* ── Customer KPI strip ── */}
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Kpi
           label="Toplam K/Z"
           value={hasActivity ? `${totalPnl >= 0 ? "+" : ""}$${totalPnl.toFixed(2)}` : "—"}
@@ -88,10 +88,12 @@ export default async function AppDashboard() {
 
       {/* ── Activity area: empty state until trades arrive ── */}
       {!hasActivity ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-border)] bg-[var(--color-surface)]/20 px-6 py-14 text-center">
-          <Activity size={28} className="text-[var(--color-muted)]/50" />
-          <h2 className="mt-4 text-base font-medium text-white">Henüz işlem yok</h2>
-          <p className="mt-1 max-w-sm text-sm text-[var(--color-muted)]">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/10 bg-white/[0.02] px-6 py-16 text-center backdrop-blur-sm">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500/20 to-transparent ring-1 ring-emerald-500/20">
+            <Activity size={26} className="text-emerald-400" />
+          </div>
+          <h2 className="mt-5 text-base font-medium text-white">Henüz işlem yok</h2>
+          <p className="mt-1.5 max-w-sm text-sm text-[var(--color-muted)]">
             {active
               ? "Borsa hesabını bağla; bot işlem açtıkça hepsi burada görünecek — bakiye, K/Z, açık pozisyonlar."
               : "Aboneliğini başlatıp borsanı bağladığında bot senin hesabında işlem açmaya başlar ve burada anlık olarak görürsün."}
@@ -239,13 +241,13 @@ function Kpi({
       ? "text-emerald-400"
       : tone === "red"
         ? "text-red-400"
-        : "text-white/95";
+        : "text-white";
   return (
-    <div className="bg-[var(--color-bg)] px-4 py-4">
+    <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-4 backdrop-blur-sm transition-colors hover:border-white/10">
       <div className="text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
         {label}
       </div>
-      <div className={`mt-1 font-mono text-xl font-medium tabular-nums ${cls}`}>
+      <div className={`mt-2 font-mono text-2xl font-semibold tabular-nums ${cls}`}>
         {value}
       </div>
     </div>
