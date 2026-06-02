@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Activity, ArrowRight } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import { isSubscriptionActive } from "@/lib/subscription/status";
+import { tradeStats } from "@/lib/metrics/trades";
 
 export const metadata: Metadata = { title: "Panel" };
 
@@ -45,8 +46,8 @@ export default async function AppDashboard() {
   const closed = trades.filter((t) => t.status === "closed");
   const open = trades.filter((t) => t.status === "open");
   const totalPnl = closed.reduce((s, t) => s + (t.pnl ?? 0), 0);
-  const wins = closed.filter((t) => (t.pnl ?? 0) > 0).length;
-  const winRate = closed.length > 0 ? (wins / closed.length) * 100 : null;
+  const stats = tradeStats(closed.map((t) => t.pnl));
+  const winRate = stats.winRate === null ? null : stats.winRate * 100;
   const hasActivity = trades.length > 0;
 
   return (
@@ -112,8 +113,9 @@ export default async function AppDashboard() {
               </thead>
               <tbody className="font-mono tabular-nums">
                 {trades.map((t, i) => {
-                  const pnlPct = t.pnl_pct ?? 0;
-                  const win = (t.pnl ?? 0) > 0;
+                  const isOpen = t.status === "open";
+                  const hasPnl = !isOpen && t.pnl_pct != null;
+                  const pnl = t.pnl ?? 0;
                   return (
                     <tr key={i} className="border-t border-[var(--color-border)]/50">
                       <td className="px-3 py-2 font-semibold text-white">
@@ -135,16 +137,18 @@ export default async function AppDashboard() {
                       </td>
                       <td
                         className={`px-3 py-2 text-right ${
-                          t.status === "open"
+                          !hasPnl
                             ? "text-[var(--color-muted)]"
-                            : win
+                            : pnl > 0
                               ? "text-emerald-400"
-                              : "text-red-400"
+                              : pnl < 0
+                                ? "text-red-400"
+                                : "text-[var(--color-muted)]"
                         }`}
                       >
-                        {t.status === "open"
-                          ? "—"
-                          : `${pnlPct >= 0 ? "+" : ""}${pnlPct.toFixed(2)}%`}
+                        {hasPnl
+                          ? `${(t.pnl_pct ?? 0) >= 0 ? "+" : ""}${(t.pnl_pct ?? 0).toFixed(2)}%`
+                          : "—"}
                       </td>
                       <td className="hidden px-3 py-2 text-right text-[10px] text-[var(--color-muted)]/60 sm:table-cell">
                         {new Date(t.opened_at).toLocaleDateString("tr-TR")}

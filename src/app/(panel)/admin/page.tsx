@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { FlaskConical } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
+import { isSubscriptionActive } from "@/lib/subscription/status";
 import {
   approveSubscriptionAction,
   rejectSubscriptionAction,
@@ -25,6 +26,7 @@ type Sub = {
   price_usd: number;
   payment_tx: string | null;
   payment_network: string | null;
+  expires_at: string | null;
   created_at: string;
 };
 type Bot = { user_id: string; enabled: boolean };
@@ -63,12 +65,10 @@ export default async function AdminDashboard() {
   const connByUser = new Map(conns.map((c) => [c.user_id, c.status]));
 
   const pending = subs.filter((s) => s.status === "pending");
-  const activeUsers = new Set(
-    subs.filter((s) => s.status === "active").map((s) => s.user_id),
-  );
-  const revenue = subs
-    .filter((s) => s.status === "active")
-    .reduce((sum, s) => sum + (s.price_usd ?? 0), 0);
+  // One latest sub per user, expiry-aware → no double-count, no expired counted.
+  const activeLatest = [...latestSub.values()].filter((s) => isSubscriptionActive(s));
+  const activeUsers = new Set(activeLatest.map((s) => s.user_id));
+  const revenue = activeLatest.reduce((sum, s) => sum + (s.price_usd ?? 0), 0);
   const connectedCount = conns.filter((c) => c.status === "connected").length;
 
   const profById = new Map(profiles.map((p) => [p.id, p]));

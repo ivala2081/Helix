@@ -188,20 +188,30 @@ export default async function CustomerDetail({
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <tbody className="font-mono tabular-nums">
-                {trades.map((t, i) => (
-                  <tr key={i} className="border-b border-[var(--color-border)]/40">
-                    <td className="py-1.5 font-semibold text-white">{t.symbol.replace("USDT", "")}</td>
-                    <td className="py-1.5 text-xs">{t.direction}</td>
-                    <td className="py-1.5 text-xs text-[var(--color-muted)]">{t.status}</td>
-                    <td
-                      className={`py-1.5 text-right ${
-                        (t.pnl_pct ?? 0) >= 0 ? "text-emerald-400" : "text-red-400"
-                      }`}
-                    >
-                      {t.status === "open" ? "—" : `${(t.pnl_pct ?? 0).toFixed(2)}%`}
-                    </td>
-                  </tr>
-                ))}
+                {trades.map((t, i) => {
+                  const hasPnl = t.status !== "open" && t.pnl_pct != null;
+                  const v = t.pnl_pct ?? 0;
+                  return (
+                    <tr key={i} className="border-b border-[var(--color-border)]/40">
+                      <td className="py-1.5 font-semibold text-white">{t.symbol.replace("USDT", "")}</td>
+                      <td className="py-1.5 text-xs">{t.direction}</td>
+                      <td className="py-1.5 text-xs text-[var(--color-muted)]">{t.status}</td>
+                      <td
+                        className={`py-1.5 text-right ${
+                          !hasPnl
+                            ? "text-[var(--color-muted)]"
+                            : v > 0
+                              ? "text-emerald-400"
+                              : v < 0
+                                ? "text-red-400"
+                                : "text-[var(--color-muted)]"
+                        }`}
+                      >
+                        {hasPnl ? `${v >= 0 ? "+" : ""}${v.toFixed(2)}%` : "—"}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

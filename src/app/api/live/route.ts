@@ -18,6 +18,7 @@ export async function GET() {
     db
       .from("live_portfolios")
       .select("symbol, interval, status, initial_capital, equity, realized_pnl, open_trade, last_candle_ts, bar_index, warmup_complete, started_at, updated_at")
+      .eq("status", "active")
       .order("symbol"),
     db
       .from("live_trades")

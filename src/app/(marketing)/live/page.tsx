@@ -95,24 +95,20 @@ export default function LivePage() {
     totalInitial > 0 ? ((totalEquity - totalInitial) / totalInitial) * 100 : 0;
   const positive = totalReturn >= 0;
 
-  const bestCoin = data?.portfolios.reduce((best, p) => {
-    if (!best) return p;
-    const pRet = (p.equity - p.initial_capital) / p.initial_capital;
-    const bRet = (best.equity - best.initial_capital) / best.initial_capital;
-    return pRet > bRet ? p : best;
-  }, undefined as Portfolio | undefined);
-  const bestRet = bestCoin
-    ? ((bestCoin.equity - bestCoin.initial_capital) / bestCoin.initial_capital) * 100
-    : 0;
+  const retOf = (p: Portfolio) =>
+    p.initial_capital > 0 ? (p.equity - p.initial_capital) / p.initial_capital : 0;
+  const bestCoin = data?.portfolios.reduce(
+    (best, p) => (!best ? p : retOf(p) > retOf(best) ? p : best),
+    undefined as Portfolio | undefined,
+  );
+  const bestRet = bestCoin ? retOf(bestCoin) * 100 : 0;
 
-  const earliestStart = data?.portfolios.map((p) => p.started_at).sort()[0];
-  const daysLive = earliestStart
-    ? Math.max(
-        0,
-        Math.floor(
-          (Date.now() - new Date(earliestStart).getTime()) / 86_400_000,
-        ),
-      )
+  const startTimes = (data?.portfolios ?? [])
+    .map((p) => Date.parse(p.started_at))
+    .filter((t) => Number.isFinite(t));
+  const earliest = startTimes.length ? Math.min(...startTimes) : null;
+  const daysLive = earliest
+    ? Math.max(0, Math.floor((Date.now() - earliest) / 86_400_000))
     : 0;
 
   const lastTickAgeMin = data?.lastCronRun
@@ -380,7 +376,10 @@ function Cell({
 }
 
 function PortfolioCard({ p }: { p: Portfolio }) {
-  const ret = ((p.equity - p.initial_capital) / p.initial_capital) * 100;
+  const ret =
+    p.initial_capital > 0
+      ? ((p.equity - p.initial_capital) / p.initial_capital) * 100
+      : 0;
   const tint = COIN_TINT[p.symbol] ?? "text-[var(--color-muted)]";
   const updatedAgo = Math.max(
     0,

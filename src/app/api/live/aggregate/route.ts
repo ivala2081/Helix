@@ -4,6 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { tradeStats } from "@/lib/metrics/trades";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -130,8 +131,13 @@ export async function GET() {
     if (Math.abs(dd) > maxCombinedDD) maxCombinedDD = Math.abs(dd);
     currentCombinedDD = Math.abs(dd);
   }
+  // Current DD from the FRESH portfolio equity (snapshots can lag the live
+  // portfolio rows), so it never contradicts the KPI strip's equity.
+  const livePeak = Math.max(peak, totalEquity);
+  currentCombinedDD =
+    livePeak > 0 ? Math.abs(((totalEquity - livePeak) / livePeak) * 100) : 0;
 
-  // Hourly returns for Sharpe/Sortino
+  // Per-step returns for Sharpe/Sortino
   const returns: number[] = [];
   for (let i = 1; i < combinedSeries.length; i++) {
     const prev = combinedSeries[i - 1].equity;
@@ -144,12 +150,27 @@ export async function GET() {
   let sortinoRatio: number | null = null;
   let calmarRatio: number | null = null;
 
+  // Annualize by the ACTUAL median sampling step (cron moved hourly → 15-min),
+  // not a hard-coded √8760 that would mis-scale Sharpe.
+  const YEAR_MS = 365 * 24 * 3600 * 1000;
+  const stepMs = (() => {
+    if (combinedSeries.length < 2) return 3_600_000;
+    const deltas: number[] = [];
+    for (let i = 1; i < combinedSeries.length; i++) {
+      const d = combinedSeries[i].ts - combinedSeries[i - 1].ts;
+      if (d > 0) deltas.push(d);
+    }
+    if (!deltas.length) return 3_600_000;
+    deltas.sort((a, b) => a - b);
+    return deltas[Math.floor(deltas.length / 2)];
+  })();
+  const annFactor = Math.sqrt(YEAR_MS / stepMs);
+
   if (returns.length >= 24) {
     const mean = returns.reduce((s, r) => s + r, 0) / returns.length;
     const variance =
       returns.reduce((s, r) => s + (r - mean) ** 2, 0) / returns.length;
     const std = Math.sqrt(variance);
-    const annFactor = Math.sqrt(8760); // hours per year
 
     if (std > 0) {
       sharpeRatio = (mean / std) * annFactor;
@@ -173,9 +194,14 @@ export async function GET() {
         totalInitial > 0
           ? ((totalEquity - totalInitial) / totalInitial) * 100
           : 0;
-      // Annualize: assume data spans returns.length hours
-      const hoursOfData = returns.length;
-      const annualizedReturn = totalReturnPct * (8760 / hoursOfData);
+      // Annualize by real elapsed time, not an assumed hourly count.
+      const elapsedMs =
+        combinedSeries.length >= 2
+          ? combinedSeries[combinedSeries.length - 1].ts - combinedSeries[0].ts
+          : returns.length * stepMs;
+      const elapsedYears = elapsedMs > 0 ? elapsedMs / YEAR_MS : 0;
+      const annualizedReturn =
+        elapsedYears > 0 ? totalReturnPct / elapsedYears : 0;
       calmarRatio = annualizedReturn / maxCombinedDD;
     }
   }
@@ -187,10 +213,12 @@ export async function GET() {
     totalInitial > 0
       ? ((totalEquity - totalInitial) / totalInitial) * 100
       : 0;
+  // Settled-only, breakeven-neutral win-rate (shared classifier).
+  const allStats = tradeStats(allTrades.map((t) => t.pnl));
   const totalTrades = allTrades.length;
-  const totalWins = allTrades.filter((t) => t.pnl > 0).length;
-  const totalLosses = allTrades.filter((t) => t.pnl <= 0).length;
-  const overallWinRate = totalTrades > 0 ? totalWins / totalTrades : null;
+  const totalWins = allStats.wins;
+  const totalLosses = allStats.losses;
+  const overallWinRate = allStats.winRate;
 
   const winPnlSum = allTrades
     .filter((t) => t.pnl > 0)
