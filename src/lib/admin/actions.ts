@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { SUBSCRIPTION_DAYS } from "@/lib/pricing";
+import { isValidStrategyKey } from "@/lib/engine/strategies";
 
 /** Throws unless the current session belongs to an admin. Throwing (not a silent
  *  `return`) means an unauthorized invocation fails loudly instead of looking
@@ -94,5 +95,21 @@ export async function setUserBotAction(formData: FormData): Promise<void> {
   await svc
     .from("bot_settings")
     .upsert({ user_id: userId, enabled }, { onConflict: "user_id" });
+  revalidatePath(`/admin/${userId}`);
+}
+
+/** Assign which strategy the customer's bot runs (e.g. v5 / v5_2). Validated
+ *  against the strategy registry; service role (bot_settings is owner-only RLS),
+ *  gated by an admin check. The executor mirrors that strategy's signal. */
+export async function setUserStrategyAction(formData: FormData): Promise<void> {
+  const userId = String(formData.get("user_id") ?? "");
+  const strategy = String(formData.get("strategy") ?? "");
+  if (!userId || !isValidStrategyKey(strategy)) return;
+  const supabase = await createServerSupabase();
+  await assertAdminOrThrow(supabase);
+  const svc = createServiceClient();
+  await svc
+    .from("bot_settings")
+    .upsert({ user_id: userId, strategy }, { onConflict: "user_id" });
   revalidatePath(`/admin/${userId}`);
 }

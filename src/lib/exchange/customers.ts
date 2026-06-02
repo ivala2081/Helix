@@ -3,12 +3,18 @@
 // button. Eligibility = active subscription AND bot enabled AND a connected
 // exchange — the same gate the customer UI enforces, re-checked here so the bot
 // never trades an account that lapsed since the UI last ran.
+//
+// Per-customer strategy: each customer runs one strategy from the registry
+// (src/lib/engine/strategies.ts). The executor mirrors THAT strategy's live
+// forward-test signal (its portfolios table). Customer X can run V5 while
+// customer Y runs V5.2.
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isSubscriptionActive } from "../subscription/status";
 import { FORWARD_TEST_COINS, FORWARD_TEST_INITIAL_CAPITAL } from "../engine/live-config";
 import { evaluateKillSwitch, type MinimalTrade } from "../engine/kill-switch";
-import type { BinanceFuturesClient, FuturesFilters } from "./binance-futures";
+import { getStrategy, type StrategyDef } from "../engine/strategies";
+import type { BinanceFuturesClient, FuturesFilters, FuturesEnv } from "./binance-futures";
 import { clientFromConnection, type ExchangeConnectionRow } from "./customer-account";
 import {
   runReconcileCycle,
@@ -22,7 +28,6 @@ import {
   type OpenGate,
   DEFAULT_MAX_SIGNAL_AGE_MS,
 } from "./safety";
-import type { FuturesEnv } from "./binance-futures";
 
 export type SymbolSignal = { target: EngineTarget; updatedAt: number | null };
 
@@ -31,6 +36,14 @@ export type EligibleCustomer = {
   conn: ExchangeConnectionRow;
   riskPct: number; // fraction (e.g. 0.01), already clamped
   symbols: string[];
+  strategy: string; // registry key, e.g. 'v5' | 'v5_2'
+};
+
+/** Per-strategy loaded context: its definition, current signals, and open-gates. */
+export type StrategyContext = {
+  def: StrategyDef;
+  signals: Map<string, SymbolSignal>;
+  gates: Map<string, OpenGate>;
 };
 
 const FORWARD_COINS = new Set<string>(FORWARD_TEST_COINS as readonly string[]);
@@ -42,7 +55,7 @@ export async function loadEligibleCustomers(
 ): Promise<EligibleCustomer[]> {
   const { data: bots } = await db
     .from("bot_settings")
-    .select("user_id, risk_pct, symbols")
+    .select("user_id, risk_pct, symbols, strategy")
     .eq("enabled", true);
   if (!bots || bots.length === 0) return [];
 
@@ -64,7 +77,6 @@ export async function loadEligibleCustomers(
   const connByUser = new Map<string, ExchangeConnectionRow>();
   for (const c of conns ?? []) connByUser.set(c.user_id as string, c as ExchangeConnectionRow);
 
-  // Newest subscription row per user (rows already sorted created_at desc).
   const newestSub = new Map<string, { status: string; expires_at?: string | null }>();
   for (const s of subs ?? []) {
     if (!newestSub.has(s.user_id as string)) {
@@ -81,18 +93,21 @@ export async function loadEligibleCustomers(
     const riskRaw = Number(b.risk_pct);
     const riskPct = (Number.isFinite(riskRaw) ? Math.min(5, Math.max(0.25, riskRaw)) : 1) / 100;
     const symbols = (b.symbols as string[] | null)?.filter((s) => FORWARD_COINS.has(s)) ?? [];
-    eligible.push({ userId, conn, riskPct, symbols });
+    // getStrategy falls back to V5 for an unknown/removed key (fail-safe).
+    const strategy = getStrategy(b.strategy as string | null).key;
+    eligible.push({ userId, conn, riskPct, symbols, strategy });
   }
   return eligible;
 }
 
-/** V5 desired position per symbol + the cron timestamp behind it (for the
- *  freshness gate), from live_portfolios. */
-export async function loadV5Signals(
+/** Desired position per symbol + cron timestamp (freshness gate), from a
+ *  strategy's live forward-test portfolios table. */
+export async function loadStrategySignals(
   db: SupabaseClient,
+  portfoliosTable: string,
 ): Promise<Map<string, SymbolSignal>> {
   const { data } = await db
-    .from("live_portfolios")
+    .from(portfoliosTable)
     .select("symbol, open_trade, updated_at")
     .eq("status", "active");
   const map = new Map<string, SymbolSignal>();
@@ -107,11 +122,12 @@ export async function loadV5Signals(
 }
 
 /** Per-symbol "may we OPEN now?" gate = signal fresh AND kill-switch not tripped.
- *  Only computed for symbols that actually have a target (no target → no open).
- *  Kill-switch is evaluated from the V5 forward-test record (live_trades). */
+ *  Only computed for symbols that have a target. Kill-switch is evaluated from
+ *  the strategy's own forward-test trade record. */
 export async function computeOpenGates(
   db: SupabaseClient,
   signals: Map<string, SymbolSignal>,
+  tradesTable: string,
   now: number,
   maxAgeMs: number = DEFAULT_MAX_SIGNAL_AGE_MS,
 ): Promise<Map<string, OpenGate>> {
@@ -119,11 +135,11 @@ export async function computeOpenGates(
   const monthAgo = now - 30 * 86_400_000;
 
   for (const [symbol, sig] of signals) {
-    if (sig.target === null) continue; // nothing to open
+    if (sig.target === null) continue;
     const fresh = isSignalFresh(sig.updatedAt, now, maxAgeMs);
 
     const { data } = await db
-      .from("live_trades")
+      .from(tradesTable)
       .select("exit_ts, pnl, r_multiple")
       .eq("symbol", symbol)
       .gte("exit_ts", monthAgo)
@@ -137,27 +153,43 @@ export async function computeOpenGates(
       now,
       initialCapital: FORWARD_TEST_INITIAL_CAPITAL,
       recentTrades,
-      parityLastPassedAt: null, // K4 skipped here; parity is a cron-side concern
+      parityLastPassedAt: null,
       currentState: null,
     });
-
     gates.set(symbol, buildOpenGate(fresh, ks));
   }
   return gates;
 }
 
-/** Run a reconciliation cycle for every relevant symbol of one customer. Skips
- *  symbols with no target and no open position (avoids needless API calls). On a
- *  client-level failure (bad key / IP / network) flags the connection 'error'. */
-export type CycleOptions = {
-  gates?: Map<string, OpenGate>;
-  dryRun?: boolean;
-};
+/** Load signals + open-gates for each distinct strategy the eligible customers
+ *  use, so a tick reads each strategy's signal source exactly once. */
+export async function loadStrategyContexts(
+  db: SupabaseClient,
+  strategyKeys: Iterable<string>,
+  now: number,
+  maxAgeMs: number = DEFAULT_MAX_SIGNAL_AGE_MS,
+): Promise<Map<string, StrategyContext>> {
+  const out = new Map<string, StrategyContext>();
+  const keys = new Set<string>([...strategyKeys]);
+  for (const key of keys) {
+    const def = getStrategy(key);
+    if (out.has(def.key)) continue; // unknown keys collapse to the same fallback
+    const signals = await loadStrategySignals(db, def.portfoliosTable);
+    const gates = await computeOpenGates(db, signals, def.tradesTable, now, maxAgeMs);
+    out.set(def.key, { def, signals, gates });
+  }
+  return out;
+}
 
+export type CycleOptions = { dryRun?: boolean };
+
+/** Run a reconciliation cycle for every relevant symbol of one customer, using
+ *  the customer's assigned strategy context. Skips symbols with no target and no
+ *  open position. On a hard credential failure flags the connection 'error'. */
 export async function runCustomerCycle(
   db: SupabaseClient,
   customer: EligibleCustomer,
-  signals: Map<string, SymbolSignal>,
+  ctx: StrategyContext,
   env: FuturesEnv,
   filtersCache: Map<string, FuturesFilters>,
   opts: CycleOptions = {},
@@ -170,7 +202,6 @@ export async function runCustomerCycle(
     return [{ symbol: "*", action: "error", detail: "decrypt", error: (e as Error).message }];
   }
 
-  // Which symbols does this customer currently hold an open trade on?
   const { data: openRows } = await db
     .from("user_trades")
     .select("symbol")
@@ -180,10 +211,10 @@ export async function runCustomerCycle(
 
   const records: CycleRecord[] = [];
   for (const symbol of customer.symbols) {
-    const target = signals.get(symbol)?.target ?? null;
-    if (target === null && !openSymbols.has(symbol)) continue; // nothing to do
+    const target = ctx.signals.get(symbol)?.target ?? null;
+    if (target === null && !openSymbols.has(symbol)) continue;
 
-    const gate = opts.gates?.get(symbol);
+    const gate = ctx.gates.get(symbol);
     try {
       let filters = filtersCache.get(symbol);
       if (!filters) {
@@ -204,10 +235,6 @@ export async function runCustomerCycle(
         dryRun: opts.dryRun,
       });
       records.push(rec);
-      // Only DISABLE the connection for a genuine credential/permission/IP
-      // problem (needs customer action). A transient network blip must NOT lock
-      // a paying customer out — reconciliation is idempotent and self-heals next
-      // tick, so we just skip and leave the connection 'connected'.
       if (rec.error && isHardConnectionError(rec.error)) {
         await flagConnectionError(db, customer.userId, rec.error);
       }
@@ -226,15 +253,15 @@ export async function runCustomerCycle(
 function isHardConnectionError(msg: string): boolean {
   const m = msg.toLowerCase();
   return (
-    m.includes("[code -2015]") || // invalid key / IP not whitelisted
-    m.includes("[code -1022]") || // bad signature (wrong secret)
-    m.includes("[code -2014]") || // bad api-key format
-    m.includes("[code -1099]") || // not found / auth
+    m.includes("[code -2015]") ||
+    m.includes("[code -1022]") ||
+    m.includes("[code -2014]") ||
+    m.includes("[code -1099]") ||
     m.includes("(401)") ||
     m.includes("(403)") ||
     m.includes("api-key") ||
     m.includes("permission") ||
-    m.includes("malformed ciphertext") // our own decrypt failure
+    m.includes("malformed ciphertext")
   );
 }
 

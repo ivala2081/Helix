@@ -6,8 +6,7 @@ import { BinanceFuturesClient, roundStep } from "@/lib/exchange/binance-futures"
 import type { FuturesFilters } from "@/lib/exchange/binance-futures";
 import {
   loadEligibleCustomers,
-  loadV5Signals,
-  computeOpenGates,
+  loadStrategyContexts,
   runCustomerCycle,
 } from "@/lib/exchange/customers";
 
@@ -102,22 +101,7 @@ export async function runExecutorTestTick(
   try {
     const db = createServiceClient();
     const now = Date.now();
-    const [customers, signals] = await Promise.all([
-      loadEligibleCustomers(db),
-      loadV5Signals(db),
-    ]);
-    const gates = await computeOpenGates(db, signals, now);
-
-    const liveSymbols = [...signals.entries()]
-      .filter(([, s]) => s.target !== null)
-      .map(([s]) => s);
-    const blocked = [...gates.entries()].filter(([, g]) => !g.allowOpen);
-    log.push(
-      `Uygun müşteri: ${customers.length} · V5 açık sinyal: ${liveSymbols.length ? liveSymbols.join(", ") : "yok"}`,
-    );
-    log.push(
-      `Open-gate bloklu: ${blocked.length ? blocked.map(([s, g]) => `${s} (${g.reason})`).join(", ") : "yok"}`,
-    );
+    const customers = await loadEligibleCustomers(db);
     if (customers.length === 0) {
       log.push(
         "Uygun müşteri yok. Önce `npm run seed-test-customer` ile simüle müşteriyi kur.",
@@ -125,12 +109,21 @@ export async function runExecutorTestTick(
       return { log };
     }
 
+    const contexts = await loadStrategyContexts(db, customers.map((c) => c.strategy), now);
+    for (const ctx of contexts.values()) {
+      const live = [...ctx.signals.entries()].filter(([, s]) => s.target !== null).map(([s]) => s);
+      const blocked = [...ctx.gates.entries()].filter(([, g]) => !g.allowOpen);
+      log.push(
+        `[${ctx.def.label}] açık sinyal: ${live.length ? live.join(", ") : "yok"} · gate-bloklu: ${blocked.length ? blocked.map(([s, g]) => `${s}(${g.reason})`).join(", ") : "yok"}`,
+      );
+    }
+
     const filtersCache = new Map<string, FuturesFilters>();
     for (const customer of customers) {
-      const records = await runCustomerCycle(db, customer, signals, "testnet", filtersCache, {
-        gates,
-      });
-      const id = customer.userId.slice(0, 8);
+      const ctx = contexts.get(customer.strategy);
+      if (!ctx) continue;
+      const records = await runCustomerCycle(db, customer, ctx, "testnet", filtersCache);
+      const id = `${customer.userId.slice(0, 8)}[${customer.strategy}]`;
       for (const r of records) {
         if (r.action === "noop") {
           log.push(`· ${id} ${r.symbol}: noop (${r.detail})`);

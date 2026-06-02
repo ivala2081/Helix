@@ -17,8 +17,7 @@ import { createClient } from "@supabase/supabase-js";
 import type { FuturesEnv, FuturesFilters } from "../src/lib/exchange/binance-futures";
 import {
   loadEligibleCustomers,
-  loadV5Signals,
-  computeOpenGates,
+  loadStrategyContexts,
   runCustomerCycle,
 } from "../src/lib/exchange/customers";
 import { fetchEgressIp } from "../src/lib/exchange/egress-ip";
@@ -52,38 +51,44 @@ async function main() {
   });
 
   const now = Date.now();
-  const [customers, signals] = await Promise.all([
-    loadEligibleCustomers(db),
-    loadV5Signals(db),
-  ]);
-  const gates = await computeOpenGates(db, signals, now, maxAgeMs);
-
-  const blocked = [...gates.entries()].filter(([, g]) => !g.allowOpen);
-  console.log(
-    `${customers.length} eligible customer(s), ${signals.size} symbol(s); open-gate blocked: ${blocked.length ? blocked.map(([s, g]) => `${s}(${g.reason})`).join(", ") : "none"}`,
-  );
+  const customers = await loadEligibleCustomers(db);
   if (customers.length === 0) {
     console.log("No eligible customers — nothing to do.");
     return;
   }
+
+  // Load each used strategy's signals + open-gates once.
+  const contexts = await loadStrategyContexts(
+    db,
+    customers.map((c) => c.strategy),
+    now,
+    maxAgeMs,
+  );
+  const stratSummary = [...contexts.values()]
+    .map((ctx) => {
+      const blocked = [...ctx.gates.entries()].filter(([, g]) => !g.allowOpen);
+      return `${ctx.def.label}: ${ctx.signals.size} sym, blocked ${blocked.length ? blocked.map(([s, g]) => `${s}(${g.reason})`).join("/") : "none"}`;
+    })
+    .join(" | ");
+  console.log(`${customers.length} eligible customer(s) — ${stratSummary}`);
 
   const filtersCache = new Map<string, FuturesFilters>();
   let actions = 0;
   let errors = 0;
 
   for (const customer of customers) {
-    const records = await runCustomerCycle(db, customer, signals, env, filtersCache, {
-      gates,
-      dryRun,
-    });
+    const ctx = contexts.get(customer.strategy);
+    if (!ctx) continue;
+    const records = await runCustomerCycle(db, customer, ctx, env, filtersCache, { dryRun });
     for (const r of records) {
       if (r.action === "noop") continue;
+      const who = `${customer.userId.slice(0, 8)}[${customer.strategy}]`;
       if (r.error) {
         errors++;
-        console.error(`  ✗ ${customer.userId.slice(0, 8)} ${r.symbol}: ${r.error}`);
+        console.error(`  ✗ ${who} ${r.symbol}: ${r.error}`);
       } else {
         actions++;
-        console.log(`  ✓ ${customer.userId.slice(0, 8)} ${r.symbol}: ${r.action} — ${r.detail}`);
+        console.log(`  ✓ ${who} ${r.symbol}: ${r.action} — ${r.detail}`);
       }
     }
   }

@@ -7,7 +7,9 @@ import {
   rejectSubscriptionAction,
   setUserRoleAction,
   setUserBotAction,
+  setUserStrategyAction,
 } from "@/lib/admin/actions";
+import { assignableStrategies, getStrategy } from "@/lib/engine/strategies";
 
 export const metadata: Metadata = { title: "Müşteri" };
 
@@ -30,7 +32,7 @@ type Sub = {
   activated_at: string | null;
 };
 type Conn = { exchange: string; status: string; created_at: string };
-type Bot = { enabled: boolean; risk_pct: number };
+type Bot = { enabled: boolean; risk_pct: number; strategy: string };
 type Trade = {
   symbol: string;
   direction: string;
@@ -57,7 +59,7 @@ export default async function CustomerDetail({
     supabase.from("profiles").select("*").eq("id", id).single(),
     supabase.from("subscriptions").select("*").eq("user_id", id).order("created_at", { ascending: false }),
     supabase.from("exchange_connections").select("exchange, status, created_at").eq("user_id", id),
-    supabase.from("bot_settings").select("enabled, risk_pct").eq("user_id", id),
+    supabase.from("bot_settings").select("enabled, risk_pct, strategy").eq("user_id", id),
     supabase
       .from("user_trades")
       .select("symbol, direction, status, pnl_pct, opened_at")
@@ -78,7 +80,8 @@ export default async function CustomerDetail({
 
   const subs = (subsRes.data ?? []) as Sub[];
   const conn = (connRes.data?.[0] ?? null) as Conn | null;
-  const bot = (botRes.data?.[0] ?? { enabled: false, risk_pct: 1 }) as Bot;
+  const bot = (botRes.data?.[0] ?? { enabled: false, risk_pct: 1, strategy: "v5" }) as Bot;
+  const currentStrategy = getStrategy(bot.strategy);
   const trades = (tradesRes.data ?? []) as Trade[];
   const pendingSub = subs.find((s) => s.status === "pending");
 
@@ -162,6 +165,30 @@ export default async function CustomerDetail({
         />
         <Row k="Bot" v={bot.enabled ? "aktif" : "pasif"} />
         <Row k="Risk" v={`%${bot.risk_pct}`} />
+        <Row
+          k="Strateji"
+          v={`${currentStrategy.label}${currentStrategy.experimental ? " (deneysel)" : ""}`}
+        />
+        {/* Per-customer strategy assignment — the executor mirrors this
+            strategy's live signal onto the customer's account. */}
+        <form action={setUserStrategyAction} className="mt-3 flex items-center gap-2">
+          <input type="hidden" name="user_id" value={p.id} />
+          <select
+            name="strategy"
+            defaultValue={currentStrategy.key}
+            className="rounded-md border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1.5 text-xs text-white"
+          >
+            {assignableStrategies().map((s) => (
+              <option key={s.key} value={s.key}>
+                {s.label}
+                {s.experimental ? " (deneysel)" : ""}
+              </option>
+            ))}
+          </select>
+          <button className="rounded-md border border-sky-500/40 px-3 py-1.5 text-xs text-sky-300 hover:bg-sky-500/10">
+            Stratejiyi ata
+          </button>
+        </form>
         <div className="mt-3 flex gap-2">
           <form action={setUserBotAction}>
             <input type="hidden" name="user_id" value={p.id} />
