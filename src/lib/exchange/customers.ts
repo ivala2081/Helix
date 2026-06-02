@@ -28,13 +28,14 @@ import {
   type OpenGate,
   DEFAULT_MAX_SIGNAL_AGE_MS,
 } from "./safety";
+import { cappedRiskPct } from "./account-risk";
 
 export type SymbolSignal = { target: EngineTarget; updatedAt: number | null };
 
 export type EligibleCustomer = {
   userId: string;
   conn: ExchangeConnectionRow;
-  riskPct: number; // fraction (e.g. 0.01), already clamped
+  riskPct: number; // fraction (e.g. 0.01), already clamped + launch-capped
   symbols: string[];
   strategy: string; // registry key, e.g. 'v5' | 'v5_2'
 };
@@ -91,7 +92,9 @@ export async function loadEligibleCustomers(
     if (!conn) continue;
     if (!isSubscriptionActive(newestSub.get(userId) ?? null)) continue;
     const riskRaw = Number(b.risk_pct);
-    const riskPct = (Number.isFinite(riskRaw) ? Math.min(5, Math.max(0.25, riskRaw)) : 1) / 100;
+    const clamped = Number.isFinite(riskRaw) ? Math.min(5, Math.max(0.25, riskRaw)) : 1;
+    // Conservative launch cap (account-risk.ts) on top of the bot_settings clamp.
+    const riskPct = cappedRiskPct(clamped) / 100;
     const symbols = (b.symbols as string[] | null)?.filter((s) => FORWARD_COINS.has(s)) ?? [];
     // getStrategy falls back to V5 for an unknown/removed key (fail-safe).
     const strategy = getStrategy(b.strategy as string | null).key;
@@ -209,12 +212,32 @@ export async function runCustomerCycle(
     .eq("status", "open");
   const openSymbols = new Set((openRows ?? []).map((r) => r.symbol as string));
 
+  // ── Per-customer circuit breaker (once per tick) ──
+  // Stateless kill-switch over the customer's OWN closed trades (capital-flow
+  // immune, no equity read, no persisted halt state). Blocks NEW entries only;
+  // closing an existing position is never blocked (a customer can always exit).
+  // Only computed when the customer has a candidate OPEN this tick — closes/
+  // reduces don't consult it, so an idle customer skips the query.
+  const hasCandidateOpen = customer.symbols.some(
+    (s) => ctx.signals.get(s)?.target != null && !openSymbols.has(s),
+  );
+  const accountGate = hasCandidateOpen
+    ? await checkCustomerKillSwitch(db, customer.userId)
+    : { allowOpen: true, reason: "no candidate open" };
   const records: CycleRecord[] = [];
+  if (!accountGate.allowOpen) {
+    records.push({ symbol: "*", action: "risk-halt", detail: accountGate.reason });
+  }
+
   for (const symbol of customer.symbols) {
     const target = ctx.signals.get(symbol)?.target ?? null;
     if (target === null && !openSymbols.has(symbol)) continue;
 
     const gate = ctx.gates.get(symbol);
+    // Open requires BOTH the strategy signal gate (freshness + strategy
+    // kill-switch) AND the per-customer circuit breaker to allow it.
+    const allowOpen = (gate ? gate.allowOpen : true) && accountGate.allowOpen;
+    const openBlockReason = !accountGate.allowOpen ? accountGate.reason : gate?.reason;
     try {
       let filters = filtersCache.get(symbol);
       if (!filters) {
@@ -230,8 +253,8 @@ export async function runCustomerCycle(
         riskPct: customer.riskPct,
         env,
         filters,
-        allowOpen: gate ? gate.allowOpen : true,
-        openBlockReason: gate?.reason,
+        allowOpen,
+        openBlockReason,
         dryRun: opts.dryRun,
       });
       records.push(rec);
@@ -245,6 +268,49 @@ export async function runCustomerCycle(
     }
   }
   return records;
+}
+
+/** Per-customer circuit breaker: a STATELESS kill-switch over the customer's own
+ *  closed bot trades (user_trades). Capital-flow immune (no equity read), needs
+ *  no persisted halt state — it trips while the drawdown / loss-streak / daily
+ *  loss thresholds hold and clears when they recover (evaluateKillSwitch with no
+ *  carried state). K1 (rolling drawdown) and K2 (consecutive losses) are the
+ *  robust, capital-independent drivers; pnl_pct is used as the per-trade return
+ *  for the synthetic equity curve. Read-only DB query → no write to fail/clobber.
+ *  Empty history (new customer) → not paused. */
+async function checkCustomerKillSwitch(
+  db: SupabaseClient,
+  userId: string,
+): Promise<{ allowOpen: boolean; reason: string }> {
+  const now = Date.now();
+  const monthAgo = new Date(now - 30 * 86_400_000).toISOString();
+  const { data, error } = await db
+    .from("user_trades")
+    .select("pnl, pnl_pct, closed_at")
+    .eq("user_id", userId)
+    .eq("status", "closed")
+    .gte("closed_at", monthAgo)
+    .order("closed_at", { ascending: true });
+  // On a query error, fail OPEN (a DB blip must not halt a paying customer).
+  if (error || !data || data.length === 0) return { allowOpen: true, reason: "no history" };
+
+  const recentTrades: MinimalTrade[] = data.map((t) => ({
+    exitTs: t.closed_at ? new Date(t.closed_at as string).getTime() : now,
+    pnl: Number(t.pnl ?? 0),
+    // pnl_pct (= pnl/notional×100) as the R-proxy for the synthetic DD curve.
+    rMultiple: t.pnl_pct != null ? Number(t.pnl_pct) : null,
+  }));
+  const ks = evaluateKillSwitch({
+    now,
+    initialCapital: FORWARD_TEST_INITIAL_CAPITAL,
+    recentTrades,
+    parityLastPassedAt: null,
+    currentState: null, // stateless: recompute each tick
+  });
+  return {
+    allowOpen: !ks.paused,
+    reason: ks.paused ? `circuit-breaker ${ks.state.rule ?? "paused"}` : "ok",
+  };
 }
 
 /** True only for errors that mean the customer's key itself is bad (auth, IP
