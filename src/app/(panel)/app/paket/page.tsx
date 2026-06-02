@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import { isSubscriptionActive } from "@/lib/subscription/status";
+import { MONTHLY_PRICE_USD, PROFIT_SHARE_PCT } from "@/lib/pricing";
 import { SubscriptionRequest } from "@/components/panel/SubscriptionRequest";
 
 export const metadata: Metadata = { title: "Helix Bot Paketi" };
@@ -108,10 +109,12 @@ export default async function PaketPage() {
           5 dakika; gerisini bot halleder.
         </p>
         <div className="mt-6 flex items-baseline gap-2">
-          <span className="text-4xl font-bold text-white">499</span>
-          <span className="text-lg font-medium text-emerald-300">USDT</span>
-          <span className="text-sm text-[var(--color-muted)]">/ tek seferlik</span>
+          <span className="text-4xl font-bold text-white">${MONTHLY_PRICE_USD}</span>
+          <span className="text-sm text-[var(--color-muted)]">/ ay</span>
         </div>
+        <p className="mt-1.5 text-sm text-emerald-300">
+          + kârın %{PROFIT_SHARE_PCT}&apos;i — yalnızca kazandırırsa (high-water mark)
+        </p>
       </div>
 
       {/* ── How it works ── */}

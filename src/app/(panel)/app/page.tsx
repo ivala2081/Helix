@@ -4,6 +4,7 @@ import { Activity, ArrowRight } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import { isSubscriptionActive } from "@/lib/subscription/status";
 import { tradeStats } from "@/lib/metrics/trades";
+import { MONTHLY_PRICE_USD, PROFIT_SHARE_PCT } from "@/lib/pricing";
 
 export const metadata: Metadata = { title: "Panel" };
 
@@ -200,13 +201,13 @@ export default async function AppDashboard() {
           <ul className="mt-4 space-y-1.5 text-sm text-[var(--color-muted)]">
             <li>✓ Tam otomatik · 7/24 · V5 stratejisi</li>
             <li>✓ Paran kendi borsanda kalır (non-custodial)</li>
-            <li>✓ Giriş, SL ve TP&apos;ler bot tarafından yönetilir</li>
+            <li>✓ Aylık ${MONTHLY_PRICE_USD} + kârın %{PROFIT_SHARE_PCT}&apos;i — yalnızca kazandırırsa</li>
           </ul>
           <Link
             href="/app/paket"
             className="mt-5 inline-flex items-center gap-2 rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
           >
-            Satın Al · 499 USDT
+            Başla · ${MONTHLY_PRICE_USD}/ay
             <ArrowRight size={16} />
           </Link>
         </div>

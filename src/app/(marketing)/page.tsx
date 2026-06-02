@@ -10,6 +10,7 @@ import {
   Activity,
 } from "lucide-react";
 import { HeroScene } from "@/components/ui/HeroScene";
+import { MONTHLY_PRICE_USD, PROFIT_SHARE_PCT } from "@/lib/pricing";
 
 const STEPS = [
   {
@@ -194,14 +195,16 @@ export default function LandingPage() {
           <SectionLabel>Fiyat</SectionLabel>
           <div className="mx-auto mt-6 max-w-md rounded-2xl border border-emerald-500/30 bg-[var(--color-surface)]/40 p-8 backdrop-blur-md">
             <div className="flex items-baseline justify-center gap-2">
-              <span className="text-5xl font-bold text-white">499</span>
-              <span className="text-xl font-medium text-emerald-300">USDT</span>
+              <span className="text-5xl font-bold text-white">${MONTHLY_PRICE_USD}</span>
+              <span className="text-base font-medium text-[var(--color-muted)]">/ ay</span>
             </div>
-            <p className="mt-1 text-sm text-[var(--color-muted)]">tek seferlik</p>
+            <p className="mt-1.5 text-sm text-emerald-300">
+              + kârın %{PROFIT_SHARE_PCT}&apos;i — yalnızca kazandırırsa
+            </p>
             <ul className="mt-6 space-y-2 text-left text-sm text-[var(--color-muted)]">
               <li>✓ Tam otomatik · 7/24 · V5 stratejisi</li>
               <li>✓ Paran kendi borsanda (non-custodial)</li>
-              <li>✓ Giriş, SL ve TP&apos;ler otomatik yönetilir</li>
+              <li>✓ Kaybedersen kâr payı yok (high-water mark)</li>
               <li>✓ Canlı panel + işlem geçmişi</li>
             </ul>
             <Link

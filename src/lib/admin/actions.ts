@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import { createServiceClient } from "@/lib/supabase/server";
+import { SUBSCRIPTION_DAYS } from "@/lib/pricing";
 
 /** Throws unless the current session belongs to an admin. Throwing (not a silent
  *  `return`) means an unauthorized invocation fails loudly instead of looking
@@ -27,9 +28,16 @@ export async function approveSubscriptionAction(formData: FormData): Promise<voi
   if (!id) return;
   const supabase = await createServerSupabase();
   await assertAdminOrThrow(supabase);
+  // Monthly access — set the expiry one billing period out.
+  const now = new Date();
+  const expires = new Date(now.getTime() + SUBSCRIPTION_DAYS * 86_400_000);
   await supabase
     .from("subscriptions")
-    .update({ status: "active", activated_at: new Date().toISOString() })
+    .update({
+      status: "active",
+      activated_at: now.toISOString(),
+      expires_at: expires.toISOString(),
+    })
     .eq("id", id);
   revalidatePath("/admin");
 }

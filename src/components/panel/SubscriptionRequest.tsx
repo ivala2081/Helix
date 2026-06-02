@@ -5,6 +5,7 @@ import {
   requestSubscriptionAction,
   type SubState,
 } from "@/lib/subscription/actions";
+import { MONTHLY_PRICE_USD, PROFIT_SHARE_PCT } from "@/lib/pricing";
 
 const INPUT =
   "w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500/60";
@@ -17,10 +18,11 @@ export function SubscriptionRequest({ wallet }: { wallet: string }) {
 
   return (
     <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)]/40 p-5">
-      <h2 className="text-lg font-semibold text-white">Helix Bot Paketi</h2>
+      <h2 className="text-lg font-semibold text-white">Helix Bot — İlk Ay</h2>
       <p className="mt-1 text-sm text-[var(--color-muted)]">
-        Otomatik işlem botu. Aşağıdaki cüzdana <b>499 USDT</b> gönder, işlem
-        hash&apos;ini gir; onaylandığında bot panelinde aktifleşir.
+        Aylık <b>${MONTHLY_PRICE_USD}</b> + kârın %{PROFIT_SHARE_PCT}&apos;i. Başlamak için
+        aşağıdaki cüzdana <b>${MONTHLY_PRICE_USD} USDT</b> (ilk ay) gönder, işlem
+        hash&apos;ini gir; onaylandığında bot <b>30 gün</b> aktifleşir.
       </p>
 
       <div className="mt-4 rounded-md border border-[var(--color-border)] bg-black/30 p-3">
