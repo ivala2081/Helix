@@ -6,9 +6,9 @@ import {
   type SubState,
 } from "@/lib/subscription/actions";
 import { MONTHLY_PRICE_USD, PROFIT_SHARE_PCT } from "@/lib/pricing";
+import { inputClass, primaryBtn } from "@/lib/ui";
 
-const INPUT =
-  "w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500/60";
+const INPUT = inputClass;
 
 export function SubscriptionRequest({ wallet }: { wallet: string }) {
   const [state, formAction, pending] = useActionState<SubState, FormData>(
@@ -59,11 +59,7 @@ export function SubscriptionRequest({ wallet }: { wallet: string }) {
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-emerald-400 disabled:opacity-60"
-        >
+        <button type="submit" disabled={pending} className={`w-full ${primaryBtn}`}>
           {pending ? "Gönderiliyor..." : "Ödememi bildir"}
         </button>
       </form>

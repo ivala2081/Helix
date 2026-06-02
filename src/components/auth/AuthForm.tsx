@@ -4,9 +4,9 @@ import { useActionState, useState } from "react";
 import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { signInAction, signUpAction, type AuthState } from "@/lib/auth/actions";
+import { inputClass, primaryBtn } from "@/lib/ui";
 
-const INPUT =
-  "w-full rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/60 px-3 py-2 text-sm text-white outline-none focus:border-emerald-500/60";
+const INPUT = inputClass;
 const LABEL = "mb-1 block text-xs text-[var(--color-muted)]";
 
 export function AuthForm({
@@ -109,11 +109,7 @@ export function AuthForm({
           </p>
         )}
 
-        <button
-          type="submit"
-          disabled={pending}
-          className="w-full rounded-md bg-emerald-500 px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-emerald-400 disabled:opacity-60"
-        >
+        <button type="submit" disabled={pending} className={`w-full ${primaryBtn}`}>
           {pending ? "..." : isSignup ? "Kayıt ol" : "Giriş yap"}
         </button>
       </form>

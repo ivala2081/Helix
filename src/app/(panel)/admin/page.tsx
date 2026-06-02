@@ -89,7 +89,7 @@ export default async function AdminDashboard() {
       </div>
 
       {/* ── KPI strip ── */}
-      <div className="grid grid-cols-2 gap-px overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Kpi label="Müşteri" value={String(profiles.length)} />
         <Kpi label="Aktif Abonelik" value={String(activeUsers.size)} tone="emerald" />
         <Kpi label="Onay Bekleyen" value={String(pending.length)} tone={pending.length ? "amber" : undefined} />
@@ -243,11 +243,11 @@ function Kpi({
   tone?: "emerald" | "amber";
 }) {
   const cls =
-    tone === "emerald" ? "text-emerald-400" : tone === "amber" ? "text-amber-300" : "text-white/95";
+    tone === "emerald" ? "text-emerald-400" : tone === "amber" ? "text-amber-300" : "text-white";
   return (
-    <div className="bg-[var(--color-bg)] px-4 py-4">
+    <div className="rounded-xl border border-white/5 bg-white/[0.02] px-4 py-4 backdrop-blur-sm transition-colors hover:border-white/10">
       <div className="text-[10px] uppercase tracking-wider text-[var(--color-muted)]">{label}</div>
-      <div className={`mt-1 font-mono text-xl font-medium tabular-nums ${cls}`}>{value}</div>
+      <div className={`mt-2 font-mono text-2xl font-semibold tabular-nums ${cls}`}>{value}</div>
     </div>
   );
 }
