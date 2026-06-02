@@ -67,9 +67,9 @@ export default function LandingPage() {
             çalıştır
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base text-[var(--color-muted)]">
-            Helix Bot, kanıtlanmış bir kripto stratejisini senin Binance
-            hesabında 7/24 otomatik işletir. Paranı biz tutmayız — anahtarın
-            yalnızca işlem izniyle bağlanır.
+            Helix Bot, kurallı ve sistematik bir kripto stratejisini senin
+            Binance hesabında 7/24 otomatik işletir. Paranı biz tutmayız —
+            anahtarın yalnızca işlem izniyle bağlanır.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
