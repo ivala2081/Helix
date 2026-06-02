@@ -31,9 +31,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Node
+        # Node 22+ — @supabase/realtime-js (pulled by supabase-js) now requires
+        # native WebSocket support, which only exists from Node 22 onward.
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "npm"
 
       - name: Install dependencies
