@@ -37,6 +37,14 @@ import {
 const INTERVAL_MS = FORWARD_TEST_INTERVAL_MS;
 const MAX_PAGES = 10;
 
+// Public copier channel (@ArikanTrade) honesty guard: when the GH-Actions cron
+// stalls (gaps of hours are common) and then catches up a backlog, do NOT
+// broadcast hours-late "signals" to copiers — only announce a signal whose
+// candle closed within this window. The DB record, the private monitoring
+// channel, and the cumulative win/loss tally still get every trade; only the
+// public, copier-facing broadcast is suppressed when stale.
+const MAX_PUBLIC_AGE_MS = 45 * 60_000;
+
 /** Prepend a one-line tag header to a Telegram message so the recipient can
  * tell V5 production trades from V6.2 paper-test trades at a glance. */
 function withTag(message: string, tag?: string): string {
@@ -155,6 +163,28 @@ async function main() {
   const errors = results.filter((r) => r.error).map((r) => ({ symbol: r.symbol, message: r.error }));
   const status = errors.length === 0 ? "ok" : errors.length === results.length ? "error" : "partial";
 
+  // Stall detection: if the PREVIOUS tick ran long ago, the GH-Actions schedule
+  // stalled (gaps of hours are common). Alert the owner privately so a manual
+  // dispatch / external trigger can be set up. The public channel is already
+  // protected by the staleness guard; this is operational visibility.
+  try {
+    const { data: lastRun } = await db
+      .from("live_cron_runs")
+      .select("ran_at")
+      .order("ran_at", { ascending: false })
+      .limit(1);
+    const lastMs = lastRun?.[0]?.ran_at ? new Date(lastRun[0].ran_at as string).getTime() : null;
+    const STALL_ALERT_MS = 60 * 60_000;
+    if (lastMs && Date.now() - lastMs > STALL_ALERT_MS) {
+      const gapMin = Math.round((Date.now() - lastMs) / 60_000);
+      sendTelegramMessage(
+        `⚠️ Forward-test cron STALLED ~${gapMin}min (recovered now). GH-Actions schedule unreliable — set up an external trigger (see docs/cron-reliability.md).`,
+      );
+    }
+  } catch {
+    /* non-fatal: never let stall-detection break the tick */
+  }
+
   await db.from("live_cron_runs").insert({
     duration_ms: duration,
     portfolios_processed: allPortfolios.length,
@@ -251,9 +281,11 @@ async function runEngineVariant(
       // Public-channel messages buffered IN ORDER; flushed after the DB insert
       // so the cumulative record only counts persisted trades (monotonic) and
       // TP1/TP2/close never arrive out of order.
+      // closeMs = the candle's CLOSE time (open + interval); the public flush
+      // suppresses broadcasts whose candle closed longer ago than MAX_PUBLIC_AGE_MS.
       const publicEvents: (
-        | { kind: "text"; text: string }
-        | { kind: "close"; trade: Trade }
+        | { kind: "text"; text: string; closeMs: number }
+        | { kind: "close"; trade: Trade; closeMs: number }
       )[] = [];
 
       for (const candle of newCandles) {
@@ -270,6 +302,7 @@ async function runEngineVariant(
               publicEvents.push({
                 kind: "text",
                 text: formatPublicSignal(symbol, event.trade),
+                closeMs: candle.timestamp + INTERVAL_MS,
               });
             }
           }
@@ -277,6 +310,7 @@ async function runEngineVariant(
             publicEvents.push({
               kind: "text",
               text: formatPublicTpHit(symbol, event.trade, event.tpLevel),
+              closeMs: candle.timestamp + INTERVAL_MS,
             });
           }
           if (event.type === "tradeClosed" && event.trade) {
@@ -314,7 +348,7 @@ async function runEngineVariant(
               );
             }
             if (variant.publicChannel) {
-              publicEvents.push({ kind: "close", trade: t });
+              publicEvents.push({ kind: "close", trade: t, closeMs: candle.timestamp + INTERVAL_MS });
             }
           }
         }
@@ -367,17 +401,29 @@ async function runEngineVariant(
       // close is only announced (and counted) once its trade is persisted, so
       // the cumulative record never regresses. Trail-mode (V6.2) stays private.
       if (variant.publicChannel && !variant.params.trailAfterTp1) {
+        const nowMs = Date.now();
+        let suppressed = 0;
         for (const ev of publicEvents) {
+          const fresh = nowMs - ev.closeMs <= MAX_PUBLIC_AGE_MS;
           if (ev.kind === "text") {
-            await sendTelegramPublic(ev.text);
+            if (fresh) await sendTelegramPublic(ev.text);
+            else suppressed++;
           } else if (tradeInsertOk) {
+            // Count EVERY persisted close in the cumulative tally (keeps the
+            // public "genel sicil" accurate) but only BROADCAST fresh ones, so a
+            // cron catch-up never spams hours-late signals to copiers.
             const pnl = ev.trade.pnl ?? 0;
             if (pnl > 0) pubWins++;
             else if (pnl < 0) pubLosses++; // breakeven / null → neutral
-            await sendTelegramPublic(
-              formatPublicClose(symbol, ev.trade, pubWins, pubLosses),
-            );
+            if (fresh) {
+              await sendTelegramPublic(formatPublicClose(symbol, ev.trade, pubWins, pubLosses));
+            } else {
+              suppressed++;
+            }
           }
+        }
+        if (suppressed > 0) {
+          console.log(`  [${variant.label}] ${symbol}: suppressed ${suppressed} stale public broadcast(s) (cron catch-up >${MAX_PUBLIC_AGE_MS / 60000}min)`);
         }
       }
 
