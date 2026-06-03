@@ -288,17 +288,19 @@ export default function LivePage() {
         {/* CTA */}
         <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/10 to-transparent p-8 text-center">
           <h2 className="text-xl font-semibold text-white">
-            Bu stratejiyi kendi hesabında çalıştır
+            Erken erişim listesine katıl
           </h2>
           <p className="mx-auto mt-2 max-w-md text-sm text-[var(--color-muted)]">
-            Helix Bot aynı stratejiyi senin Binance hesabında 7/24 otomatik
-            işletir. Paran sende kalır.
+            Helix Bot aynı stratejiyi senin Binance hesabında otomatik işletecek
+            — non-custodial, paran sende kalır. Strateji şu an{" "}
+            <span className="text-white/80">canlı doğrulama aşamasında</span>;
+            gerçek sicil olgunlaştığında erken erişim davetleri gönderilecek.
           </p>
           <Link
             href="/signup"
             className="mt-5 inline-flex items-center gap-2 rounded-md bg-emerald-500 px-6 py-3 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
           >
-            Hesap oluştur →
+            Erken erişim için kaydol →
           </Link>
         </div>
 
