@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { HeroScene } from "@/components/ui/HeroScene";
 import { LiveEquityChart } from "@/components/live/LiveEquityChart";
+import { selectLiveKpis, type LiveAggregate } from "@/lib/metrics/live-kpis";
 
 interface OpenTrade {
   direction: "LONG" | "SHORT";
@@ -52,6 +53,7 @@ const COIN_TINT: Record<string, string> = {
 
 export default function LivePage() {
   const [data, setData] = useState<LiveData | null>(null);
+  const [agg, setAgg] = useState<LiveAggregate | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,12 +63,21 @@ export default function LivePage() {
     async function fetchData() {
       if (document.hidden) return;
       try {
-        const r = await fetch("/api/live");
+        // Main payload (required) + honest aggregate risk metrics (best-effort:
+        // its failure must not blank the whole page).
+        const [r, aggRes] = await Promise.all([
+          fetch("/api/live"),
+          fetch("/api/live/aggregate").catch(() => null),
+        ]);
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const json = await r.json();
         if (mounted) {
           setData(json);
           setError(null);
+        }
+        if (aggRes && aggRes.ok) {
+          const aggJson = await aggRes.json();
+          if (mounted) setAgg(aggJson.aggregate ?? null);
         }
       } catch (err) {
         if (mounted) setError((err as Error).message);
@@ -89,19 +100,9 @@ export default function LivePage() {
   }, []);
 
   const totalEquity = data?.portfolios.reduce((s, p) => s + p.equity, 0) ?? 0;
-  const totalInitial =
-    data?.portfolios.reduce((s, p) => s + p.initial_capital, 0) ?? 0;
-  const totalReturn =
-    totalInitial > 0 ? ((totalEquity - totalInitial) / totalInitial) * 100 : 0;
-  const positive = totalReturn >= 0;
-
-  const retOf = (p: Portfolio) =>
-    p.initial_capital > 0 ? (p.equity - p.initial_capital) / p.initial_capital : 0;
-  const bestCoin = data?.portfolios.reduce(
-    (best, p) => (!best ? p : retOf(p) > retOf(best) ? p : best),
-    undefined as Portfolio | undefined,
-  );
-  const bestRet = bestCoin ? retOf(bestCoin) * 100 : 0;
+  // Honest headline metrics (return AND drawdown AND win rate AND profit factor)
+  // from the aggregate API — never a cherry-picked "best performer".
+  const kpis = selectLiveKpis(agg);
 
   const startTimes = (data?.portfolios ?? [])
     .map((p) => Date.parse(p.started_at))
@@ -162,31 +163,18 @@ export default function LivePage() {
 
         {data && (
           <>
-            {/* ── Top KPI strip — hairline grid ─────────────────── */}
+            {/* ── Top KPI strip — honest full picture (return + drawdown +
+                 win rate + profit factor), not a cherry-picked best coin ── */}
             <section>
-              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-px overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-3 lg:grid-cols-6">
                 <Cell
                   label="Total equity"
                   value={`$${totalEquity.toLocaleString(undefined, { maximumFractionDigits: 0 })}`}
                 />
-                <Cell
-                  label="Total return"
-                  value={`${positive ? "+" : ""}${totalReturn.toFixed(2)}%`}
-                  tone={positive ? "emerald" : "red"}
-                />
-                <Cell
-                  label="Best performer"
-                  value={
-                    bestCoin
-                      ? `${bestCoin.symbol.replace("USDT", "")} ${bestRet >= 0 ? "+" : ""}${bestRet.toFixed(1)}%`
-                      : "—"
-                  }
-                  tone={bestRet >= 0 ? "emerald" : "red"}
-                />
-                <Cell
-                  label="Trades closed"
-                  value={String(data.totalTradeCount)}
-                />
+                {kpis.map((k) => (
+                  <Cell key={k.label} label={k.label} value={k.value} tone={k.tone} />
+                ))}
+                <Cell label="Trades closed" value={String(data.totalTradeCount)} />
               </div>
             </section>
 
@@ -355,7 +343,7 @@ function Cell({
 }: {
   label: string;
   value: string;
-  tone?: "emerald" | "red";
+  tone?: "emerald" | "red" | "neutral";
 }) {
   const cls =
     tone === "emerald"
