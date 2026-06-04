@@ -47,8 +47,9 @@ For live the executor talks to `fapi.binance.com`; for testnet,
 |-----|---------|---------|
 | `EXECUTOR_ENV` | `testnet` | `testnet` or `live`. |
 | `EXECUTOR_LIVE` | _(unset)_ | Must equal `1` to permit `EXECUTOR_ENV=live` — a second, deliberate switch so a stray env can't trade money. |
-| `EXECUTOR_DRYRUN` | _(unset)_ | `1` = decide + log actions, place NO orders, write NO rows. |
+| `EXECUTOR_DRYRUN` | _(unset)_ | `1` = decide + log actions, place NO orders, write NO rows. Skips the single-flight lock (read-only ⇒ safe to run alongside a real tick). |
 | `EXECUTOR_MAX_SIGNAL_AGE_MIN` | `30` | Older `live_portfolios.updated_at` ⇒ signal stale ⇒ no new opens. |
+| `EXECUTOR_LOCK_TTL_MIN` | `5` | Single-flight lease length. A crashed tick auto-frees the lock after this; the next scheduled tick recovers. Keep ≥ worst-case tick duration. |
 
 ---
 
@@ -139,10 +140,31 @@ journalctl -u helix-executor.service -f
 
 ---
 
-## 6. Open items for full Phase C / D
+## 6. Concurrency model (single-flight + compare-and-set)
 
-- **Concurrency**: today customers are processed sequentially. Fine for a
-  handful; parallelize with a small pool when the book grows.
+Two hardening fixes make overlapping/retried ticks safe (`MEDIUM` pre-live
+must-dos, now done):
+
+- **Single-flight lock** (`executor_locks` lease row, `src/lib/exchange/tick-lock.ts`):
+  a real tick takes a lease before touching any account, so two overlapping runs
+  (slow tick + next cron, admin test button + timer, a manual run alongside the
+  schedule) can't both fire a market OPEN and double-fill a customer. A second
+  tick that finds the lease held logs `Another executor tick is already running —
+  skipping` and exits 0. A crashed holder auto-frees after `EXECUTOR_LOCK_TTL_MIN`.
+  Dry-run skips the lock (it places no orders).
+- **Compare-and-set writes** (`reduce`/`close` in `executor.ts`): the user_trades
+  state update is guarded on the row pre-image (`status` / `remaining_qty`), so a
+  racing duplicate can't lost-update the realized pnl — the basis the per-customer
+  drawdown circuit breaker reads. A lost race is surfaced as a `conflict` (`✗`)
+  and self-heals next tick, never a silent double-count.
+
+## 7. Open items for full Phase C / D
+
+- **Concurrency (multi-customer scale)**: today customers are processed
+  sequentially under one global tick lock. Fine for a handful; when the book
+  grows, switch to a small worker pool with a **per-customer** lock key (the lock
+  helper already takes a `name`) so customers run in parallel without
+  reintroducing the double-open race.
 - **Signal source**: still the GitHub-Actions paper cron via `live_portfolios`.
   Consider moving the engine step onto the VPS too (one box, one source of
   truth, no GH-Actions dependency) once live volume justifies it.

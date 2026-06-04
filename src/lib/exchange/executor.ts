@@ -265,15 +265,31 @@ export async function runReconcileCycle(ctx: CycleContext): Promise<CycleRecord>
         const fill = await client.price(symbol);
         const row = openRow!.open;
         const realized = signedPnl(row.direction, openRow!.entryPrice, fill, action.qty);
-        const { error } = await db
+        // Compare-and-set on the pre-image (status + the remaining_qty we read):
+        // if a concurrent tick already applied this partial, 0 rows match and we
+        // DON'T double-count pnl or under-report remaining_qty. The single-flight
+        // lock makes overlap the exceptional case; this is the backstop that keeps
+        // the realized-pnl basis the per-customer drawdown breaker reads correct.
+        const { data: upd, error } = await db
           .from("user_trades")
           .update({
             remaining_qty: Math.max(0, row.remainingQty - action.qty),
             tp_stage: action.tpStage,
             pnl: (openRow!.pnl ?? 0) + realized,
           })
-          .eq("id", openRow!.id);
+          .eq("id", openRow!.id)
+          .eq("status", "open")
+          .eq("remaining_qty", row.remainingQty)
+          .select("id");
         if (error) throw new Error("update (reduce): " + error.message);
+        if (!upd || upd.length === 0) {
+          return {
+            symbol,
+            action: "conflict",
+            detail: "reduce lost a write race (row already advanced)",
+            error: "concurrent-write: reduce",
+          };
+        }
         return {
           symbol,
           action: "reduce",
@@ -291,7 +307,11 @@ export async function runReconcileCycle(ctx: CycleContext): Promise<CycleRecord>
             : 0;
         const pnl = (openRow!.pnl ?? 0) + realized;
         const notional = openRow!.notional ?? openRow!.entryPrice * row.entryQty;
-        const { error } = await db
+        // CAS on status: only the FIRST close flips open→closed; a concurrent
+        // duplicate sees status='closed', matches 0 rows, and bails — no double
+        // pnl write. (Closes are never gated, so this is the sole guard against a
+        // racing duplicate close clobbering the realized total.)
+        const { data: upd, error } = await db
           .from("user_trades")
           .update({
             status: "closed",
@@ -302,8 +322,18 @@ export async function runReconcileCycle(ctx: CycleContext): Promise<CycleRecord>
             exit_reason: action.reason,
             closed_at: new Date().toISOString(),
           })
-          .eq("id", openRow!.id);
+          .eq("id", openRow!.id)
+          .eq("status", "open")
+          .select("id");
         if (error) throw new Error("update (close): " + error.message);
+        if (!upd || upd.length === 0) {
+          return {
+            symbol,
+            action: "conflict",
+            detail: "close lost a write race (already closed)",
+            error: "concurrent-write: close",
+          };
+        }
         return { symbol, action: "close", detail: `${action.side} ${action.qty} @ ~${fill} (pnl ${pnl.toFixed(2)})` };
       }
     }
