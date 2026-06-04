@@ -68,15 +68,17 @@ export default function LandingPage() {
           </h1>
           <p className="mx-auto mt-5 max-w-xl text-base text-[var(--color-muted)]">
             Helix Bot, kurallı ve sistematik bir kripto stratejisini senin
-            Binance hesabında 7/24 otomatik işletir. Paranı biz tutmayız —
-            anahtarın yalnızca işlem izniyle bağlanır.
+            Binance hesabında otomatik işletecek — paranı biz tutmayız, anahtarın
+            yalnızca işlem izniyle bağlanır. Strateji şu an{" "}
+            <span className="text-white/80">canlı doğrulama aşamasında</span>;
+            erken erişim için kaydol.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href="/signup"
               className="inline-flex items-center gap-2 rounded-md bg-emerald-500 px-6 py-3 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
             >
-              Hemen başla <ArrowRight size={16} />
+              Erken erişim <ArrowRight size={16} />
             </Link>
             <Link
               href="/live"
@@ -207,11 +209,15 @@ export default function LandingPage() {
               <li>✓ Kaybedersen kâr payı yok (high-water mark)</li>
               <li>✓ Canlı panel + işlem geçmişi</li>
             </ul>
+            <p className="mt-5 rounded-md border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-xs leading-relaxed text-amber-200/80">
+              Launch fiyatı. Strateji canlı doğrulama aşamasında — ücretlendirme,
+              bot gerçek canlı sicil gösterip erişim açıldığında başlar.
+            </p>
             <Link
               href="/signup"
-              className="mt-7 inline-flex w-full items-center justify-center gap-2 rounded-md bg-emerald-500 px-6 py-3 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
+              className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-md bg-emerald-500 px-6 py-3 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
             >
-              Hesap oluştur <ArrowRight size={16} />
+              Erken erişim için kaydol <ArrowRight size={16} />
             </Link>
           </div>
         </section>
