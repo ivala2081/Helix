@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import { isSubscriptionActive } from "@/lib/subscription/status";
-import { MONTHLY_PRICE_USD, PROFIT_SHARE_PCT } from "@/lib/pricing";
+import { MONTHLY_PRICE_USD, PROFIT_SHARE_PCT, EXECUTION_LIVE } from "@/lib/pricing";
 import { SubscriptionRequest } from "@/components/panel/SubscriptionRequest";
 
 export const metadata: Metadata = { title: "Helix Bot Paketi" };
@@ -28,8 +28,10 @@ const STEPS = [
   },
   {
     icon: Bot,
-    title: "2 · Bot çalışır",
-    body: "Helix V5 stratejisi sinyal verdikçe senin hesabında otomatik işlem açar; SL ve TP'leri yönetir.",
+    title: EXECUTION_LIVE ? "2 · Bot çalışır" : "2 · Bot çalışacak",
+    body: EXECUTION_LIVE
+      ? "Helix V5 stratejisi sinyal verdikçe senin hesabında otomatik işlem açar; SL ve TP'leri yönetir."
+      : "Canlı doğrulama tamamlanınca Helix V5 sinyal verdikçe senin hesabında otomatik işlem açacak; SL ve TP'leri yönetecek.",
   },
   {
     icon: TrendingUp,
@@ -71,7 +73,9 @@ export default async function PaketPage() {
         <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-6">
           <h1 className="text-lg font-semibold text-emerald-300">Aboneliğin zaten aktif ✓</h1>
           <p className="mt-1 text-sm text-[var(--color-muted)]">
-            Borsa bağlama ekranından hesabını bağlayıp botu çalıştırabilirsin.
+            {EXECUTION_LIVE
+              ? "Borsa bağlama ekranından hesabını bağlayıp botu çalıştırabilirsin."
+              : "Borsanı şimdiden bağlayabilirsin; strateji canlı doğrulama aşamasında olduğu için bot, emir altyapısı devreye girene kadar gerçek işlem açmaz."}
           </p>
         </div>
       </div>
@@ -99,14 +103,15 @@ export default async function PaketPage() {
       {/* ── Hero ── */}
       <div className="relative overflow-hidden rounded-2xl border border-[var(--color-border)] bg-gradient-to-br from-emerald-500/15 via-[var(--color-surface)]/30 to-transparent p-8">
         <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-300">
-          <Zap size={12} /> Helix Bot Paketi
+          <Zap size={12} /> {EXECUTION_LIVE ? "Helix Bot Paketi" : "Erken erişim · canlı doğrulama"}
         </div>
         <h1 className="mt-4 text-3xl font-semibold text-white">
           Stratejiyi senin hesabında çalıştır
         </h1>
         <p className="mt-2 max-w-lg text-sm text-[var(--color-muted)]">
-          Helix V5'i kendi Binance/Bybit hesabında 7/24 otomatik işlet. Kurulum
-          5 dakika; gerisini bot halleder.
+          {EXECUTION_LIVE
+            ? "Helix V5'i kendi Binance/Bybit hesabında 7/24 otomatik işlet. Kurulum 5 dakika; gerisini bot halleder."
+            : "Helix V5 yakında kendi Binance/Bybit hesabında 7/24 otomatik işleyecek. Strateji şu an canlı doğrulamadan geçiyor — erken erişim için sıraya gir, hazır olunca haber veririz."}
         </p>
         <div className="mt-6 flex items-baseline gap-2">
           <span className="text-4xl font-bold text-white">${MONTHLY_PRICE_USD}</span>
@@ -151,13 +156,37 @@ export default async function PaketPage() {
         </div>
       </section>
 
-      {/* ── Payment ── */}
+      {/* ── Payment / early-access ── */}
       <section id="odeme" className="scroll-mt-20">
         <h2 className="text-[10px] uppercase tracking-[0.3em] text-[var(--color-muted)]/70">
-          Satın al
+          {EXECUTION_LIVE ? "Satın al" : "Erken erişim"}
         </h2>
         <div className="mt-4">
-          <SubscriptionRequest wallet={USDT_WALLET} />
+          {EXECUTION_LIVE ? (
+            <SubscriptionRequest wallet={USDT_WALLET} />
+          ) : (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-5">
+              <h3 className="text-lg font-semibold text-amber-200">
+                Strateji canlı doğrulama aşamasında
+              </h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">
+                Bot henüz gerçek hesaplarda işlem açmıyor; bu yüzden{" "}
+                <b className="text-white/80">şu an ücret alınmıyor</b>. Hesabını
+                oluşturduğun için erken erişim listesindesin — V5 gerçek canlı
+                sicilini gösterip emir altyapısı devreye girdiğinde
+                ücretlendirme ($
+                {MONTHLY_PRICE_USD}/ay + kârın %{PROFIT_SHARE_PCT}&apos;i) ve
+                aktivasyon başlar, sana haber veririz.
+              </p>
+              <p className="mt-3 text-xs text-[var(--color-muted)]/70">
+                İlerlemeyi{" "}
+                <Link href="/live" className="text-emerald-400 hover:underline">
+                  canlı panelden
+                </Link>{" "}
+                şeffaf takip edebilirsin.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

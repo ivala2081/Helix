@@ -4,7 +4,7 @@ import { Activity, ArrowRight } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import { isSubscriptionActive } from "@/lib/subscription/status";
 import { tradeStats } from "@/lib/metrics/trades";
-import { MONTHLY_PRICE_USD, PROFIT_SHARE_PCT } from "@/lib/pricing";
+import { MONTHLY_PRICE_USD, PROFIT_SHARE_PCT, EXECUTION_LIVE } from "@/lib/pricing";
 
 export const metadata: Metadata = { title: "Panel" };
 
@@ -56,13 +56,18 @@ export default async function AppDashboard() {
       {/* ── Hero ── */}
       <div>
         <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-[var(--color-muted)]/70">
-          {active ? (
+          {active && EXECUTION_LIVE ? (
             <>
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
               </span>
               Bot aktif
+            </>
+          ) : active ? (
+            <>
+              <span className="h-2 w-2 rounded-full bg-amber-400/70" />
+              Doğrulama aşamasında
             </>
           ) : (
             <>
@@ -96,8 +101,10 @@ export default async function AppDashboard() {
           <h2 className="mt-5 text-base font-medium text-white">Henüz işlem yok</h2>
           <p className="mt-1.5 max-w-sm text-sm text-[var(--color-muted)]">
             {active
-              ? "Borsa hesabını bağla; bot işlem açtıkça hepsi burada görünecek — bakiye, K/Z, açık pozisyonlar."
-              : "Aboneliğini başlatıp borsanı bağladığında bot senin hesabında işlem açmaya başlar ve burada anlık olarak görürsün."}
+              ? EXECUTION_LIVE
+                ? "Borsa hesabını bağla; bot işlem açtıkça hepsi burada görünecek — bakiye, K/Z, açık pozisyonlar."
+                : "Borsanı şimdiden bağlayabilirsin. Strateji canlı doğrulama aşamasında — bot canlıya geçtiğinde işlemlerin burada anlık görünecek."
+              : "Strateji canlı doğrulama aşamasında. Erken erişim listesindesin; bot gerçek hesaplarda işlem açmaya başladığında burada anlık göreceksin."}
           </p>
         </div>
       ) : (
@@ -172,7 +179,9 @@ export default async function AppDashboard() {
             Aboneliğin aktif ✓
           </h2>
           <p className="mt-1 text-sm text-[var(--color-muted)]">
-            Borsa hesabını bağla ve botu çalıştır.
+            {EXECUTION_LIVE
+              ? "Borsa hesabını bağla ve botu çalıştır."
+              : "Borsanı şimdiden bağlayabilirsin. Strateji canlı doğrulama aşamasında — bot, emir altyapısı devreye girene kadar gerçek işlem açmaz."}
           </p>
           <Link
             href="/app/baglanti"
@@ -194,9 +203,9 @@ export default async function AppDashboard() {
             Botu kendi hesabında çalıştır
           </h2>
           <p className="mt-2 max-w-md text-sm text-[var(--color-muted)]">
-            Helix Bot, Binance/Bybit hesabında 7/24 otomatik işlem açar. Paranı
-            biz tutmayız — anahtar yalnızca işlem izniyle, çekim yetkisi olmadan
-            bağlanır.
+            {EXECUTION_LIVE
+              ? "Helix Bot, Binance/Bybit hesabında 7/24 otomatik işlem açar. Paranı biz tutmayız — anahtar yalnızca işlem izniyle, çekim yetkisi olmadan bağlanır."
+              : "Helix Bot, canlı doğrulama tamamlanınca Binance/Bybit hesabında 7/24 otomatik işlem açacak. Paranı biz tutmayız — anahtar yalnızca işlem izniyle, çekim yetkisi olmadan bağlanır. Strateji şu an canlı doğrulama aşamasında."}
           </p>
           <ul className="mt-4 space-y-1.5 text-sm text-[var(--color-muted)]">
             <li>✓ Tam otomatik · 7/24 · V5 stratejisi</li>
@@ -207,7 +216,7 @@ export default async function AppDashboard() {
             href="/app/paket"
             className="mt-5 inline-flex items-center gap-2 rounded-md bg-emerald-500 px-5 py-2.5 text-sm font-semibold text-black transition-colors hover:bg-emerald-400"
           >
-            Başla · ${MONTHLY_PRICE_USD}/ay
+            {EXECUTION_LIVE ? `Başla · $${MONTHLY_PRICE_USD}/ay` : "Erken erişime katıl"}
             <ArrowRight size={16} />
           </Link>
         </div>

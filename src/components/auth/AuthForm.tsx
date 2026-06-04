@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 import { signInAction, signUpAction, type AuthState } from "@/lib/auth/actions";
 import { inputClass, primaryBtn } from "@/lib/ui";
+import { EXECUTION_LIVE } from "@/lib/pricing";
 
 const INPUT = inputClass;
 const LABEL = "mb-1 block text-xs text-[var(--color-muted)]";
@@ -30,7 +31,11 @@ export function AuthForm({
         {isSignup ? "Hesap oluştur" : "Giriş yap"}
       </h1>
       <p className="mb-6 text-sm text-[var(--color-muted)]">
-        {isSignup ? "Helix botunu kullanmaya başla." : "Helix paneline eriş."}
+        {isSignup
+          ? EXECUTION_LIVE
+            ? "Helix botunu kullanmaya başla."
+            : "Erken erişim listesine katıl — strateji canlı doğrulama aşamasında."
+          : "Helix paneline eriş."}
       </p>
 
       <form action={formAction} className="space-y-3">

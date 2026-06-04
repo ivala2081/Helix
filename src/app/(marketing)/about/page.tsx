@@ -71,7 +71,11 @@ export default function AboutPage() {
                 <EvolutionChart />
               </div>
 
-              <div className="mt-6 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/40 backdrop-blur-md">
+              <p className="mt-6 text-[11px] uppercase tracking-wider text-amber-300/70">
+                Backtest results (realism-patched) — not a live track record. The
+                strategy is in live validation.
+              </p>
+              <div className="mt-2 overflow-hidden rounded-md border border-[var(--color-border)] bg-[var(--color-surface)]/40 backdrop-blur-md">
                 <table className="w-full text-sm">
                   <thead className="border-b border-[var(--color-border)] bg-[var(--color-bg)]/40 text-[10px] uppercase tracking-wider text-[var(--color-muted)]">
                     <tr>

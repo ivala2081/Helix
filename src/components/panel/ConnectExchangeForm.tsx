@@ -30,7 +30,7 @@ export function ConnectExchangeForm() {
         <ol className="mt-2 list-decimal space-y-0.5 pl-4">
           <li>Binance → Profil → API Management → Create API</li>
           <li>
-            <b>Enable Spot &amp; Margin Trading</b> AÇIK
+            <b>Enable Futures</b> AÇIK (bot USDT-M Futures&apos;ta işlem yapar)
           </li>
           <li>
             <b>Enable Withdrawals</b> KAPALI (bırak)

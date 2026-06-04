@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ArrowLeft, CheckCircle2, Lock } from "lucide-react";
 import { createServerSupabase } from "@/lib/supabase/ssr-server";
 import { isSubscriptionActive } from "@/lib/subscription/status";
+import { EXECUTION_LIVE } from "@/lib/pricing";
 import { decryptSecret, maskKey } from "@/lib/crypto/apiKeys";
 import { ConnectExchangeForm } from "@/components/panel/ConnectExchangeForm";
 import {
@@ -121,8 +122,19 @@ export default async function BaglantiPage() {
                 defaultChecked={bot.enabled}
                 className="h-4 w-4 accent-emerald-500"
               />
-              <span className="text-sm text-white">Bot aktif (hesabımda işlem açsın)</span>
+              <span className="text-sm text-white">
+                {EXECUTION_LIVE
+                  ? "Bot aktif (hesabımda işlem açsın)"
+                  : "Bot aktif et (hazır olduğunda hesabımda işlem açsın)"}
+              </span>
             </label>
+            {!EXECUTION_LIVE && (
+              <p className="mt-2 rounded-md border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-xs leading-relaxed text-amber-200/80">
+                Strateji şu an canlı doğrulama aşamasında. Bu ayar kaydedilir ama
+                canlı emir altyapısı devreye girene kadar hesabında{" "}
+                <b className="text-white/80">hiçbir işlem açılmaz</b>.
+              </p>
+            )}
             <div className="mt-4 max-w-xs">
               <label className="mb-1 block text-xs text-[var(--color-muted)]">
                 İşlem başına risk (%)
@@ -151,7 +163,16 @@ export default async function BaglantiPage() {
           </p>
         </>
       ) : (
-        <ConnectExchangeForm />
+        <>
+          {!EXECUTION_LIVE && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-4 text-sm leading-relaxed text-amber-200/80">
+              Strateji canlı doğrulama aşamasında. Borsanı şimdiden
+              bağlayabilirsin — bağlantı ve ayarların hazır tutulur, ama canlı
+              emir altyapısı devreye girene kadar bot hiçbir emir göndermez.
+            </div>
+          )}
+          <ConnectExchangeForm />
+        </>
       )}
     </div>
   );

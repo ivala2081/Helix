@@ -240,7 +240,12 @@ function ReleaseCard({ release }: { release: Release }) {
         ))}
       </ul>
       {release.metrics && release.metrics.length > 0 && (
-        <div className="mt-5 grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-5">
+        <>
+        <div className="mt-5 text-[9px] uppercase tracking-wider text-amber-300/70">
+          Backtest (realism-patched) — not a live track record. The strategy is in
+          live validation; see Methodology.
+        </div>
+        <div className="mt-2 grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-[var(--color-border)] bg-[var(--color-border)] sm:grid-cols-5">
           {release.metrics.map((m) => (
             <div
               key={m.label}
@@ -255,6 +260,7 @@ function ReleaseCard({ release }: { release: Release }) {
             </div>
           ))}
         </div>
+        </>
       )}
     </div>
   );
