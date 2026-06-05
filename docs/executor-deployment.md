@@ -140,6 +140,22 @@ journalctl -u helix-executor.service -f
 
 ---
 
+## 5b. Windows Server VPS (Task Scheduler)
+
+If the VPS is Windows (no systemd), two scripts under `scripts/deploy/` replace
+§5. Run both ON THE BOX in an **elevated** PowerShell, via RDP:
+
+1. `windows-executor-bootstrap.ps1` — installs Node 22 LTS + Git (official MSIs;
+   `winget` isn't on Server), clones the repo to `C:\helix`, `npm ci`, prints the
+   **egress IP** to whitelist, and runs one **testnet dry-run** tick. Idempotent.
+   Copy your `.env.local` into `C:\helix\` first (it carries `APP_ENCRYPTION_KEY`).
+2. `windows-executor-task.ps1` — registers an every-minute Scheduled Task
+   (`HelixExecutor`, testnet). `MultipleInstances=IgnoreNew` + a 4-min execution
+   limit pair with the DB single-flight lock so ticks never overlap.
+
+Going live is still the same gated switch (`EXECUTOR_ENV=live` + `EXECUTOR_LIVE=1`),
+set in `.env.local` only after the §4 arming procedure — not in either script.
+
 ## 6. Concurrency model (single-flight + compare-and-set)
 
 Two hardening fixes make overlapping/retried ticks safe (`MEDIUM` pre-live
