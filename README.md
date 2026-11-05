@@ -9,19 +9,9 @@ A professional-grade cryptocurrency trading strategy backtesting framework with 
 
 **Helix** is an event-driven backtesting system for BTC price action trading using Market Structure and Fair Value Gap (FVG) analysis on 1-hour timeframes.
 
-### Performance Highlights (V5)
+### Results: run it yourself
 
-- **Total Return**: +949.7%
-- **Sharpe Ratio**: 5.40
-- **Max Drawdown**: 8.55%
-- **Win Rate**: 84.3%
-- **Profit Factor**: 12.46
-- **Expectancy**: $426 per trade
-- **Walk-Forward**: 5/5 folds profitable (avg OOS +48.72%)
-
-> ⚠️ These are backtest results optimized on in-sample data. See
-> [CHANGELOG.md](CHANGELOG.md) for the full V1→V5 evolution and the
-> strategy's roadmap for holdout OOS validation and paper trading.
+This README does not quote headline backtest numbers on purpose. Clone the repo, run the backtest and the walk-forward on your own data and cost assumptions, and judge the output yourself. Read **Assumptions & limitations** (near the end) first: they change the numbers a lot.
 
 ## ✨ Features
 
@@ -30,7 +20,7 @@ A professional-grade cryptocurrency trading strategy backtesting framework with 
 - **Multiple indicator systems**: Market Structure, Fair Value Gaps, Smart Money Concepts, Classic Price Action
 - **Advanced risk management**: Tiered position sizing, breakeven stops, progressive take-profits
 - **Comprehensive metrics**: 30+ performance indicators including Sharpe, Sortino, Calmar ratios
-- **Commission & slippage modeling**: Realistic trading costs
+- **Commission & slippage modeling**: commission defaults to 0.075% per side; slippage defaults to **0**, so set it yourself
 
 ### Validation & Analysis
 - ✅ **Walk-forward validation** with rolling windows
@@ -171,47 +161,33 @@ python3 -c "from validate_strategy import test_out_of_sample; test_out_of_sample
 
 ## 📈 Strategy Evolution
 
+Each version changed the rules below and was re-tuned on the same BTC history. Per-version results are not listed here; see [CHANGELOG.md](CHANGELOG.md) for the full history.
+
 ### V1: Base Strategy
 - Market Structure + FVG on 1H
 - Fixed take-profits and stop-loss
-- **Result**: +49.7%, Sharpe 1.81, DD 10.3%
 
 ### V2: Risk Management
 - Suppress SL for first 19 bars (prevent shakeouts)
 - Move to breakeven after TP1
 - Signal quality filter (min score 0.60)
-- **Result**: +95.5%, Sharpe 3.36, DD 5.9%
 
 ### V3: Position Sizing
 - Rebalanced TP percentages (40% → 20% at TP1)
 - Extended SL suppression to 30 bars
-- **Result**: +173.2%, Sharpe 4.66, DD 4.1%
 
 ### V4: Risk Stabilization
 - Fixed risk at 2% per trade (tiered sizing was a no-op)
 - Extended SL suppression to 50 bars
-- Optimized TP distribution (5%/30%/65%)
-- **Result**: +295.6%, Sharpe 4.96, DD 2.6% *(V4)*
+- TP distribution 5% / 30% / 65%
 
-**V5: Final Risk Tuning (Current)**
-- SL multiplier: 2× → 1× ATR (tighter entry risk)
-- TP1 multiplier: 2× → 1× ATR
-- Risk per trade: 2% → 3%, max position 80% equity
-- **Result**: +949.7%, Sharpe 5.40, DD 8.55%, WR 84.3%, PF 12.46
-- Walk-Forward: 5/5 folds profitable (avg OOS +48.72%)
+### V5: Current
+- Tighter stops: SL 2× → 1× ATR
+- Earlier profit lock: TP1 2× → 1× ATR
+- Risk per trade 2% → 3%, position cap 50% → 80% of equity
 
-### V5: Return Maximization (Current)
-- Tighter stops: SL 2× → 1× ATR (less $ lost per loss)
-- Earlier profit lock: TP1 2× → 1× ATR (WR 78.6% → 84.3%)
-- Position sizing unlocked: risk 2% → 3%, position cap 50% → 80%
-- **Result**: +949.7%, Sharpe 5.40, DD 8.55%, WR 84.3%, PF 12.46
-- Walk-forward: 5/5 folds profitable, avg OOS +48.72%
-
-> **Note on V5:** The monotonic improvement from V1→V5 is a known
-> overfit signal. V5 still needs (a) a true holdout OOS test on data
-> excluded from optimization, (b) a parameter sensitivity matrix to
-> confirm V5 sits on a plateau rather than a lone peak, and (c) paper
-> trading on Binance Testnet before any live capital exposure.
+### V6: Shelved
+- A redesign that failed its own acceptance gate against V5. See [docs/v6-gate3-verdict.md](docs/v6-gate3-verdict.md).
 
 ## 📊 Key Metrics Explained
 
@@ -234,6 +210,22 @@ Historical data is fetched from Binance API:
 # Fetch fresh data
 python3 -c "from data_fetcher import fetch_klines; fetch_klines('BTCUSDT', '1h', '2023-01-01')"
 ```
+
+## ⚠️ Assumptions & limitations
+
+Read this before trusting any number the backtester prints.
+
+- **Tuned on the data it is tested on.** V1 → V5 were optimized on BTCUSDT 1H history from 2023 onward, and the backtest reports on that same history. Results only ever improved from one version to the next, which is a classic sign of overfitting.
+- **Slippage is zero by default.** `slippage_pct` and `slippage_atr_frac` default to `0.0`. Commission is 0.075% per side (Binance taker). Funding, spread widening and market impact are not modelled.
+- **The stop-loss is switched off for the first 50 bars.** With `min_bars_before_sl: 50`, the only protection during that window is a hard stop at 15× ATR. In a live account a trade can lose far more than the 1× ATR stop suggests, and drawdowns can be much deeper than in the backtest.
+- **Win rate is shaped by the exit design.** TP1 sits at 1× ATR and the stop moves to breakeven after it, so many trades are counted as winners after a small partial close.
+- **Positions are large.** 3% risk per trade with up to 80% of equity in one position.
+- **1H bars hide the intra-bar path.** When a stop and a target both fall inside the same candle, the outcome depends on the engine's fill-order assumption, not on what actually happened.
+- **One venue, one asset class.** Binance spot data; mostly BTC, with ETH and SOL as secondary checks.
+- **Stricter re-tests came out much weaker.** On a constrained 3-symbol, 2024–2026 test with fair costs, results were a fraction of the headline backtest. Details: [docs/v6-gate3-verdict.md](docs/v6-gate3-verdict.md).
+- **No proven live track record.** Forward testing and Testnet execution are work in progress.
+
+To get a more honest picture: set slippage above zero, lower `min_bars_before_sl`, run the walk-forward, and test on a period the parameters never saw.
 
 ## ⚠️ Disclaimer
 
