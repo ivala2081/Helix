@@ -20,7 +20,7 @@ This README does not quote headline backtest numbers on purpose. Clone the repo,
 - **Multiple indicator systems**: Market Structure, Fair Value Gaps, Smart Money Concepts, Classic Price Action
 - **Advanced risk management**: Tiered position sizing, breakeven stops, progressive take-profits
 - **Comprehensive metrics**: 30+ performance indicators including Sharpe, Sortino, Calmar ratios
-- **Commission & slippage modeling**: commission defaults to 0.075% per side; slippage defaults to **0**, so set it yourself
+- **Commission & slippage modeling**: 0.075% commission per side; the strategy config adds 0.02% slippage plus 5% of ATR per fill
 
 ### Validation & Analysis
 - ✅ **Walk-forward validation** with rolling windows
@@ -54,7 +54,7 @@ pip install pandas numpy requests
 
 ```bash
 git clone https://github.com/ivala2081/helix.git
-cd helix-trading-strategy
+cd Helix
 ```
 
 ### Run Backtest
@@ -116,7 +116,7 @@ STRATEGY_PARAMS = {
 ## 📁 Project Structure
 
 ```
-helix-trading-strategy/
+Helix/
 ├── backtester.py           # Core backtesting engine
 ├── strategy.py             # Main strategy implementation
 ├── indicators.py           # Technical indicators (MS, FVG, SMC, PA)
@@ -216,7 +216,7 @@ python3 -c "from data_fetcher import fetch_klines; fetch_klines('BTCUSDT', '1h',
 Read this before trusting any number the backtester prints.
 
 - **Tuned on the data it is tested on.** V1 → V5 were optimized on BTCUSDT 1H history from 2023 onward, and the backtest reports on that same history. Results only ever improved from one version to the next, which is a classic sign of overfitting.
-- **Slippage is zero by default.** `slippage_pct` and `slippage_atr_frac` default to `0.0`. Commission is 0.075% per side (Binance taker). Funding, spread widening and market impact are not modelled.
+- **Costs are simplified.** `strategy.py` uses 0.02% slippage plus 5% of ATR per fill and 0.075% commission per side (Binance taker); the bare `Backtester` class defaults slippage to 0. Funding, spread widening in fast markets and market impact are not modelled.
 - **The stop-loss is switched off for the first 50 bars.** With `min_bars_before_sl: 50`, the only protection during that window is a hard stop at 15× ATR. In a live account a trade can lose far more than the 1× ATR stop suggests, and drawdowns can be much deeper than in the backtest.
 - **Win rate is shaped by the exit design.** TP1 sits at 1× ATR and the stop moves to breakeven after it, so many trades are counted as winners after a small partial close.
 - **Positions are large.** 3% risk per trade with up to 80% of equity in one position.
@@ -225,7 +225,7 @@ Read this before trusting any number the backtester prints.
 - **Stricter re-tests came out much weaker.** On a constrained 3-symbol, 2024–2026 test with fair costs, results were a fraction of the headline backtest. Details: [docs/v6-gate3-verdict.md](docs/v6-gate3-verdict.md).
 - **No proven live track record.** Forward testing and Testnet execution are work in progress.
 
-To get a more honest picture: set slippage above zero, lower `min_bars_before_sl`, run the walk-forward, and test on a period the parameters never saw.
+To get a more honest picture: raise slippage, lower `min_bars_before_sl`, run the walk-forward, and test on a period the parameters never saw.
 
 ## ⚠️ Disclaimer
 
